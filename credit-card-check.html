@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>信用卡回饋核對表</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* 工具頁，霧白底，最寬 480px 置中 */
+/* 外形還原成一張帳單收據：上緣打孔、分類之間虛線、下緣鋸齒，不拆成一張張圓角卡片 */
+/* 每張信用卡一個自己的顏色（不限品牌三色，要一眼分得出是哪張卡），標籤、色條、回饋金額、合計都跟著它走 */
+:root {
+  --c-lime: #D9E86B;      --c-lime-soft: #F4F8D2;      --c-lime-deep: #7C8A1F;
+  --c-rose: #F68FDB;      --c-rose-soft: #FDE3ED;      --c-rose-deep: #B8466F;
+  --c-lavender: #CDB9FF;  --c-lavender-soft: #EEE8FF;  --c-lavender-deep: #6447C9;
+  --c-bg: #F9FAFC;  --c-surface: #FFFFFF;  --c-line: #ECE9F1;
+  --c-text: #2A2433;  --c-text-2: #6E6878;  --c-text-3: #9C96A6;
+  --c-overlay: rgba(42, 36, 51, 0.5);
+  --radius-sm: 10px;  --radius-md: 16px;  --radius-pill: 999px;
+  --shadow: 0 8px 24px rgba(42, 36, 51, 0.08);
+  --font-sans: "Huninn", "jf-openhuninn-2.1", "PingFang TC", "Noto Sans TC", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --fs-h1: 32px;  --fs-h2: 22px;  --fs-h3: 18px;
+  --fs-body: 16px;  --fs-sm: 14px;  --fs-tag: 13px;  --fs-caption: 12px;
+  --lh-title: 1.35;  --lh-h2: 1.4;  --lh-h3: 1.5;
+  --lh-body: 1.75;  --lh-sm: 1.7;  --lh-ui: 1.4;  --lh-single: 1;
+  color-scheme: light;
+}
+@media (max-width: 480px) {
+  :root { --fs-h1: 28px; --fs-h2: 20px; }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-synthesis: none;
+  color: var(--c-text);
+  background: var(--c-surface);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  letter-spacing: normal;
+  line-break: strict;
+  min-height: 100vh;
+}
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; line-height: var(--lh-single); }
+:focus-visible { outline: 1.5px solid var(--c-text); outline-offset: 2px; }
+.mono { font-family: var(--font-mono); font-weight: 500; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
+.nowrap { white-space: nowrap; }
+
+/* 卡片色：一張信用卡一個色，--soft 淺底、--deep 字和色條 */
+.c-richart { --soft: #FCE4E8; --deep: #B02A41; }
+.c-sport   { --soft: #DDF3EE; --deep: #146B5C; }
+.c-feib    { --soft: #FDEBD9; --deep: #A9530E; }
+.c-ubear   { --soft: #F3E8DC; --deep: #7A4B1E; }
+.c-cube    { --soft: #E0EAF7; --deep: #1D4E8F; }
+
+.sheet {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ─── 頁首 ─── */
+.masthead { margin-bottom: 12px; }
+.masthead .eyebrow { font-size: var(--fs-sm); line-height: var(--lh-ui); color: var(--c-text-2); }
+.masthead h1 { margin: 4px 0 4px; font-size: var(--fs-h1); font-weight: 400; line-height: var(--lh-title); text-wrap: balance; }
+.masthead p { margin: 0; font-size: var(--fs-sm); line-height: var(--lh-sm); color: var(--c-text-2); text-wrap: pretty; }
+
+/* ─── 固定在上方的總回饋 ─── */
+.total-bar {
+  position: sticky; top: 8px; z-index: 5;
+  background: var(--c-bg);
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.total-bar .tl { font-size: var(--fs-sm); line-height: var(--lh-ui); color: var(--c-text-2); }
+.total-bar .tv { font-size: 28px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.total-bar .tv .unit { font-size: var(--fs-sm); color: var(--c-text-2); }
+.pill-btn {
+  height: 32px; padding: 0 14px;
+  font-size: var(--fs-sm);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--c-line);
+  background: var(--c-bg);
+  color: var(--c-text-2);
+  flex-shrink: 0;
+}
+.pill-btn:hover { border-color: var(--c-text); color: var(--c-text); }
+
+/* ─── 帳單收據 ─── */
+.ledger {
+  position: relative;
+  background: var(--c-bg);
+  border: 1px solid var(--c-line);
+  border-bottom: 0;
+  border-radius: 4px 4px 0 0;
+  padding: 28px 16px 8px;
+  margin-bottom: 18px;
+}
+/* 上緣一排打孔 */
+.ledger::before {
+  content: "";
+  position: absolute; top: 8px; left: 12px; right: 12px; height: 12px;
+  background-image: radial-gradient(circle, var(--c-surface) 4px, #DDD8E5 4.4px, #DDD8E5 5.2px, transparent 5.6px);
+  background-size: 22px 12px;
+  background-repeat: space no-repeat;
+}
+/* 下緣鋸齒，像撕下來的收據 */
+.ledger::after {
+  content: "";
+  position: absolute; left: -1px; right: -1px; bottom: -14px; height: 14px;
+  background:
+    linear-gradient(135deg, var(--c-bg) 10px, transparent 0) 0 0 / 20px 14px repeat-x,
+    linear-gradient(225deg, var(--c-bg) 10px, transparent 0) 0 0 / 20px 14px repeat-x;
+  filter: drop-shadow(0 1px 0 #DDD8E5);
+}
+
+/* ─── 消費分類：收據上的一段，用虛線隔開 ─── */
+.block {
+  padding: 20px 0;
+  border-bottom: 1px dashed var(--c-line);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.block:first-child { padding-top: 4px; }
+.block:last-child { border-bottom: 0; }
+.block-head { display: flex; align-items: flex-start; gap: 12px; }
+.num {
+  flex-shrink: 0;
+  width: 28px; height: 28px; margin-top: 1px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-pill);
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  font-family: var(--font-mono); font-weight: 500; letter-spacing: 0.02em;
+  font-size: var(--fs-tag); line-height: var(--lh-single);
+  color: var(--c-text-2);
+}
+.block-title { margin: 0; font-size: var(--fs-h2); font-weight: 400; line-height: var(--lh-h2); text-wrap: balance; }
+.block-sub { font-size: var(--fs-sm); line-height: var(--lh-sm); color: var(--c-text-2); }
+
+/* 一筆消費：左邊一條卡片色的色條，像帳單上的一列 */
+.item {
+  border-left: 4px solid var(--deep);
+  padding: 2px 0 2px 12px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.item-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  flex-wrap: wrap;
+}
+.item-head .label { font-size: var(--fs-body); line-height: var(--lh-ui); color: var(--c-text); flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.item-body { display: flex; flex-direction: column; gap: 8px; }
+.card-tag {
+  display: inline-flex; align-items: center;
+  height: 24px; padding: 0 10px;
+  font-size: var(--fs-tag); line-height: var(--lh-single);
+  border-radius: var(--radius-pill);
+  background: var(--deep);
+  color: #FFFFFF;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.amt-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.amt-row .field-name { font-size: var(--fs-sm); line-height: var(--lh-ui); color: var(--c-text-2); }
+.amt-wrap {
+  display: flex; align-items: center; gap: 4px;
+  height: 40px; padding: 0 12px;
+  background: var(--c-bg);
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+.amt-wrap:focus-within { border: 1.5px solid var(--c-text); padding: 0 11.5px; }
+.amt-wrap span { font-size: var(--fs-sm); color: var(--c-text-2); }
+.amt-wrap input {
+  width: 96px;
+  border: none; outline: none;
+  font-size: var(--fs-body);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  background: transparent;
+  -moz-appearance: textfield;
+}
+.amt-wrap input::-webkit-outer-spin-button,
+.amt-wrap input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.amt-wrap input::placeholder { color: var(--c-text-3); }
+
+/* 回饋：收據的點線引導 */
+.reward-line {
+  display: flex; align-items: baseline; gap: 8px;
+  font-size: var(--fs-sm); line-height: var(--lh-ui);
+  color: var(--c-text-2);
+}
+.reward-line::after {
+  content: ""; order: 1; flex: 1;
+  border-bottom: 1.5px dotted var(--c-line);
+  transform: translateY(-4px);
+}
+.reward-line b { order: 2; }
+.reward-line b {
+  font-weight: 400;
+  font-size: 20px; line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: var(--deep);
+}
+
+/* 二選一：分段切換 */
+.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.toggle-row .field-name { font-size: var(--fs-sm); line-height: var(--lh-ui); color: var(--c-text-2); }
+.seg {
+  display: inline-flex; padding: 2px;
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius-pill);
+  background: var(--c-surface);
+  flex-shrink: 0;
+}
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label {
+  height: 32px; min-width: 52px; padding: 0 14px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-sm); line-height: var(--lh-single);
+  color: var(--c-text-2);
+  cursor: pointer;
+}
+.seg input:checked + label { background: var(--c-text); color: #FFFFFF; }
+.seg input:focus-visible + label { outline: 1.5px solid var(--c-text); outline-offset: 2px; }
+
+.note-line {
+  font-size: var(--fs-sm);
+  line-height: var(--lh-sm);
+  color: var(--c-text-2);
+  padding: 10px 12px;
+  background: var(--c-surface);
+  border-radius: var(--radius-sm);
+  text-wrap: pretty;
+}
+.note-line b { font-weight: 400; color: var(--c-text); }
+.note-line .warn { color: var(--c-rose-deep); }
+
+.pool-hint { font-size: var(--fs-sm); line-height: var(--lh-ui); color: var(--c-text-2); text-align: right; }
+.pool-hint:empty { display: none; }
+
+/* ─── 合計：收據最後一段 ─── */
+.summary { gap: 8px; }
+.summary h2 { margin: 0 0 4px; font-size: var(--fs-h2); font-weight: 400; line-height: var(--lh-h2); }
+.sum-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 8px 12px;
+  background: var(--soft);
+  border-left: 4px solid var(--deep);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.sum-row .name { font-size: var(--fs-body); line-height: var(--lh-ui); color: var(--deep); }
+.sum-row .val { font-size: 18px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.sum-total {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-top: 4px; padding-top: 12px;
+  border-top: 1px dashed var(--c-line);
+  font-size: var(--fs-sm); line-height: var(--lh-ui); color: var(--c-text-2);
+}
+.sum-total b { font-weight: 400; font-size: 24px; line-height: 1.2; color: var(--c-text); font-variant-numeric: tabular-nums; }
+
+.foot { text-align: center; margin-top: 12px; font-size: var(--fs-tag); line-height: 1.5; color: var(--c-text-2); }
+</style>
+</head>
+<body>
+
+<div class="sheet">
+
+  <div class="masthead">
+    <div class="eyebrow">每月刷卡分配</div>
+    <h1>信用卡回饋核對表</h1>
+    <p>示範組合 · 輸入預計消費金額，即時試算回饋</p>
+  </div>
+
+  <div class="total-bar">
+    <div>
+      <div class="tl">本月預估總回饋</div>
+      <div class="tv"><span class="unit">NT$</span>&nbsp;<span id="grandTotal">0</span></div>
+    </div>
+    <button class="pill-btn" onclick="resetAll()">清空重填</button>
+  </div>
+
+  <div class="ledger">
+
+  <!-- 1 -->
+  <section class="block">
+    <div class="block-head">
+      <span class="num">1</span>
+      <div>
+        <h2 class="block-title">日常小額消費</h2>
+        <div class="block-sub">外送 / 超商 / 速食</div>
+      </div>
+    </div>
+    <div class="item c-richart">
+      <div class="item-head">
+        <span class="label">Pay著刷（今日切換）</span>
+        <span class="card-tag">Richart 3.8%</span>
+      </div>
+      <div class="item-body">
+        <div class="amt-row">
+          <span class="field-name">預計金額</span>
+          <div class="amt-wrap"><span>$</span><input type="number" inputmode="numeric" min="0" placeholder="0" aria-label="日常小額消費預計金額" data-calc="flat" data-rate="0.038" data-out="out1" data-color="richart"></div>
+        </div>
+        <div class="reward-line">回饋約 <b id="out1">$0</b></div>
+      </div>
+    </div>
+    <div class="note-line">
+      超商/速食用台新Pay，其他（外送等）用LINE Pay需領券才有+1.5%<br>
+      <span class="warn">⚠</span> 每日僅能切換一種權益，以<b>當天最後一次切換</b>為準
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section class="block">
+    <div class="block-head">
+      <span class="num">2</span>
+      <div>
+        <h2 class="block-title">網購與大額購物</h2>
+        <div class="block-sub">App內行動支付結帳</div>
+      </div>
+    </div>
+    <div class="item c-sport">
+      <div class="item-head">
+        <span class="label">Apple/<wbr>Google/<wbr>Samsung Pay</span>
+        <span class="card-tag">Sport 5→4→1%</span>
+      </div>
+      <div class="item-body">
+        <div class="amt-row">
+          <span class="field-name">預計金額</span>
+          <div class="amt-wrap"><span>$</span><input type="number" inputmode="numeric" min="0" placeholder="0" aria-label="網購與大額購物預計金額" data-calc="sport" data-out="out2" data-color="sport"></div>
+        </div>
+        <div class="reward-line">回饋約 <b id="out2">$0</b></div>
+      </div>
+    </div>
+    <div class="note-line">
+      級距：0–5,000元 5%／5,001–10,000元 4%／超過部分 1%<br>
+      <span class="warn">⚠</span> 網頁輸入卡號結帳不算數，只拿1%；當月需滿10,000大卡或Apple Watch三環10次才有完整比例
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="block">
+    <div class="block-head">
+      <span class="num">3</span>
+      <div>
+        <h2 class="block-title">生活採買</h2>
+        <div class="block-sub">用餐 / 超市</div>
+      </div>
+    </div>
+    <div class="item c-feib">
+      <div class="item-head">
+        <span class="label">用餐</span>
+        <span class="card-tag">遠東 4%</span>
+      </div>
+      <div class="item-body">
+        <div class="amt-row">
+          <span class="field-name">預計金額</span>
+          <div class="amt-wrap"><span>$</span><input type="number" inputmode="numeric" min="0" placeholder="0" aria-label="用餐預計金額" data-calc="capped" data-rate="0.04" data-cap="200" data-out="out3a" data-color="feib"></div>
+        </div>
+        <div class="reward-line">回饋約 <b id="out3a">$0</b></div>
+        <div class="pool-hint" id="pool3a-hint"></div>
+      </div>
+    </div>
+    <div class="item c-feib">
+      <div class="item-head">
+        <span class="label">超市</span>
+        <span class="card-tag">遠東 4%</span>
+      </div>
+      <div class="item-body">
+        <div class="amt-row">
+          <span class="field-name">預計金額</span>
+          <div class="amt-wrap"><span>$</span><input type="number" inputmode="numeric" min="0" placeholder="0" aria-label="超市預計金額" data-calc="pool" data-rate="0.04" data-pool="poolB" data-out="out3b" data-color="feib"></div>
+        </div>
+        <div class="reward-line">回饋約 <b id="out3b">$0</b></div>
+      </div>
+    </div>
+    <div class="note-line">
+      限實體卡感應，行動支付一律只剩0.5%；用餐跟「超市+計程車」是兩個獨立200元上限池，不共用<br>
+      <span class="warn">⚠</span> 當期帳單需累積滿3,000元才有加碼<br>
+      <span class="warn">⚠</span> 回饋大於應繳金額會被視為<b>扣繳失敗</b>，下期無法加碼
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section class="block">
+    <div class="block-head">
+      <span class="num">4</span>
+      <div>
+        <h2 class="block-title">交通出行</h2>
+        <div class="block-sub">計程車 / 捷運</div>
+      </div>
+    </div>
+    <div class="item c-feib">
+      <div class="item-head">
+        <span class="label">計程車</span>
+        <span class="card-tag">遠東 4%</span>
+      </div>
+      <div class="item-body">
+        <div class="amt-row">
+          <span class="field-name">預計金額</span>
+          <div class="amt-wrap"><span>$</span><input type="number" inputmode="numeric" min="0" placeholder="0" aria-label="計程車預計金額" data-calc="pool" data-rate="0.04" data-pool="poolB" data-out="out4a" data-color="feib"></div>
+        </div>
+        <div class="reward-line">回饋約 <b id="out4a">$0</b></div>
+        <div class="pool-hint" id="poolB-hint">與上方超市共用200元上限</div>
+      </div>
+    </div>
+    <div class="item c-richart">
+      <div class="item-head">
+        <span class="label">捷運本月已達3次搭乘？</span>
+        <span class="card-tag">Richart $50</span>
+      </div>
+      <div class="item-body">
+        <div class="toggle-row">
+          <span class="field-name">本月搭乘</span>
+          <div class="seg" role="radiogroup" aria-label="捷運本月已達3次搭乘？">
+            <input type="radio" name="mrt" id="mrtNo" checked onchange="calcAll()"><label for="mrtNo">未達</label>
+            <input type="radio" name="mrt" id="mrtToggle" onchange="calcAll()"><label for="mrtToggle">已達</label>
+          </div>
+        </div>
+        <div class="reward-line">回饋約 <b id="out4b">$0</b></div>
+      </div>
+    </div>
+    <div class="note-line">
+      計程車與超市共用同一個200元上限池（生活禮遇）<br>
+      <span class="warn">⚠</span> 捷運為每月搭3次送$50，<b>需每月記得領券</b>，跟Pay著刷是不同活動、互不影響
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section class="block">
+    <div class="block-head">
+      <span class="num">5</span>
+      <div>
+        <h2 class="block-title">寵物</h2>
+        <div class="block-sub">寵物用品 / 動物醫院</div>
+      </div>
+    </div>
+    <div class="item c-feib">
+      <div class="item-head">
+        <span class="label">寵物商店 / 動物醫院</span>
+        <span class="card-tag">遠東 10%</span>
+      </div>
+      <div class="item-body">
+        <div class="amt-row">
+          <span class="field-name">預計金額</span>
+          <div class="amt-wrap"><span>$</span><input type="number" inputmode="numeric" min="0" placeholder="0" aria-label="寵物預計金額" data-calc="capped" data-rate="0.10" data-cap="500" data-out="out5" data-color="feib"></div>
+        </div>
+        <div class="reward-line">回饋約 <b id="out5">$0</b></div>
+      </div>
+    </div>
+    <div class="note-line">
+      不需3,000元門檻、不需扣繳，這張卡裡最好上手的一筆（上限500元/期）
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section class="block">
+    <div class="block-head">
+      <span class="num">6</span>
+      <div>
+        <h2 class="block-title">備用與限定活動</h2>
+        <div class="block-sub">額度用完時</div>
+      </div>
+    </div>
+    <div class="item c-ubear">
+      <div class="item-head">
+        <span class="label">淘寶 / 海外網購</span>
+        <span class="card-tag">UBear 3%</span>
+      </div>
+      <div class="item-body">
+        <div class="amt-row">
+          <span class="field-name">預計金額</span>
+          <div class="amt-wrap"><span>$</span><input type="number" inputmode="numeric" min="0" placeholder="0" aria-label="淘寶海外網購預計金額" data-calc="capped" data-rate="0.03" data-cap="150" data-out="out6a" data-color="ubear"></div>
+        </div>
+        <div class="reward-line">回饋約 <b id="out6a">$0</b></div>
+      </div>
+    </div>
+    <div class="item c-cube">
+      <div class="item-head">
+        <span class="label">百貨（樂饗購+Level2）</span>
+        <span class="card-tag">CUBE 3%</span>
+      </div>
+      <div class="item-body">
+        <div class="amt-row">
+          <span class="field-name">預計金額</span>
+          <div class="amt-wrap"><span>$</span><input type="number" inputmode="numeric" min="0" placeholder="0" aria-label="百貨預計金額" data-calc="flat" data-rate="0.03" data-out="out6b" data-color="cube"></div>
+        </div>
+        <div class="reward-line">回饋約 <b id="out6b">$0</b></div>
+      </div>
+    </div>
+    <div class="note-line">
+      UBear網購上限150元/月；<span class="warn">⚠</span> CUBE每日全卡（不論持有幾張）僅能共用一種切換權益
+    </div>
+  </section>
+
+  <!-- 合計：每張卡用自己的項目色 -->
+  <section class="block summary">
+    <h2>各卡回饋合計</h2>
+    <div class="sum-row c-richart"><span class="name">Richart</span><span class="val" id="sum-richart">$0</span></div>
+    <div class="sum-row c-sport"><span class="name">Sport</span><span class="val" id="sum-sport">$0</span></div>
+    <div class="sum-row c-feib"><span class="name">遠東</span><span class="val" id="sum-feib">$0</span></div>
+    <div class="sum-row c-ubear"><span class="name">UBear</span><span class="val" id="sum-ubear">$0</span></div>
+    <div class="sum-row c-cube"><span class="name">CUBE</span><span class="val" id="sum-cube">$0</span></div>
+    <div class="sum-total">本月預估總回饋 <b id="sumTotal">$0</b></div>
+  </section>
+
+  </div>
+
+  <div class="foot">回饋規則更新到 2026 年 7 月 · 實際回饋以各銀行公告為準</div>
+
+</div>
+
+<script>
+function fmt(n){
+  return "$" + Math.round(n).toLocaleString('en-US');
+}
+
+function calcAll(){
+  const inputs = document.querySelectorAll('input[data-calc]');
+  let total = 0;
+  const byCard = { richart:0, sport:0, feib:0, ubear:0, cube:0 };
+
+  // first pass: gather pool sums
+  let poolSums = {};
+  inputs.forEach(inp=>{
+    if(inp.dataset.calc === 'pool'){
+      const pool = inp.dataset.pool;
+      poolSums[pool] = (poolSums[pool]||0) + (parseFloat(inp.value)||0);
+    }
+  });
+
+  inputs.forEach(inp=>{
+    const val = parseFloat(inp.value)||0;
+    const rate = parseFloat(inp.dataset.rate)||0;
+    const outEl = document.getElementById(inp.dataset.out);
+    let reward = 0;
+
+    if(inp.dataset.calc === 'flat'){
+      reward = val * rate;
+    }
+    else if(inp.dataset.calc === 'capped'){
+      const cap = parseFloat(inp.dataset.cap)||Infinity;
+      reward = Math.min(val*rate, cap);
+    }
+    else if(inp.dataset.calc === 'sport'){
+      let r = 0;
+      let remain = val;
+      const tier1 = Math.min(remain, 5000); r += tier1*0.05; remain -= tier1;
+      const tier2 = Math.min(remain, 5000); r += tier2*0.04; remain -= tier2;
+      r += remain*0.01;
+      reward = r;
+    }
+    else if(inp.dataset.calc === 'pool'){
+      // proportional share of capped pool, but simplest: compute pool reward once, split by this item's own contribution proportionally
+      const pool = inp.dataset.pool;
+      const cap = 200;
+      const poolTotal = poolSums[pool]||0;
+      const poolReward = Math.min(poolTotal*rate, cap);
+      reward = poolTotal>0 ? poolReward * (val/poolTotal) : 0;
+    }
+
+    if(outEl) outEl.textContent = fmt(reward);
+    byCard[inp.dataset.color] += reward;
+    total += reward;
+  });
+
+  // MRT toggle
+  const mrt = document.getElementById('mrtToggle').checked ? 50 : 0;
+  document.getElementById('out4b').textContent = fmt(mrt);
+  byCard.richart += mrt;
+  total += mrt;
+
+  Object.keys(byCard).forEach(k=>{
+    document.getElementById('sum-' + k).textContent = fmt(byCard[k]);
+  });
+  document.getElementById('sumTotal').textContent = fmt(total);
+  document.getElementById('grandTotal').textContent = Math.round(total).toLocaleString('en-US');
+}
+
+function resetAll(){
+  document.querySelectorAll('input[type=number]').forEach(i=>i.value='');
+  document.getElementById('mrtNo').checked = true;
+  calcAll();
+}
+
+document.querySelectorAll('input[data-calc]').forEach(inp=>{
+  inp.addEventListener('input', calcAll);
+});
+
+calcAll();
+</script>
+
+</body>
+</html>
