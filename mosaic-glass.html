@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>馬賽克玻璃模擬器 · Liquid Glass Filter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* 工具頁，霧白底，最寬 480px 置中；類別「好看」→ 嫩紫 */
+/* 手機優先：375px 一欄；900px 以上照片在左、參數在右，照片可以放大 */
+:root {
+  --c-lime: #D9E86B;      --c-lime-soft: #F4F8D2;      --c-lime-deep: #7C8A1F;
+  --c-rose: #F68FDB;      --c-rose-soft: #FDE3ED;      --c-rose-deep: #B8466F;
+  --c-lavender: #CDB9FF;  --c-lavender-soft: #EEE8FF;  --c-lavender-deep: #6447C9;
+  --c-bg: #F9FAFC;  --c-surface: #FFFFFF;  --c-line: #ECE9F1;
+  --c-text: #2A2433;  --c-text-2: #6E6878;  --c-text-3: #9C96A6;
+  --c-overlay: rgba(42, 36, 51, 0.5);
+  --radius-sm: 10px;  --radius-md: 16px;  --radius-pill: 999px;
+  --shadow: 0 8px 24px rgba(42, 36, 51, 0.08);
+  --font-sans: "Huninn", "jf-openhuninn-2.1", "PingFang TC", "Noto Sans TC", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --fs-h1: 32px;  --fs-h2: 22px;  --fs-h3: 18px;
+  --fs-body: 16px;  --fs-sm: 14px;  --fs-tag: 13px;  --fs-caption: 12px;
+  --lh-title: 1.35;  --lh-h2: 1.4;  --lh-h3: 1.5;
+  --lh-body: 1.75;  --lh-sm: 1.7;  --lh-ui: 1.4;  --lh-single: 1;
+  color-scheme: light;
+}
+@media (max-width: 480px) {
+  :root { --fs-h1: 28px; --fs-h2: 20px; }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-synthesis: none;
+  color: var(--c-text);
+  background: var(--c-surface);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  letter-spacing: normal;
+  line-break: strict;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; line-height: var(--lh-single); }
+:focus-visible { outline: 1.5px solid var(--c-text); outline-offset: 2px; }
+.mono { font-family: var(--font-mono); font-weight: 500; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
+.nowrap { white-space: nowrap; }
+
+.wrap { max-width: 480px; margin: 0 auto; padding: 24px 16px 64px; }
+.layout { display: flex; flex-direction: column; }
+@media (min-width: 900px) {
+  .wrap { max-width: 1200px; padding: 40px 32px 64px; }
+  header { max-width: 640px; }
+  .dropzone { min-height: 440px; }
+  /* 有照片之後：照片在左、參數在右，參數跟著捲動固定在畫面上 */
+  .layout:has(.canvas-shell.active) { display: grid; grid-template-columns: minmax(0, 1fr) 360px; column-gap: 32px; align-items: start; }
+  .layout:has(.canvas-shell.active) .panel { grid-column: 2; grid-row: 1 / span 2; margin-top: 0; position: sticky; top: 24px; }
+  .layout:has(.canvas-shell.active) .stage { grid-column: 1; }
+  .layout:has(.canvas-shell.active) .canvas-toolbar { grid-column: 1; }
+  #outCanvas { max-height: calc(100vh - 120px); width: auto; max-width: 100%; margin: 0 auto; }
+}
+header { margin-bottom: 24px; }
+h1 { font-size: var(--fs-h1); font-weight: 400; line-height: var(--lh-title); text-wrap: balance; margin: 0 0 8px; }
+h1 span { display: block; font-size: var(--fs-sm); line-height: var(--lh-ui); color: var(--c-text-2); }
+p.lead { color: var(--c-text-2); font-size: var(--fs-sm); line-height: var(--lh-sm); margin: 0; text-wrap: pretty; }
+
+/* ─── 預覽區 ─── */
+.stage {
+  background: var(--c-bg);
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  margin-bottom: 12px;
+}
+.dropzone {
+  position: relative;
+  border-radius: var(--radius-sm);
+  border: 1.5px dashed var(--c-text-3);
+  background: var(--c-bg);
+  min-height: 240px;
+  display: flex; align-items: center; justify-content: center;
+  text-align: center; padding: 24px;
+  transition: border-color .18s ease, background .18s ease;
+  cursor: pointer;
+}
+.dropzone.drag { border-color: var(--c-lavender-deep); background: var(--c-lavender-soft); }
+.dropzone .dz-inner { color: var(--c-text-2); font-size: var(--fs-sm); line-height: var(--lh-sm); }
+.dropzone .dz-inner b { font-weight: 400; color: var(--c-text); font-size: var(--fs-body); }
+.dropzone svg { color: var(--c-text); margin-bottom: 8px; }
+input[type=file] { display: none; }
+.canvas-shell { display: none; position: relative; }
+.canvas-shell.active { display: block; }
+/* 照片底下保留深色襯底，照片比例不同時也看得出玻璃範圍 */
+#outCanvas { width: 100%; height: auto; display: block; border-radius: var(--radius-sm); background: var(--c-text); }
+/* 檔名和「更換圖片」放在預覽區下面，有照片時才出現 */
+.canvas-toolbar { display: none; align-items: center; justify-content: space-between; margin-top: 0; gap: 8px; flex-wrap: wrap; }
+.stage:has(.canvas-shell.active) + .canvas-toolbar { display: flex; }
+.filehint { font-family: var(--font-mono); font-weight: 500; font-size: var(--fs-tag); line-height: var(--lh-ui); letter-spacing: 0.02em; color: var(--c-text-2); overflow-wrap: anywhere; min-width: 0; }
+
+/* 膠囊小按鈕（更換圖片） */
+a.reset-link { color: var(--c-text-2); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+a.reset-link:hover { color: var(--c-text); }
+.canvas-toolbar a.reset-link {
+  display: inline-flex; align-items: center; height: 32px; padding: 0 14px;
+  border: 1px solid var(--c-line); border-radius: var(--radius-pill); background: var(--c-bg);
+  font-family: var(--font-sans); font-size: var(--fs-sm); line-height: var(--lh-single);
+  text-decoration: none; white-space: nowrap;
+}
+.canvas-toolbar a.reset-link:hover { border-color: var(--c-text); }
+
+/* ─── 參數卡片 ─── */
+.panel {
+  margin-top: 12px;
+  background: var(--c-bg);
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+.panel-title { font-size: var(--fs-h2); font-weight: 400; line-height: var(--lh-h2); margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
+.panel-title .dot { width: 10px; height: 10px; background: var(--c-lavender); border-radius: var(--radius-pill); display: inline-block; flex-shrink: 0; }
+.field label { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: var(--fs-sm); line-height: var(--lh-ui); color: var(--c-text-2); margin-bottom: 8px; }
+.field label .val { font-size: var(--fs-body); color: var(--c-lavender-deep); font-variant-numeric: tabular-nums; }
+
+/* 二選一：分段切換 */
+.seg { display: flex; padding: 2px; border: 1px solid var(--c-line); border-radius: var(--radius-pill); background: var(--c-surface); }
+.seg .style-btn, .seg .ratio-btn { flex: 1; height: 36px; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--c-text-2); font-size: var(--fs-sm); }
+.seg .style-btn.active, .seg .ratio-btn.active { background: var(--c-text); color: #FFFFFF; }
+
+/* 滑桿：線灰軌道、嫩紫圓鈕＋墨色細框 */
+input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 28px; background: transparent; outline: none; margin: 0; }
+input[type=range]::-webkit-slider-runnable-track { height: 4px; border-radius: var(--radius-pill); background: var(--c-line); }
+input[type=range]::-moz-range-track { height: 4px; border-radius: var(--radius-pill); background: var(--c-line); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; margin-top: -9px; border-radius: var(--radius-pill); background: var(--c-lavender); border: 1.5px solid var(--c-text); cursor: pointer; }
+input[type=range]::-moz-range-thumb { width: 20px; height: 20px; border-radius: var(--radius-pill); background: var(--c-lavender); border: 1.5px solid var(--c-text); cursor: pointer; }
+input[type=range]:focus-visible::-webkit-slider-thumb { outline: 1.5px solid var(--c-text); outline-offset: 2px; }
+
+/* 按鈕 */
+.row-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 24px; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 44px; padding: 0 12px;
+  font-size: var(--fs-body);
+  white-space: nowrap;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--c-text);
+  background: var(--c-bg);
+  color: var(--c-text);
+  transition: background .15s ease;
+}
+.btn:hover { background: var(--c-surface); }
+.btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+.btn.primary { background: var(--c-rose); border-color: var(--c-rose); flex: 1 1 100%; }
+.btn.primary:hover { background: var(--c-rose); border-color: var(--c-text); }
+.row-actions .btn:not(.primary) { flex: 1; }
+
+footer { margin-top: 24px; color: var(--c-text-2); font-size: var(--fs-tag); line-height: 1.5; text-align: center; }
+.rendering { opacity: .6; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>馬賽克玻璃模擬器 <span>Liquid Glass Filter</span></h1>
+    <p class="lead">
+      上傳圖片，透過一片片壓花玻璃看出去。「方格玻璃」是一格一格緊靠的厚玻璃磚，每格的起伏和水紋都不太一樣；
+      「海棠花」是台灣老窗戶常見的花紋玻璃。
+    </p>
+  </header>
+  <div class="layout">
+  <div class="stage">
+    <div id="dropzone" class="dropzone">
+      <div class="dz-inner">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        <div><b>點擊上傳</b>或拖曳圖片到這裡</div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*">
+    </div>
+    <div class="canvas-shell" id="canvasShell">
+      <canvas id="outCanvas"></canvas>
+    </div>
+  </div>
+  <div class="canvas-toolbar">
+    <span class="filehint" id="fileHint"></span>
+    <a class="reset-link" id="changeImage" role="button" tabindex="0">更換圖片</a>
+  </div>
+
+  <div class="panel" id="controlsPanel" style="display:none;">
+    <h2 class="panel-title"><span class="dot"></span>玻璃參數 Parameters</h2>
+    <div class="field">
+      <label>玻璃款式 Pattern</label>
+      <div class="seg" role="group" aria-label="玻璃款式">
+        <button class="btn style-btn" data-style="0">▦ 方格玻璃</button>
+        <button class="btn style-btn" data-style="1">✿ 海棠花</button>
+      </div>
+    </div>
+    <div class="field" style="margin-top:16px;">
+      <label>畫面比例</label>
+      <div class="seg" role="group" aria-label="畫面比例">
+        <button class="btn ratio-btn" data-ratio="rect">▭ 長方形</button>
+        <button class="btn ratio-btn" data-ratio="square">□ 方形</button>
+      </div>
+    </div>
+    <div class="field" style="margin-top:16px;">
+      <label for="tileSize">花紋大小 Pattern Size <span class="val" id="v_tile">80px</span></label>
+      <input type="range" id="tileSize" min="24" max="320" value="80" step="1">
+    </div>
+    <div class="field" style="margin-top:12px;">
+      <label for="strength">折射強度 Refraction <span class="val" id="v_strength">60%</span></label>
+      <input type="range" id="strength" min="0" max="100" value="60" step="1">
+    </div>
+    <div class="field" style="margin-top:12px;">
+      <label for="blur">模糊程度 Blur <span class="val" id="v_blur">0%</span></label>
+      <input type="range" id="blur" min="0" max="100" value="0" step="1">
+    </div>
+    <div class="row-actions">
+      <button class="btn" id="rerollBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="8.5" cy="8.5" r=".6" fill="currentColor"/><circle cx="15.5" cy="15.5" r=".6" fill="currentColor"/><circle cx="12" cy="12" r=".6" fill="currentColor"/></svg>重新排列 Reroll</button>
+      <button class="btn" id="resetBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a8 8 0 1 1 2.3 5.7"/><path d="M4 5v6h6"/></svg>重設</button>
+      <button class="btn primary" id="exportBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg>匯出 PNG</button>
+    </div>
+  </div>
+
+  </div>
+
+  <footer>rendered client-side · nothing is uploaded anywhere · lens idea from <a class="reset-link" href="https://codepen.io/shingidad/pen/jEPxMgW" target="_blank" rel="noopener">shingidad / Liquid Glass Shader</a></footer>
+</div>
+
+<script id="fragShader" type="x-shader/x-fragment">
+precision highp float;
+uniform sampler2D uImg;
+uniform vec2 uRes;
+uniform float uTile;
+uniform float uStrength;
+uniform float uSeed;
+uniform float uBlur;    // 0–1，額外的高斯模糊程度
+uniform float uStyle;   // 0 = 方格玻璃, 1 = 海棠花
+
+// 不用 sin 的亂數（手機 GPU 算大數字的 sin 不準，會在畫面上切出細線）
+float hash(vec2 p){
+  vec3 p3 = fract(vec3(p.xyx + uSeed) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
+float noise(vec2 p){
+  vec2 i = floor(p), f = fract(p);
+  vec2 w = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), w.x),
+             mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), w.x), w.y);
+}
+
+// 以「像素座標」取樣，原點在左上
+vec3 tex(vec2 px){ return texture2D(uImg, clamp(px / uRes, vec2(0.0), vec2(1.0))).rgb; }
+vec3 blur(vec2 px, float r){
+  vec3 c = vec3(0.0);
+  for (int x = -2; x <= 2; x++) {
+    for (int y = -2; y <= 2; y++) { c += tex(px + vec2(float(x), float(y)) * r); }
+  }
+  return c / 25.0;
+}
+
+// 高斯模糊：9×9 取樣，權重照高斯分布；sigma 以像素計，取樣間距 = sigma/2，涵蓋約 ±2 sigma
+vec3 gaussBlur(vec2 px, float sigma){
+  float stp = sigma * 0.5;
+  vec3 c = vec3(0.0);
+  float wsum = 0.0;
+  for (int x = -4; x <= 4; x++) {
+    for (int y = -4; y <= 4; y++) {
+      vec2 o = vec2(float(x), float(y));
+      float w = exp(-dot(o, o) / 8.0);
+      c += tex(px + o * stp) * w;
+      wsum += w;
+    }
+  }
+  return c / wsum;
+}
+
+// 方格玻璃：每格是一顆緊靠的「枕頭」，格與格之間是 V 形的溝；每格另外有不同程度的水紋
+float heightSquare(vec2 px){
+  vec2 cell = floor(px / uTile);
+  vec2 p = (px - (cell + 0.5) * uTile) / (uTile * 0.5);
+  float d = pow(abs(p.x), 5.0) + pow(abs(p.y), 5.0);
+  float pillow = 1.0 - min(d, 1.6);
+  float r = hash(cell);
+  // 每格的水紋強度不同：有的幾乎平整，有的明顯起伏
+  float ripple = noise(px / (uTile * 0.38) + r * 61.0) + 0.35 * noise(px / (uTile * 0.16) + r * 17.0);
+  return pillow * 0.8 + ripple * (0.02 + 0.32 * r * r * r);
+}
+
+float ellipse(vec2 c, vec2 ctr, vec2 rad){ return smoothstep(1.0, 0.2, length((c - ctr) / rad)); }
+
+// 海棠花：四瓣的外框（雙線浮雕）、框內細點、中間十字花瓣，格子交界處是小菊花，空白處是斜紋
+float heightHaitang(vec2 px){
+  vec2 q = px / uTile;
+  vec2 c = fract(q) - 0.5;
+  float a = 0.185, rl = 0.255;
+  float sd = min(min(length(c - vec2(a, 0.0)), length(c + vec2(a, 0.0))),
+                 min(length(c - vec2(0.0, a)), length(c + vec2(0.0, a)))) - rl;
+  float rim = smoothstep(0.028, 0.0, abs(sd + 0.012)) + 0.7 * smoothstep(0.016, 0.0, abs(sd - 0.03));
+  float inside = smoothstep(0.0, -0.02, sd);
+  vec2 dg = fract(c * 26.0) - 0.5;
+  float dots = smoothstep(0.34, 0.1, length(dg)) * inside * 0.3;
+  float petal = max(max(ellipse(c, vec2(0.15, 0.0), vec2(0.1, 0.035)), ellipse(c, vec2(-0.15, 0.0), vec2(0.1, 0.035))),
+                    max(ellipse(c, vec2(0.0, 0.15), vec2(0.035, 0.1)), ellipse(c, vec2(0.0, -0.15), vec2(0.035, 0.1))));
+  float leaf = max(max(ellipse(c, vec2(0.09, 0.09), vec2(0.035, 0.035)), ellipse(c, vec2(-0.09, 0.09), vec2(0.035, 0.035))),
+                   max(ellipse(c, vec2(0.09, -0.09), vec2(0.035, 0.035)), ellipse(c, vec2(-0.09, -0.09), vec2(0.035, 0.035))));
+  float center = smoothstep(0.045, 0.0, length(c));
+  vec2 s = fract(q + 0.5) - 0.5;
+  float rs = length(s);
+  float star = smoothstep(0.12, 0.025, rs) * (0.55 + 0.45 * cos(atan(s.y, s.x) * 12.0)) + smoothstep(0.03, 0.0, rs);
+  float starMask = smoothstep(0.14, 0.1, rs);
+  float stria = 0.02 * sin(dot(px, vec2(1.0, 1.0)) * 0.9) * (1.0 - inside) * (1.0 - starMask);
+  return rim * 0.6 + dots + petal * 0.7 + leaf * 0.45 + center * 0.6 + star * 0.55 + stria;
+}
+
+float height(vec2 px){ return uStyle < 0.5 ? heightSquare(px) : heightHaitang(px); }
+
+// 方格玻璃的反光點：在周圍 3×3 取樣、用高斯權重（1-2-1）平均，等於做一次約 2px 的高斯模糊
+float specSquare(vec2 px, vec3 L){
+  float total = 0.0;
+  for (int x = -1; x <= 1; x++) {
+    for (int y = -1; y <= 1; y++) {
+      vec2 q = px + vec2(float(x), float(y)) * 2.0;
+      vec2 g = vec2(height(q + vec2(1.0, 0.0)) - height(q - vec2(1.0, 0.0)),
+                    height(q + vec2(0.0, 1.0)) - height(q - vec2(0.0, 1.0))) * 0.5;
+      vec3 n = normalize(vec3(-g * uTile * 0.18, 1.0));
+      float w = (x == 0 ? 2.0 : 1.0) * (y == 0 ? 2.0 : 1.0);
+      total += w * pow(max(dot(reflect(-L, n), vec3(0.0, 0.0, 1.0)), 0.0), 60.0);
+    }
+  }
+  return total / 16.0;
+}
+
+void main(){
+  vec2 px = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
+  float e = 1.0;
+  vec2 grad = vec2(height(px + vec2(e, 0.0)) - height(px - vec2(e, 0.0)),
+                   height(px + vec2(0.0, e)) - height(px - vec2(0.0, e))) / (2.0 * e);
+
+  bool square = uStyle < 0.5;
+  // 折射：沿著表面斜率偏移取樣點；方格的起伏大、海棠花的浮雕細
+  float k = square ? 0.16 : 0.006;
+  vec2 offset = -grad * uTile * uTile * k * uStrength;
+  float maxOff = uTile * 0.35;
+  if (length(offset) > maxOff) offset = normalize(offset) * maxOff;   // 接縫處斜率會暴衝，限制位移避免拉出線條
+  // 模糊為 0 時維持原本的輕微柔化；拉開之後改用高斯模糊（最大 sigma 約 20px）
+  float sigma = uBlur * 20.0;
+  vec3 col = sigma > 0.5 ? gaussBlur(px + offset, sigma) : blur(px + offset, square ? 0.7 : 1.6);
+
+  // 光影：光從左上來
+  vec3 n = normalize(vec3(-grad * uTile * (square ? 0.18 : 0.03), 1.0));
+  vec3 L = normalize(vec3(-0.45, -0.6, 0.65));
+  float diff = dot(n, L) - L.z;
+  float spec = square ? specSquare(px, L) : pow(max(dot(reflect(-L, n), vec3(0.0, 0.0, 1.0)), 0.0), 24.0);
+  col += diff * (square ? 0.12 : 0.5) + spec * (square ? 0.4 : 0.45);
+  if (square) col = col * 1.04 + 0.03;   // 透明玻璃略亮
+
+  if (!square) {
+    // 花紋玻璃比較霧、偏白
+    float l = dot(col, vec3(0.299, 0.587, 0.114));
+    col = mix(col, vec3(l), 0.3) * 0.88 + 0.14;
+  }
+  gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+}
+</script>
+
+<script>
+(function(){
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const canvasShell = document.getElementById('canvasShell');
+  const controlsPanel = document.getElementById('controlsPanel');
+  const outCanvas = document.getElementById('outCanvas');
+  const fileHint = document.getElementById('fileHint');
+  const changeImageLink = document.getElementById('changeImage');
+  const tileSizeSlider = document.getElementById('tileSize');
+  const strengthSlider = document.getElementById('strength');
+  const blurSlider = document.getElementById('blur');
+  const styleBtns = document.querySelectorAll('.style-btn');
+  const ratioBtns = document.querySelectorAll('.ratio-btn');
+
+  const DEFAULTS = { tile: 80, strength: 60, blur: 0 };
+  const STYLE_TILE = [80, 180];
+  let style = 0;
+  let ratio = 'rect';   // rect = 保留原圖比例，square = 從中間裁成 1:1
+  let sourceImg = null;
+  let seed = Math.random() * 100;
+  let rafPending = false;
+
+  const gl = outCanvas.getContext('webgl', { preserveDrawingBuffer: true });
+  if (!gl) {
+    dropzone.querySelector('.dz-inner').innerHTML = '<b>這個瀏覽器不支援 WebGL</b>，請換 Chrome、Safari 或 Edge 再試一次。';
+    return;
+  }
+
+  function compile(type, src){
+    const sh = gl.createShader(type);
+    gl.shaderSource(sh, src);
+    gl.compileShader(sh);
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(sh));
+    return sh;
+  }
+  const program = gl.createProgram();
+  gl.attachShader(program, compile(gl.VERTEX_SHADER,
+    'attribute vec2 position; void main(){ gl_Position = vec4(position, 0.0, 1.0); }'));
+  gl.attachShader(program, compile(gl.FRAGMENT_SHADER, document.getElementById('fragShader').textContent));
+  gl.linkProgram(program);
+  gl.useProgram(program);
+
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+  const posLoc = gl.getAttribLocation(program, 'position');
+  gl.enableVertexAttribArray(posLoc);
+  gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+  const u = {};
+  ['uImg','uRes','uTile','uStrength','uSeed','uStyle','uBlur'].forEach(function(n){ u[n] = gl.getUniformLocation(program, n); });
+
+  const texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+  function updateLabels(){
+    document.getElementById('v_tile').textContent = tileSizeSlider.value + 'px';
+    document.getElementById('v_strength').textContent = strengthSlider.value + '%';
+    document.getElementById('v_blur').textContent = blurSlider.value + '%';
+    styleBtns.forEach(function(b){ b.classList.toggle('active', Number(b.dataset.style) === style); });
+    ratioBtns.forEach(function(b){ b.classList.toggle('active', b.dataset.ratio === ratio); });
+  }
+
+  let fileName = '';
+
+  // 依目前的比例把原圖畫成貼圖：方形時取中間最大的正方形
+  function uploadTexture(){
+    const img = sourceImg;
+    let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
+    if (ratio === 'square') {
+      const side = Math.min(sw, sh);
+      sx = (sw - side) / 2; sy = (sh - side) / 2; sw = sh = side;
+    }
+    const maxDim = 1600;
+    let w = sw, h = sh;
+    if (Math.max(w, h) > maxDim) {
+      const scale = maxDim / Math.max(w, h);
+      w = Math.round(w * scale); h = Math.round(h * scale);
+    }
+    const src = document.createElement('canvas');
+    src.width = w; src.height = h;
+    src.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
+    outCanvas.width = w; outCanvas.height = h;
+    fileHint.textContent = fileName + '  ·  ' + w + '×' + h;
+  }
+
+  function loadImageFile(file){
+    if (!file || !file.type.startsWith('image/')) return;
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = function(){
+      sourceImg = img;
+      fileName = file.name || 'image';
+      uploadTexture();
+      dropzone.style.display = 'none';
+      canvasShell.classList.add('active');
+      controlsPanel.style.display = 'block';
+      render();
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+  }
+
+  function render(){
+    if (!sourceImg) return;
+    gl.viewport(0, 0, outCanvas.width, outCanvas.height);
+    gl.uniform1i(u.uImg, 0);
+    gl.uniform2f(u.uRes, outCanvas.width, outCanvas.height);
+    gl.uniform1f(u.uTile, parseFloat(tileSizeSlider.value));
+    gl.uniform1f(u.uStrength, parseFloat(strengthSlider.value) / 100);
+    gl.uniform1f(u.uBlur, parseFloat(blurSlider.value) / 100);
+    gl.uniform1f(u.uStyle, style);
+    gl.uniform1f(u.uSeed, seed);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  }
+
+  function scheduleRender(){
+    if (rafPending) return;
+    rafPending = true;
+    requestAnimationFrame(function(){ rafPending = false; render(); });
+  }
+
+  styleBtns.forEach(function(b){
+    b.addEventListener('click', function(){
+      style = Number(b.dataset.style);
+      tileSizeSlider.value = STYLE_TILE[style];
+      updateLabels();
+      render();
+    });
+  });
+  ratioBtns.forEach(function(b){
+    b.addEventListener('click', function(){
+      ratio = b.dataset.ratio;
+      updateLabels();
+      if (sourceImg) { uploadTexture(); render(); }
+    });
+  });
+  [tileSizeSlider, strengthSlider, blurSlider].forEach(function(el){
+    el.addEventListener('input', function(){ updateLabels(); scheduleRender(); });
+  });
+  document.getElementById('rerollBtn').addEventListener('click', function(){
+    seed = Math.random() * 100;
+    render();
+  });
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    tileSizeSlider.value = STYLE_TILE[style];
+    strengthSlider.value = DEFAULTS.strength;
+    blurSlider.value = DEFAULTS.blur;
+    updateLabels();
+    render();
+  });
+  document.getElementById('exportBtn').addEventListener('click', function(){
+    if (!sourceImg) return;
+    const link = document.createElement('a');
+    link.download = 'liquid-glass-filter.png';
+    link.href = outCanvas.toDataURL('image/png');
+    link.click();
+  });
+  changeImageLink.addEventListener('click', function(){
+    canvasShell.classList.remove('active');
+    controlsPanel.style.display = 'none';
+    dropzone.style.display = 'flex';
+    sourceImg = null;
+    fileInput.value = '';
+  });
+  changeImageLink.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); changeImageLink.click(); } });
+  dropzone.addEventListener('click', function(){ fileInput.click(); });
+  fileInput.addEventListener('change', function(e){
+    if (e.target.files && e.target.files[0]) loadImageFile(e.target.files[0]);
+  });
+  ['dragenter','dragover'].forEach(function(evt){
+    dropzone.addEventListener(evt, function(e){ e.preventDefault(); e.stopPropagation(); dropzone.classList.add('drag'); });
+  });
+  ['dragleave','drop'].forEach(function(evt){
+    dropzone.addEventListener(evt, function(e){ e.preventDefault(); e.stopPropagation(); dropzone.classList.remove('drag'); });
+  });
+  dropzone.addEventListener('drop', function(e){
+    const file = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file) loadImageFile(file);
+  });
+
+  updateLabels();
+})();
+</script>
+</body>
+</html>
