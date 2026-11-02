@@ -109,7 +109,7 @@
   #modalBox p{margin:0 0 20px;font-size:16px;line-height:1.75}
   #modalBox .modal-actions{display:flex;justify-content:flex-end;gap:8px}
   #modalBox button{min-height:44px;padding:8px 16px;border:1px solid var(--c-line);border-radius:10px;background:var(--c-surface);font-size:14px}
-  #modalConfirm{border-color:var(--c-text);background:var(--c-text);color:var(--c-surface)}
+  #modalBox #modalConfirm{border-color:var(--c-text);background:var(--c-text);color:var(--c-surface)}
   #gate{position:fixed;z-index:1000;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--c-bg)}
   #gateBox{width:min(100%,440px);padding:28px;border:1px solid var(--c-line);border-radius:16px;background:var(--c-surface)}
   #gateBox h1{margin:0 0 8px;font-size:var(--fs-h1);font-weight:400;line-height:var(--lh-title);text-wrap:balance}
@@ -142,6 +142,8 @@
   /* 第一次打開的說明頁（三頁，看過一次就不再自動出現，右上「？」可以再叫出來） */
   #guideBtn{position:fixed;z-index:1100;top:16px;right:16px;width:40px;height:40px;border:1px solid var(--c-line);border-radius:50%;background:var(--c-surface);color:var(--c-text);font-family:inherit;font-size:16px;line-height:1;cursor:pointer}
   #guideBtn:hover{background:var(--c-accent-soft);border-color:var(--c-text)}
+  #copyAiBtn{position:fixed;z-index:1100;top:16px;right:64px;height:40px;padding:0 16px;border:1px solid var(--c-line);border-radius:999px;background:var(--c-surface);color:var(--c-text);font-family:inherit;font-size:14px;line-height:1;white-space:nowrap;cursor:pointer}
+  #copyAiBtn:hover{background:var(--c-accent-soft);border-color:var(--c-text)}
   #guide{position:fixed;z-index:1200;inset:0;display:none;align-items:center;justify-content:center;padding:20px;background:var(--c-overlay)}
   #guide.show{display:flex}
   #guideBox{width:min(100%,420px);border:1px solid var(--c-line);border-radius:16px;background:var(--c-surface);overflow:hidden}
@@ -208,8 +210,6 @@
         <input type="text" id="newCatName" placeholder="新增分類名稱" maxlength="16">
         <button id="addCatBtn">新增</button>
       </div>
-      <button class="tool-btn" id="copyAiBtn" type="button">複製給 AI 的指令</button>
-      <p class="side-hint">貼給 AI，在最後填上你想怎麼分；分好後重新整理頁面。</p>
     </div>
 
     <div class="side-section" id="selSection" style="display:none;">
@@ -934,6 +934,7 @@
 })();
 </script>
 
+<button id="copyAiBtn" type="button">複製給 AI 的指令</button>
 <button id="guideBtn" type="button" aria-label="怎麼用">？</button>
 <div id="guide" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
   <div id="guideBox">
@@ -947,7 +948,7 @@
           <button class="g-copy-btn" id="guideCopyBtn" type="button">複製給 AI 的指令</button>
           <span class="g-copy-msg" id="guideCopyMsg" role="status" aria-live="polite"></span>
         </div>
-        <p class="g-copy-hint">貼給 AI，在最後填上你想怎麼分。</p>
+        <p class="g-copy-hint">把第一行的 {…} 換成你想怎麼分，例如「照配色分成清爽系、粉色系」。</p>
         <textarea class="g-copy-fallback" id="guideCopyText" readonly aria-label="給 AI 的指令"></textarea>
       </div>
     </div>
@@ -970,7 +971,7 @@
         + '<g transform="translate(62 84)">'+pic(LIME)+'</g><g transform="translate(106 92)">'+pic(ROSE)+'</g><g transform="translate(150 84)">'+pic(LAV)+'</g>'
         + '<rect x="128" y="18" width="124" height="30" rx="15" fill="'+LIME+'" stroke="'+INK+'" stroke-width="1.5"/><text x="190" y="38" text-anchor="middle" font-size="12" fill="'+INK+'">桌機 Chrome／Edge</text></svg>' },
     { title: "請 AI 幫你分類", copy: true,
-      text: "重點是<b>跟 AI 說你大概想怎麼分</b>，例如「照配色分成清爽系、粉色系」。AI 工具（例如 Claude）分好後，類別會直接出現在畫面上。",
+      text: "重點是<b>跟 AI 說你大概想怎麼分</b>。先讓 AI 打開這個資料夾：Claude 用「Claude Code」分頁、ChatGPT 用「Codex」，選好資料夾後貼上指令，分好的類別會直接出現在畫面上。",
       fig: '<svg viewBox="0 0 260 180" aria-hidden="true"><g transform="translate(20 40)">'+pic(LIME)+'</g><g transform="translate(20 84)">'+pic(ROSE)+'</g><g transform="translate(20 128)">'+pic(LIME)+'</g>'
         + '<path d="M70 98h44" stroke="'+INK+'" stroke-width="2" marker-end="url(#ga)"/><defs><marker id="ga" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0l10 5-10 5z" fill="'+INK+'"/></marker></defs>'
         + '<rect x="60" y="48" width="64" height="30" rx="8" fill="#fff" stroke="'+INK+'" stroke-width="1.5"/><path d="M86 78l6 8 6-8" fill="#fff" stroke="'+INK+'" stroke-width="1.5" stroke-linejoin="round"/><path d="M87 77h10" stroke="#fff" stroke-width="2"/><text x="92" y="68" text-anchor="middle" font-size="12" fill="'+INK+'">照配色分</text><text x="92" y="112" text-anchor="middle" font-size="13" fill="'+INK+'">AI</text>'
@@ -986,7 +987,7 @@
         + '<rect x="40" y="136" width="64" height="24" rx="12" fill="'+LIME+'" stroke="'+INK+'"/><text x="72" y="152" text-anchor="middle" font-size="12" fill="'+INK+'">清爽系</text>'
         + '<path d="M120 116l0 26 7-7 6 12 5-2-6-12 10 0z" fill="#fff" stroke="'+INK+'" stroke-width="1.5" stroke-linejoin="round"/></svg>' }
   ];
-  var AI_PROMPT = "請幫我整理一個圖片資料夾的分類。\n\n【要改的檔案】\n我選的圖片資料夾裡的 moodboard-data.json。\n如果資料夾裡還沒有這個檔：請我先在「靈感畫布」選這個資料夾，再按左側「同步資料夾」，檔案就會自動建立。\n\n【怎麼改】\n1. categories：分類清單（陣列）。每個分類寫成 { \"id\": \"c1\", \"name\": \"分類名稱\", \"color\": \"#RRGGBB\", \"visible\": true }。id 自己取、不重複；name 最多 16 個字。\n2. images：以圖片檔名為 key。把每張圖的 categoryId 填成它所屬分類的 id；不屬於任何分類就填 null。\n3. 其他欄位（每張圖的 x、y、w、note、z，以及 uncatVisible、zTop、stickies、stickiesVisible）保持原值，不要動。\n4. 請先實際看過每張圖片再分類。\n\n【範例】\n{\n  \"images\": {\n    \"IMG_0012.jpg\": { \"x\": 40, \"y\": 40, \"w\": 220, \"note\": \"\", \"categoryId\": \"c1\", \"z\": 2 },\n    \"IMG_0013.png\": { \"x\": 300, \"y\": 54, \"w\": 220, \"note\": \"配色可以參考\", \"categoryId\": \"c2\", \"z\": 3 },\n    \"IMG_0014.jpg\": { \"x\": 560, \"y\": 68, \"w\": 220, \"note\": \"\", \"categoryId\": null, \"z\": 4 }\n  },\n  \"categories\": [\n    { \"id\": \"c1\", \"name\": \"清爽系\", \"color\": \"#D9E86B\", \"visible\": true },\n    { \"id\": \"c2\", \"name\": \"粉色系\", \"color\": \"#F68FDB\", \"visible\": true }\n  ],\n  \"uncatVisible\": true,\n  \"zTop\": 4,\n  \"stickies\": [],\n  \"stickiesVisible\": true\n}\n\n【分好之後】\n告訴我改好了。我會回到靈感畫布重新整理頁面（或重新選一次資料夾），分類就會出現在畫面上。\n\n【請照我說的方式分類】\n＿＿＿＿＿＿＿＿";
+  var AI_PROMPT = "請幫我整理一個圖片資料夾的分類。{這裡替換說明你想怎麼分類}\n\n【要改的檔案】\n我選的圖片資料夾裡的 moodboard-data.json。\n如果資料夾裡還沒有這個檔：請我先在「靈感畫布」選這個資料夾，再按左側「同步資料夾」，檔案就會自動建立。\n\n【怎麼改】\n1. categories：分類清單（陣列）。每個分類寫成 { \"id\": \"c1\", \"name\": \"分類名稱\", \"color\": \"#RRGGBB\", \"visible\": true }。id 自己取、不重複；name 最多 16 個字。\n2. images：以圖片檔名為 key。把每張圖的 categoryId 填成它所屬分類的 id；不屬於任何分類就填 null。\n3. 群組排版：同一個分類的圖排在一起，每個分類在畫布上各佔一塊，塊和塊之間留明顯的空白；未分類的圖另外放一塊。只改每張圖的 x、y（畫布左上角是 0,0）。同一塊裡左右間隔至少 w＋40；上下間隔照圖片比例估，卡片高度約等於 w × 圖片高寬比＋120，不要讓卡片重疊。\n4. 其他欄位（每張圖的 w、note、z，以及 uncatVisible、zTop、stickies、stickiesVisible）保持原值，不要動。\n5. 請先實際看過每張圖片再分類。\n\n【範例】\n{\n  \"images\": {\n    \"IMG_0012.jpg\": { \"x\": 40, \"y\": 40, \"w\": 220, \"note\": \"\", \"categoryId\": \"c1\", \"z\": 2 },\n    \"IMG_0015.jpg\": { \"x\": 40, \"y\": 420, \"w\": 220, \"note\": \"\", \"categoryId\": \"c1\", \"z\": 5 },\n    \"IMG_0013.png\": { \"x\": 400, \"y\": 40, \"w\": 220, \"note\": \"配色可以參考\", \"categoryId\": \"c2\", \"z\": 3 },\n    \"IMG_0014.jpg\": { \"x\": 760, \"y\": 40, \"w\": 220, \"note\": \"\", \"categoryId\": null, \"z\": 4 }\n  },\n  \"categories\": [\n    { \"id\": \"c1\", \"name\": \"清爽系\", \"color\": \"#D9E86B\", \"visible\": true },\n    { \"id\": \"c2\", \"name\": \"粉色系\", \"color\": \"#F68FDB\", \"visible\": true }\n  ],\n  \"uncatVisible\": true,\n  \"zTop\": 5,\n  \"stickies\": [],\n  \"stickiesVisible\": true\n}\n\n【分好之後】\n告訴我改好了。我會回到靈感畫布重新整理頁面（或重新選一次資料夾），分類就會出現在畫面上。";
   var i = 0, $ = function(id){ return document.getElementById(id); };
   function copyMsg(t){ $("guideCopyMsg").textContent = t; }
   // 剪貼簿不能用時，改成在說明第 2 頁把指令攤開並選取
