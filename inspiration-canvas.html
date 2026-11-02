@@ -208,6 +208,8 @@
         <input type="text" id="newCatName" placeholder="新增分類名稱" maxlength="16">
         <button id="addCatBtn">新增</button>
       </div>
+      <button class="tool-btn" id="copyAiBtn" type="button">複製給 AI 的指令</button>
+      <p class="side-hint">貼給 AI，在最後填上你想怎麼分；分好後重新整理頁面。</p>
     </div>
 
     <div class="side-section" id="selSection" style="display:none;">
@@ -987,17 +989,25 @@
   var AI_PROMPT = "請幫我整理一個圖片資料夾的分類。\n\n【要改的檔案】\n我選的圖片資料夾裡的 moodboard-data.json。\n如果資料夾裡還沒有這個檔：請我先在「靈感畫布」選這個資料夾，再按左側「同步資料夾」，檔案就會自動建立。\n\n【怎麼改】\n1. categories：分類清單（陣列）。每個分類寫成 { \"id\": \"c1\", \"name\": \"分類名稱\", \"color\": \"#RRGGBB\", \"visible\": true }。id 自己取、不重複；name 最多 16 個字。\n2. images：以圖片檔名為 key。把每張圖的 categoryId 填成它所屬分類的 id；不屬於任何分類就填 null。\n3. 其他欄位（每張圖的 x、y、w、note、z，以及 uncatVisible、zTop、stickies、stickiesVisible）保持原值，不要動。\n4. 請先實際看過每張圖片再分類。\n\n【範例】\n{\n  \"images\": {\n    \"IMG_0012.jpg\": { \"x\": 40, \"y\": 40, \"w\": 220, \"note\": \"\", \"categoryId\": \"c1\", \"z\": 2 },\n    \"IMG_0013.png\": { \"x\": 300, \"y\": 54, \"w\": 220, \"note\": \"配色可以參考\", \"categoryId\": \"c2\", \"z\": 3 },\n    \"IMG_0014.jpg\": { \"x\": 560, \"y\": 68, \"w\": 220, \"note\": \"\", \"categoryId\": null, \"z\": 4 }\n  },\n  \"categories\": [\n    { \"id\": \"c1\", \"name\": \"清爽系\", \"color\": \"#D9E86B\", \"visible\": true },\n    { \"id\": \"c2\", \"name\": \"粉色系\", \"color\": \"#F68FDB\", \"visible\": true }\n  ],\n  \"uncatVisible\": true,\n  \"zTop\": 4,\n  \"stickies\": [],\n  \"stickiesVisible\": true\n}\n\n【分好之後】\n告訴我改好了。我會回到靈感畫布重新整理頁面（或重新選一次資料夾），分類就會出現在畫面上。\n\n【請照我說的方式分類】\n＿＿＿＿＿＿＿＿";
   var i = 0, $ = function(id){ return document.getElementById(id); };
   function copyMsg(t){ $("guideCopyMsg").textContent = t; }
-  $("guideCopyBtn").onclick = async function(){
+  // 剪貼簿不能用時，改成在說明第 2 頁把指令攤開並選取
+  function copyFallback(){
     var ta = $("guideCopyText");
+    ta.value = AI_PROMPT; ta.style.display = "block"; ta.focus(); ta.select();
+    var ok = false; try { ok = document.execCommand("copy"); } catch (er) {}
+    copyMsg(ok ? "已複製" : "已選取，請按 ⌘C／Ctrl+C 複製");
+  }
+  $("guideCopyBtn").onclick = async function(){
+    try { await navigator.clipboard.writeText(AI_PROMPT); $("guideCopyText").style.display = "none"; copyMsg("已複製"); }
+    catch (e) { copyFallback(); }
+  };
+  // 主畫面側邊欄的同一顆按鈕，複製同一段 AI_PROMPT
+  var sideBtn = $("copyAiBtn"), sideTimer = null;
+  sideBtn.onclick = async function(){
     try {
       await navigator.clipboard.writeText(AI_PROMPT);
-      ta.style.display = "none"; copyMsg("已複製");
-    } catch (e) {
-      // 剪貼簿不能用時，改成把指令攤開並選取
-      ta.value = AI_PROMPT; ta.style.display = "block"; ta.focus(); ta.select();
-      var ok = false; try { ok = document.execCommand("copy"); } catch (er) {}
-      copyMsg(ok ? "已複製" : "已選取，請按 ⌘C／Ctrl+C 複製");
-    }
+      sideBtn.textContent = "已複製";
+      clearTimeout(sideTimer); sideTimer = setTimeout(function(){ sideBtn.textContent = "複製給 AI 的指令"; }, 1600);
+    } catch (e) { open(1); copyFallback(); }
   };
   function render(){
     var pg = PAGES[i];
@@ -1011,11 +1021,11 @@
     $("guideNext").textContent = i === PAGES.length-1 ? "開始用" : "下一步";
     $("guideSkip").style.visibility = i === PAGES.length-1 ? "hidden" : "visible";
   }
-  function open(){ i = 0; render(); $("guide").classList.add("show"); $("guideNext").focus(); }
+  function open(start){ i = start || 0; render(); $("guide").classList.add("show"); $("guideNext").focus(); }
   function close(){ $("guide").classList.remove("show"); try { localStorage.setItem(KEY, "1"); } catch(e){} $("guideBtn").focus(); }
   $("guideNext").onclick = function(){ if (i < PAGES.length-1) { i++; render(); } else close(); };
   $("guideSkip").onclick = close;
-  $("guideBtn").onclick = open;
+  $("guideBtn").onclick = function(){ open(0); };
   $("guide").addEventListener("click", function(e){ if (e.target === this) close(); });
   document.addEventListener("keydown", function(e){ if (e.key === "Escape" && $("guide").classList.contains("show")) close(); });
   var seen = false; try { seen = localStorage.getItem(KEY) === "1"; } catch(e){}
