@@ -281,6 +281,18 @@ vec3 gaussBlur(vec2 px, float sigma){
   return c / wsum;
 }
 
+// 每格平均色：在「這一格」的範圍內均勻取 8×8 點平均，格內只剩一個顏色，不會出現取樣太稀的條紋
+vec3 tileAvg(vec2 px, vec2 shift){
+  vec2 c0 = floor(px / uTile) * uTile;
+  vec3 c = vec3(0.0);
+  for (int x = 0; x < 8; x++) {
+    for (int y = 0; y < 8; y++) {
+      c += tex(c0 + (vec2(float(x), float(y)) + 0.5) / 8.0 * uTile + shift);
+    }
+  }
+  return c / 64.0;
+}
+
 // 方格玻璃：每格是一顆緊靠的「枕頭」，格與格之間是 V 形的溝；每格另外有不同程度的水紋
 float heightSquare(vec2 px){
   vec2 cell = floor(px / uTile);
@@ -349,9 +361,16 @@ void main(){
   vec2 offset = -grad * uTile * uTile * k * uStrength;
   float maxOff = uTile * 0.35;
   if (length(offset) > maxOff) offset = normalize(offset) * maxOff;   // 接縫處斜率會暴衝，限制位移避免拉出線條
-  // 模糊為 0 時維持原本的輕微柔化；拉開之後改用高斯模糊（最大 sigma 約 20px）
-  float sigma = uBlur * 20.0;
-  vec3 col = sigma > 0.5 ? gaussBlur(px + offset, sigma) : blur(px + offset, square ? 0.7 : 1.6);
+  // 模糊為 0 時維持原本的輕微柔化；方格玻璃用「每格平均色」，海棠花用高斯模糊（最大 sigma 約 60px）
+  vec3 col;
+  if (square) {
+    // 方格：模糊越高，每一格越接近自己的平均色（約 62% 時完全變成色塊）
+    vec3 soft = blur(px + offset, 0.7);
+    col = mix(soft, tileAvg(px, offset * 0.5), clamp(uBlur * 1.6, 0.0, 1.0));
+  } else {
+    float sigma = uBlur * 60.0;
+    col = sigma > 0.5 ? gaussBlur(px + offset, sigma) : blur(px + offset, 1.6);
+  }
 
   // 光影：光從左上來
   vec3 n = normalize(vec3(-grad * uTile * (square ? 0.18 : 0.03), 1.0));
