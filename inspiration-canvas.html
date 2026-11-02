@@ -97,6 +97,14 @@
   #marquee{position:absolute;z-index:2147483000;display:none;border:1.5px solid var(--c-text);background:rgba(217,232,107,.22);pointer-events:none}
   .toggle-row{display:flex;align-items:center;gap:10px;min-height:36px;padding:2px 4px;font-size:14px;cursor:pointer}
   .toggle-row input{width:18px;height:18px;margin:0;accent-color:var(--c-text)}
+  .layout-seg{display:flex;gap:6px}
+  .layout-seg button{flex:1;min-height:44px;padding:8px 6px;border:1px solid var(--c-line);border-radius:10px;background:var(--c-surface);color:var(--c-text);font-family:inherit;font-size:14px;line-height:1.4;cursor:pointer}
+  .layout-seg button:hover{border-color:var(--c-text)}
+  .layout-seg button[aria-pressed="true"]{background:var(--c-accent);border-color:var(--c-accent)}
+  .frame{position:absolute;z-index:0;border:1.5px solid #DCD8E3;border-radius:20px;background:rgba(255,255,255,.6);pointer-events:none}
+  .frame-label{position:absolute;top:14px;left:20px;display:flex;align-items:center;gap:8px;color:var(--c-text);font-size:22px;line-height:1.4;white-space:nowrap}
+  .frame-label i{width:14px;height:14px;border-radius:50%;border:1px solid var(--c-line)}
+  .frame-label span{color:var(--c-text-2);font-size:16px}
   .side-hint{margin:0;color:var(--c-text-2);font-size:14px;line-height:1.7}
   .side-select{width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--c-line);border-radius:10px;background:var(--c-surface);font-size:14px}
   #selSection{margin:-4px -8px;padding:12px;border-radius:10px;background:var(--c-accent-soft)}
@@ -228,6 +236,10 @@
 
     <div class="side-section">
       <h2>檢視</h2>
+      <div class="layout-seg" role="group" aria-label="排列方式">
+        <button type="button" data-layout="flow" aria-pressed="false">由左到右</button>
+        <button type="button" data-layout="frames" aria-pressed="false">依分類分區</button>
+      </div>
       <div class="zoom-row">
         <input type="range" id="zoomSlider" min="50" max="150" value="100">
         <span class="zoom-val" id="zoomVal">100%</span>
@@ -276,7 +288,7 @@
   var STICKY_COLORS = ["#FBE7A1","#F7C8C2","#C9DDF2","#CDE5C4","#F3D2A8"];
 
   var dirHandle = null;
-  function emptyState(){ return { images: {}, categories: [], uncatVisible: true, zTop: 1, stickies: [], stickiesVisible: true }; }
+  function emptyState(){ return { images: {}, categories: [], uncatVisible: true, zTop: 1, stickies: [], stickiesVisible: true, layout: null }; }
   var state = emptyState();
   var zoom = 1;
   var selection = new Set();   // keys: "i:"+filename or "n:"+stickyId
@@ -402,6 +414,7 @@
       state.zTop = meta.zTop || 1;
       state.stickies = Array.isArray(meta.stickies) ? meta.stickies : [];
       state.stickiesVisible = meta.stickiesVisible !== false;
+      state.layout = meta.layout === "flow" || meta.layout === "frames" ? meta.layout : null;
     } else {
       state = emptyState();
     }
@@ -410,6 +423,7 @@
     renderCategories();
     await renderAllCards();
     renderStickies();
+    updateLayoutBtns(); drawFrames();
   }
 
   async function scanFolderImages(){
@@ -437,13 +451,13 @@
 
   // ---------- persistence ----------
   var saveTimer = null;
-  function scheduleSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(saveMeta, 400); }
+  function scheduleSave(){ drawFrames(); clearTimeout(saveTimer); saveTimer = setTimeout(saveMeta, 400); }
   async function saveMeta(){
     if (!dirHandle) return;
     try {
       var fh = await dirHandle.getFileHandle(META_NAME, { create: true });
       var w = await fh.createWritable();
-      await w.write(JSON.stringify({ images: state.images, categories: state.categories, uncatVisible: state.uncatVisible, zTop: state.zTop, stickies: state.stickies, stickiesVisible: state.stickiesVisible }, null, 2));
+      await w.write(JSON.stringify({ images: state.images, categories: state.categories, uncatVisible: state.uncatVisible, zTop: state.zTop, stickies: state.stickies, stickiesVisible: state.stickiesVisible, layout: state.layout }, null, 2));
       await w.close();
       byId("savedStatus").textContent = "已自動存檔 " + new Date().toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" });
     } catch (e) {
@@ -488,6 +502,7 @@
           Object.keys(state.images).forEach(function(fn){ if (state.images[fn].categoryId===cat.id) state.images[fn].categoryId=null; });
           state.categories = state.categories.filter(function(c){ return c.id!==cat.id; });
           scheduleSave(); renderCategories(); renderCategorySelects(); applyFilter();
+          if (state.layout === "frames") arrange("frames");
           document.querySelectorAll(".card").forEach(function(c){ if (c._applyCat) c._applyCat(); });
         });
       });
@@ -588,6 +603,7 @@
       im.categoryId = sel.value || null;
       card._applyCat();
       renderCategories(); applyFilter(); scheduleSave();
+      if (state.layout === "frames") arrange("frames");
     });
     selRow.appendChild(sel); body.appendChild(selRow);
     card.appendChild(body);
@@ -776,6 +792,74 @@
   }
 
   // ---------- zoom ----------
+  // ---------- 排列方式：由左到右／依分類分區（像 Figma 的 Frame） ----------
+  var LAYOUT_GAP = 40, FRAME_GAP = 64, FRAME_PAD = 24, FRAME_HEAD = 56;
+  function cardH(fn){ var el = elFor("i:"+fn); return el ? el.offsetHeight : 300; }
+  function placeCard(fn, x, y){
+    var im = state.images[fn]; im.x = Math.round(x); im.y = Math.round(y);
+    var el = elFor("i:"+fn); if (el) { el.style.left = im.x+"px"; el.style.top = im.y+"px"; }
+  }
+  function layoutGroups(){
+    var groups = state.categories.map(function(c){ return { cat:c, fns:[] }; }), uncat = { cat:null, fns:[] };
+    Object.keys(state.images).sort().forEach(function(fn){
+      var id = state.images[fn].categoryId, g = null;
+      for (var i=0;i<groups.length;i++) if (groups[i].cat.id === id) g = groups[i];
+      (g || uncat).fns.push(fn);
+    });
+    groups.push(uncat);
+    return groups.filter(function(g){ return g.fns.length; });
+  }
+  function flowCards(fns, x0, y0, maxW){
+    var x = x0, y = y0, rowH = 0;
+    fns.forEach(function(fn){
+      var w = state.images[fn].w, h = cardH(fn);
+      if (x > x0 && x + w > x0 + maxW) { x = x0; y += rowH + LAYOUT_GAP; rowH = 0; }
+      placeCard(fn, x, y); x += w + LAYOUT_GAP; rowH = Math.max(rowH, h);
+    });
+    return y + rowH - y0;
+  }
+  async function arrange(mode){
+    await Promise.all(Array.prototype.map.call(canvasInner.querySelectorAll(".card img"), function(img){ return img.decode ? img.decode().catch(function(){}) : null; }));
+    var maxW = Math.max(900, (byId("canvasScroll").clientWidth - 240) / zoom);
+    if (mode === "flow") {
+      flowCards(Object.keys(state.images).sort(), 40, 40, maxW);
+    } else {
+      var fx = 40, fy = 40, rowH = 0;
+      layoutGroups().forEach(function(g){
+        var cw = 0; g.fns.forEach(function(fn){ cw = Math.max(cw, state.images[fn].w); });
+        var cols = Math.min(3, g.fns.length), innerW = cols * (cw + LAYOUT_GAP) - LAYOUT_GAP, fw = innerW + FRAME_PAD * 2;
+        // 分區一路往右排，像 Figma 的 Frame；超過畫布寬度才換行
+        if (fx > 40 && fx + fw > canvasInner.offsetWidth - 40) { fx = 40; fy += rowH + FRAME_GAP; rowH = 0; }
+        var h = flowCards(g.fns, fx + FRAME_PAD, fy + FRAME_HEAD, innerW);
+        rowH = Math.max(rowH, h + FRAME_HEAD + FRAME_PAD); fx += fw + FRAME_GAP;
+      });
+    }
+    state.layout = mode; updateLayoutBtns(); scheduleSave();
+  }
+  function drawFrames(){
+    Array.prototype.forEach.call(canvasInner.querySelectorAll(".frame"), function(f){ f.remove(); });
+    if (state.layout !== "frames") return;
+    layoutGroups().forEach(function(g){
+      if (g.cat ? g.cat.visible === false : !state.uncatVisible) return;
+      var x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+      g.fns.forEach(function(fn){ var im = state.images[fn]; x1 = Math.min(x1, im.x); y1 = Math.min(y1, im.y); x2 = Math.max(x2, im.x + im.w); y2 = Math.max(y2, im.y + cardH(fn)); });
+      var f = document.createElement("div"); f.className = "frame";
+      f.style.left = (x1 - FRAME_PAD)+"px"; f.style.top = (y1 - FRAME_HEAD)+"px";
+      f.style.width = (x2 - x1 + FRAME_PAD * 2)+"px"; f.style.height = (y2 - y1 + FRAME_HEAD + FRAME_PAD)+"px";
+      var lb = document.createElement("div"); lb.className = "frame-label";
+      var dot = document.createElement("i"); dot.style.background = g.cat ? g.cat.color : "var(--uncat-dot)";
+      var cnt = document.createElement("span"); cnt.textContent = g.fns.length + " 張";
+      lb.appendChild(dot); lb.appendChild(document.createTextNode(g.cat ? g.cat.name : "未分類")); lb.appendChild(cnt);
+      f.appendChild(lb); canvasInner.insertBefore(f, canvasInner.firstChild);
+    });
+  }
+  function updateLayoutBtns(){
+    Array.prototype.forEach.call(document.querySelectorAll(".layout-seg button"), function(b){ b.setAttribute("aria-pressed", String(b.dataset.layout === state.layout)); });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".layout-seg button"), function(b){
+    b.addEventListener("click", function(){ arrange(b.dataset.layout); });
+  });
+
   function setZoom(v){ zoom=v/100; canvasInner.style.transform="scale("+zoom+")"; byId("zoomVal").textContent=v+"%"; }
 
   // ---------- add images (copies bytes into the connected folder) ----------
@@ -844,6 +928,7 @@
       });
       e.target.value = "__";
       renderCategories(); applyFilter(); scheduleSave();
+      if (state.layout === "frames") arrange("frames");
       showToast("已更新分類");
     });
     byId("selClearBtn").addEventListener("click", function(){ setSelection([]); });
@@ -987,7 +1072,7 @@
         + '<rect x="40" y="136" width="64" height="24" rx="12" fill="'+LIME+'" stroke="'+INK+'"/><text x="72" y="152" text-anchor="middle" font-size="12" fill="'+INK+'">清爽系</text>'
         + '<path d="M120 116l0 26 7-7 6 12 5-2-6-12 10 0z" fill="#fff" stroke="'+INK+'" stroke-width="1.5" stroke-linejoin="round"/></svg>' }
   ];
-  var AI_PROMPT = "請幫我整理一個圖片資料夾的分類。{這裡替換說明你想怎麼分類}\n\n【要改的檔案】\n我選的圖片資料夾裡的 moodboard-data.json。\n如果資料夾裡還沒有這個檔：請我先在「靈感畫布」選這個資料夾，再按左側「同步資料夾」，檔案就會自動建立。\n\n【怎麼改】\n1. categories：分類清單（陣列）。每個分類寫成 { \"id\": \"c1\", \"name\": \"分類名稱\", \"color\": \"#RRGGBB\", \"visible\": true }。id 自己取、不重複；name 最多 16 個字。\n2. images：以圖片檔名為 key。把每張圖的 categoryId 填成它所屬分類的 id；不屬於任何分類就填 null。\n3. 群組排版：同一個分類的圖排在一起，每個分類在畫布上各佔一塊，塊和塊之間留明顯的空白；未分類的圖另外放一塊。只改每張圖的 x、y（畫布左上角是 0,0）。同一塊裡左右間隔至少 w＋40；上下間隔照圖片比例估，卡片高度約等於 w × 圖片高寬比＋120，不要讓卡片重疊。\n4. 其他欄位（每張圖的 w、note、z，以及 uncatVisible、zTop、stickies、stickiesVisible）保持原值，不要動。\n5. 請先實際看過每張圖片再分類。\n\n【範例】\n{\n  \"images\": {\n    \"IMG_0012.jpg\": { \"x\": 40, \"y\": 40, \"w\": 220, \"note\": \"\", \"categoryId\": \"c1\", \"z\": 2 },\n    \"IMG_0015.jpg\": { \"x\": 40, \"y\": 420, \"w\": 220, \"note\": \"\", \"categoryId\": \"c1\", \"z\": 5 },\n    \"IMG_0013.png\": { \"x\": 400, \"y\": 40, \"w\": 220, \"note\": \"配色可以參考\", \"categoryId\": \"c2\", \"z\": 3 },\n    \"IMG_0014.jpg\": { \"x\": 760, \"y\": 40, \"w\": 220, \"note\": \"\", \"categoryId\": null, \"z\": 4 }\n  },\n  \"categories\": [\n    { \"id\": \"c1\", \"name\": \"清爽系\", \"color\": \"#D9E86B\", \"visible\": true },\n    { \"id\": \"c2\", \"name\": \"粉色系\", \"color\": \"#F68FDB\", \"visible\": true }\n  ],\n  \"uncatVisible\": true,\n  \"zTop\": 5,\n  \"stickies\": [],\n  \"stickiesVisible\": true\n}\n\n【分好之後】\n告訴我改好了。我會回到靈感畫布重新整理頁面（或重新選一次資料夾），分類就會出現在畫面上。";
+  var AI_PROMPT = "請幫我整理一個圖片資料夾的分類。{這裡替換說明你想怎麼分類}\n\n【要改的檔案】\n我選的圖片資料夾裡的 moodboard-data.json。\n如果資料夾裡還沒有這個檔：請我先在「靈感畫布」選這個資料夾，再按左側「同步資料夾」，檔案就會自動建立。\n\n【怎麼改】\n1. categories：分類清單（陣列）。每個分類寫成 { \"id\": \"c1\", \"name\": \"分類名稱\", \"color\": \"#RRGGBB\", \"visible\": true }。id 自己取、不重複；name 最多 16 個字。\n2. images：以圖片檔名為 key。把每張圖的 categoryId 填成它所屬分類的 id；不屬於任何分類就填 null。\n3. 其他欄位（每張圖的 x、y、w、note、z，以及 uncatVisible、zTop、stickies、stickiesVisible、layout）保持原值，不要動。畫布上要不要依分類分區，我會在畫布上自己切換。\n4. 請先實際看過每張圖片再分類。\n\n【範例】\n{\n  \"images\": {\n    \"IMG_0012.jpg\": { \"x\": 40, \"y\": 40, \"w\": 220, \"note\": \"\", \"categoryId\": \"c1\", \"z\": 2 },\n    \"IMG_0013.png\": { \"x\": 300, \"y\": 54, \"w\": 220, \"note\": \"配色可以參考\", \"categoryId\": \"c2\", \"z\": 3 },\n    \"IMG_0014.jpg\": { \"x\": 560, \"y\": 68, \"w\": 220, \"note\": \"\", \"categoryId\": null, \"z\": 4 }\n  },\n  \"categories\": [\n    { \"id\": \"c1\", \"name\": \"清爽系\", \"color\": \"#D9E86B\", \"visible\": true },\n    { \"id\": \"c2\", \"name\": \"粉色系\", \"color\": \"#F68FDB\", \"visible\": true }\n  ],\n  \"uncatVisible\": true,\n  \"zTop\": 4,\n  \"stickies\": [],\n  \"stickiesVisible\": true\n}\n\n\n【分好之後】\n告訴我改好了。我會回到靈感畫布重新整理頁面（或重新選一次資料夾），分類就會出現在畫面上。";
   var i = 0, $ = function(id){ return document.getElementById(id); };
   function copyMsg(t){ $("guideCopyMsg").textContent = t; }
   // 剪貼簿不能用時，改成在說明第 2 頁把指令攤開並選取
