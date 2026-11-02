@@ -161,6 +161,14 @@
   .g-skip:hover{color:var(--c-text)}
   .g-next{border:1px solid var(--c-accent);background:var(--c-accent);color:var(--c-text)}
   .g-next:hover{border-color:var(--c-text)}
+  .g-copy{display:none;margin-top:12px}
+  .g-copy.show{display:block}
+  .g-copy-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .g-copy-btn{min-height:44px;padding:8px 14px;border:1px solid var(--c-text);border-radius:10px;background:var(--c-surface);color:var(--c-text);font-family:inherit;font-size:16px;font-weight:400;cursor:pointer}
+  .g-copy-btn:hover{background:var(--c-accent-soft)}
+  .g-copy-msg{color:var(--c-text-2);font-size:14px;line-height:1.5}
+  .g-copy-hint{margin:6px 0 0;color:var(--c-text-2);font-size:14px;line-height:1.6}
+  .g-copy-fallback{display:none;width:100%;height:96px;margin-top:8px;padding:8px;border:1px solid var(--c-line);border-radius:8px;font-family:inherit;font-size:14px;line-height:1.5;resize:vertical}
 </style>
 </head>
 <body>
@@ -932,6 +940,14 @@
       <p class="g-step" id="guideStep"></p>
       <h2 class="g-title" id="guideTitle"></h2>
       <p class="g-text" id="guideText"></p>
+      <div class="g-copy" id="guideCopy">
+        <div class="g-copy-row">
+          <button class="g-copy-btn" id="guideCopyBtn" type="button">複製給 AI 的指令</button>
+          <span class="g-copy-msg" id="guideCopyMsg" role="status" aria-live="polite"></span>
+        </div>
+        <p class="g-copy-hint">貼給 AI，在最後填上你想怎麼分。</p>
+        <textarea class="g-copy-fallback" id="guideCopyText" readonly aria-label="給 AI 的指令"></textarea>
+      </div>
     </div>
     <div class="g-foot">
       <div class="g-dots" id="guideDots"><span></span><span></span><span></span></div>
@@ -951,7 +967,7 @@
       fig: '<svg viewBox="0 0 260 180" aria-hidden="true"><path d="M40 50h60l12 14h108v86a8 8 0 0 1-8 8H48a8 8 0 0 1-8-8z" fill="#fff" stroke="'+INK+'" stroke-width="2"/>'
         + '<g transform="translate(62 84)">'+pic(LIME)+'</g><g transform="translate(106 92)">'+pic(ROSE)+'</g><g transform="translate(150 84)">'+pic(LAV)+'</g>'
         + '<rect x="128" y="18" width="124" height="30" rx="15" fill="'+LIME+'" stroke="'+INK+'" stroke-width="1.5"/><text x="190" y="38" text-anchor="middle" font-size="12" fill="'+INK+'">桌機 Chrome／Edge</text></svg>' },
-    { title: "請 AI 幫你分類",
+    { title: "請 AI 幫你分類", copy: true,
       text: "重點是<b>跟 AI 說你大概想怎麼分</b>，例如「照配色分成清爽系、粉色系」。AI 工具（例如 Claude）分好後，類別會直接出現在畫面上。",
       fig: '<svg viewBox="0 0 260 180" aria-hidden="true"><g transform="translate(20 40)">'+pic(LIME)+'</g><g transform="translate(20 84)">'+pic(ROSE)+'</g><g transform="translate(20 128)">'+pic(LIME)+'</g>'
         + '<path d="M70 98h44" stroke="'+INK+'" stroke-width="2" marker-end="url(#ga)"/><defs><marker id="ga" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0l10 5-10 5z" fill="'+INK+'"/></marker></defs>'
@@ -968,13 +984,29 @@
         + '<rect x="40" y="136" width="64" height="24" rx="12" fill="'+LIME+'" stroke="'+INK+'"/><text x="72" y="152" text-anchor="middle" font-size="12" fill="'+INK+'">清爽系</text>'
         + '<path d="M120 116l0 26 7-7 6 12 5-2-6-12 10 0z" fill="#fff" stroke="'+INK+'" stroke-width="1.5" stroke-linejoin="round"/></svg>' }
   ];
+  var AI_PROMPT = "請幫我整理一個圖片資料夾的分類。\n\n【要改的檔案】\n我選的圖片資料夾裡的 moodboard-data.json。\n如果資料夾裡還沒有這個檔：請我先在「靈感畫布」選這個資料夾，再按左側「同步資料夾」，檔案就會自動建立。\n\n【怎麼改】\n1. categories：分類清單（陣列）。每個分類寫成 { \"id\": \"c1\", \"name\": \"分類名稱\", \"color\": \"#RRGGBB\", \"visible\": true }。id 自己取、不重複；name 最多 16 個字。\n2. images：以圖片檔名為 key。把每張圖的 categoryId 填成它所屬分類的 id；不屬於任何分類就填 null。\n3. 其他欄位（每張圖的 x、y、w、note、z，以及 uncatVisible、zTop、stickies、stickiesVisible）保持原值，不要動。\n4. 請先實際看過每張圖片再分類。\n\n【範例】\n{\n  \"images\": {\n    \"IMG_0012.jpg\": { \"x\": 40, \"y\": 40, \"w\": 220, \"note\": \"\", \"categoryId\": \"c1\", \"z\": 2 },\n    \"IMG_0013.png\": { \"x\": 300, \"y\": 54, \"w\": 220, \"note\": \"配色可以參考\", \"categoryId\": \"c2\", \"z\": 3 },\n    \"IMG_0014.jpg\": { \"x\": 560, \"y\": 68, \"w\": 220, \"note\": \"\", \"categoryId\": null, \"z\": 4 }\n  },\n  \"categories\": [\n    { \"id\": \"c1\", \"name\": \"清爽系\", \"color\": \"#D9E86B\", \"visible\": true },\n    { \"id\": \"c2\", \"name\": \"粉色系\", \"color\": \"#F68FDB\", \"visible\": true }\n  ],\n  \"uncatVisible\": true,\n  \"zTop\": 4,\n  \"stickies\": [],\n  \"stickiesVisible\": true\n}\n\n【分好之後】\n告訴我改好了。我會回到靈感畫布重新整理頁面（或重新選一次資料夾），分類就會出現在畫面上。\n\n【請照我說的方式分類】\n＿＿＿＿＿＿＿＿";
   var i = 0, $ = function(id){ return document.getElementById(id); };
+  function copyMsg(t){ $("guideCopyMsg").textContent = t; }
+  $("guideCopyBtn").onclick = async function(){
+    var ta = $("guideCopyText");
+    try {
+      await navigator.clipboard.writeText(AI_PROMPT);
+      ta.style.display = "none"; copyMsg("已複製");
+    } catch (e) {
+      // 剪貼簿不能用時，改成把指令攤開並選取
+      ta.value = AI_PROMPT; ta.style.display = "block"; ta.focus(); ta.select();
+      var ok = false; try { ok = document.execCommand("copy"); } catch (er) {}
+      copyMsg(ok ? "已複製" : "已選取，請按 ⌘C／Ctrl+C 複製");
+    }
+  };
   function render(){
     var pg = PAGES[i];
     $("guideFig").innerHTML = pg.fig;
     $("guideStep").textContent = (i+1) + " / " + PAGES.length;
     $("guideTitle").textContent = pg.title;
     $("guideText").innerHTML = pg.text;
+    $("guideCopy").className = pg.copy ? "g-copy show" : "g-copy";
+    copyMsg(""); $("guideCopyText").style.display = "none";
     var ds = $("guideDots").children; for (var k=0;k<ds.length;k++) ds[k].className = k===i ? "on" : "";
     $("guideNext").textContent = i === PAGES.length-1 ? "開始用" : "下一步";
     $("guideSkip").style.visibility = i === PAGES.length-1 ? "hidden" : "visible";
