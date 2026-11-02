@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>靈感畫布（資料夾版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --c-lime:#D9E86B; --c-lime-soft:#F4F8D2; --c-lime-deep:#7C8A1F;
+    --c-rose:#F68FDB; --c-rose-soft:#FDE3ED; --c-rose-deep:#B8466F;
+    --c-lavender:#CDB9FF; --c-lavender-soft:#EEE8FF; --c-lavender-deep:#6447C9;
+    --c-bg:#F9FAFC; --c-surface:#FFFFFF; --c-line:#ECE9F1;
+    --c-text:#2A2433; --c-text-2:#6E6878; --c-text-3:#9C96A6;
+    --c-overlay:rgba(42,36,51,.5); --c-accent:var(--c-lime); --c-accent-soft:var(--c-lime-soft);
+    --c-danger:var(--c-rose-deep); --uncat-dot:#9C96A6;
+    --c-shadow:rgba(42,36,51,.08);
+    --radius-sm:10px; --radius-md:16px; --radius-pill:999px;
+    --fs-h1:32px; --fs-h2:22px; --fs-h3:18px; --fs-body:16px; --fs-sm:14px; --fs-tag:13px; --fs-caption:12px;
+    --lh-title:1.35; --lh-h2:1.4; --lh-h3:1.5; --lh-body:1.75; --lh-sm:1.7; --lh-ui:1.4; --lh-single:1;
+    --font-sans:"Huninn","jf-openhuninn-2.1","PingFang TC","Noto Sans TC",sans-serif;
+    --font-mono:"JetBrains Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{background:var(--c-bg);color:var(--c-text);font-family:var(--font-sans);font-size:var(--fs-body);font-weight:400;font-synthesis:none;line-height:var(--lh-body);letter-spacing:normal;line-break:strict;-webkit-font-smoothing:antialiased}
+  button,input,select,textarea{font:inherit;color:inherit}
+  button{cursor:pointer}
+  @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+  :focus-visible{outline:2px solid var(--c-text);outline-offset:2px}
+  #app{display:flex;width:100%;height:100vh;height:100dvh;min-height:0}
+  #sidebar{width:304px;flex:0 0 304px;display:flex;flex-direction:column;gap:24px;overflow-y:auto;padding:24px 20px;background:var(--c-surface);border-right:1px solid var(--c-line)}
+  .brand{padding-bottom:20px;border-bottom:1px solid var(--c-line)}
+  .brand h1{margin:0;color:var(--c-text);font-size:var(--fs-h1);font-weight:400;line-height:var(--lh-title);text-wrap:balance}
+  .brand p{margin:6px 0 0;color:var(--c-text-2);font-size:14px;line-height:1.7}
+  .side-section{display:flex;flex-direction:column;gap:10px}
+  .side-section h2{margin:0;color:var(--c-text);font-size:var(--fs-h2);font-weight:400;line-height:var(--lh-h2);text-wrap:balance}
+  .folder-status{display:grid;gap:2px;padding:10px 12px;border:1px solid var(--c-line);border-radius:10px;background:var(--c-bg);font-size:14px;line-height:1.5}
+  .folder-status .name{font-weight:400;overflow-wrap:anywhere}
+  .folder-status .saved{color:var(--c-text-2);font-size:14px}
+  .tool-btn{width:100%;min-height:44px;margin-top:4px;padding:8px 12px;text-align:left;background:var(--c-surface);border:1px solid var(--c-line);border-radius:10px;color:var(--c-text);font-size:14px;line-height:1.4;transition:background-color .15s,border-color .15s}
+  .tool-btn:first-child{margin-top:0}
+  .tool-btn:hover{background:var(--c-accent-soft);border-color:var(--c-text)}
+  .tool-btn.primary{background:var(--c-accent);border-color:var(--c-accent);color:var(--c-text)}
+  .tool-btn.primary:hover{background:#C6D55A;border-color:#C6D55A}
+  .tool-btn.danger{color:var(--c-danger)}
+  .cat-row{display:flex;align-items:center;gap:8px;min-height:36px;padding:3px 6px;border-radius:8px}
+  .cat-row:hover{background:var(--c-bg)}
+  .cat-row input[type=checkbox]{width:18px;height:18px;flex:0 0 18px;margin:0;accent-color:var(--c-text)}
+  .cat-dot{width:12px;height:12px;flex:0 0 12px;border:1px solid var(--c-line);border-radius:50%}
+  .cat-name{flex:1;min-width:0;padding:2px 3px;border-radius:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;line-height:1.5;outline:none}
+  .cat-name:focus{background:var(--c-surface);box-shadow:0 0 0 2px var(--c-accent-soft)}
+  .cat-count{min-width:20px;color:var(--c-text-2);font-size:14px;text-align:right}
+  .cat-del{width:32px;height:32px;flex:0 0 32px;border:0;border-radius:50%;background:transparent;color:var(--c-text-2);font-size:20px;line-height:1}
+  .cat-del:hover{background:var(--c-accent-soft);color:var(--c-text)}
+  .add-cat{display:flex;align-items:center;gap:8px;margin-top:4px}
+  .add-cat input[type=color]{width:36px;height:36px;flex:0 0 36px;padding:2px;border:1px solid var(--c-line);border-radius:8px;background:var(--c-surface);cursor:pointer}
+  .add-cat input[type=text]{width:0;min-width:0;flex:1;height:40px;padding:6px 9px;border:1px solid var(--c-line);border-radius:10px;background:var(--c-surface);font-size:14px}
+  .add-cat button{min-height:40px;padding:6px 12px;border:0;border-radius:10px;background:var(--c-text);color:var(--c-surface);font-size:14px}
+  .zoom-row{display:flex;align-items:center;gap:10px;min-height:36px}
+  .zoom-row input[type=range]{min-width:0;flex:1;accent-color:var(--c-text)}
+  .zoom-val{width:48px;flex:0 0 48px;color:var(--c-text-2);font-size:14px;text-align:right}
+  .side-footer{margin-top:auto;padding-top:16px;border-top:1px solid var(--c-line);color:var(--c-text-2);font-size:13px;line-height:1.5}
+  #canvasScroll{position:relative;flex:1;min-width:0;overflow:auto;background-color:var(--c-bg);background-image:radial-gradient(#D8D5DF 1px,transparent 1px);background-size:24px 24px}
+  #canvasInner{position:relative;width:3800px;height:2400px;transform-origin:0 0}
+  .empty-hint{position:absolute;top:80px;left:80px;width:min(340px,calc(100vw - 48px));padding:20px;border:1px dashed #C9C4D2;border-radius:16px;background:var(--c-surface);color:var(--c-text-2);font-size:16px;line-height:1.75}
+  .empty-hint strong{display:block;margin-bottom:4px;color:var(--c-text);font-size:18px;font-weight:400;line-height:1.5}
+  .card{position:absolute;border:1px solid var(--c-line);border-radius:var(--radius-md);background:var(--c-surface);user-select:none}
+  .card.selected,.sticky.selected{outline:2px solid var(--c-text);outline-offset:2px}
+  .card-bar{height:4px;border-radius:16px 16px 0 0;background:var(--uncat-dot,#9C96A6)}
+  .card-media{position:relative;min-height:60px;overflow:hidden;background:var(--c-bg);cursor:grab;touch-action:none}
+  .card-media:active{cursor:grabbing}
+  .card-media img{display:block;width:100%;height:auto;pointer-events:none}
+  .card-del{position:absolute;top:8px;right:8px;width:36px;height:36px;border:1px solid var(--c-line);border-radius:50%;background:var(--c-surface);color:var(--c-text);font-size:20px;line-height:1}
+  @media(hover:hover){.card-del{opacity:0;transition:opacity .12s}.card:hover .card-del,.card.selected .card-del{opacity:1}}
+  .card-body{display:flex;flex-direction:column;gap:8px;padding:10px 12px 12px}
+  .card-fn{overflow:hidden;color:var(--c-text-2);font-size:var(--fs-tag);line-height:1.5;text-overflow:ellipsis;white-space:nowrap}
+  .card-note{min-height:1.5em;outline:none;font-size:var(--fs-body);line-height:var(--lh-body);overflow-wrap:anywhere}
+  .card-note:empty:before{color:var(--c-text-3);content:attr(data-placeholder)}
+  .card-note:focus{border-radius:4px;background:var(--c-accent-soft)}
+  .card-select-row{display:flex;align-items:center;gap:8px;min-height:32px}
+  .card-select-dot{width:10px;height:10px;flex:0 0 10px;border-radius:50%}
+  .card-select{min-width:0;flex:1;border:0;background:transparent;color:var(--c-text-2);font-size:14px;outline:none;cursor:pointer}
+  .card-resize,.sticky-resize{position:absolute;right:3px;bottom:3px;width:20px;height:20px;cursor:nwse-resize;touch-action:none;background:linear-gradient(135deg,transparent 45%,#9C96A6 45%,#9C96A6 52%,transparent 52%,transparent 68%,#9C96A6 68%,#9C96A6 76%,transparent 76%)}
+  .sticky{position:absolute;display:flex;flex-direction:column;border:1px solid rgba(42,36,51,.12);border-radius:var(--radius-sm) var(--radius-sm) var(--radius-md) var(--radius-sm);color:var(--c-text)}
+  .sticky-head{height:32px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 8px;border-radius:10px 10px 0 0;background:rgba(42,36,51,.06);cursor:grab;touch-action:none}
+  .sticky-head:active{cursor:grabbing}
+  .sticky-swatch{width:16px;height:16px;border:1px solid rgba(42,36,51,.25);border-radius:50%;padding:0;cursor:pointer}
+  .sticky-swatch.on{box-shadow:0 0 0 2px var(--c-text)}
+  .sticky-del{width:28px;height:28px;margin-left:auto;border:0;border-radius:50%;background:transparent;color:var(--c-text-2);font-size:18px;line-height:1}
+  .sticky-del:hover{background:rgba(42,36,51,.08);color:var(--c-text)}
+  @media(hover:hover){.sticky-swatch,.sticky-del{opacity:0;transition:opacity .12s}.sticky:hover .sticky-swatch,.sticky:hover .sticky-del,.sticky.selected .sticky-swatch,.sticky.selected .sticky-del{opacity:1}}
+  .sticky-text{min-height:0;flex:1;resize:none;border:0;background:transparent;padding:10px 12px 18px;color:var(--c-text);font-family:inherit;font-size:var(--fs-body);line-height:var(--lh-body);outline:none}
+  .sticky-text::placeholder{color:var(--c-text-2)}
+  #marquee{position:absolute;z-index:2147483000;display:none;border:1.5px solid var(--c-text);background:rgba(217,232,107,.22);pointer-events:none}
+  .toggle-row{display:flex;align-items:center;gap:10px;min-height:36px;padding:2px 4px;font-size:14px;cursor:pointer}
+  .toggle-row input{width:18px;height:18px;margin:0;accent-color:var(--c-text)}
+  .side-hint{margin:0;color:var(--c-text-2);font-size:14px;line-height:1.7}
+  .side-select{width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--c-line);border-radius:10px;background:var(--c-surface);font-size:14px}
+  #selSection{margin:-4px -8px;padding:12px;border-radius:10px;background:var(--c-accent-soft)}
+  #selSection h2{color:var(--c-text)}
+  #toast{position:fixed;z-index:900;bottom:24px;left:50%;max-width:min(80vw,480px);padding:10px 16px;transform:translate(-50%,12px);border-radius:999px;background:var(--c-text);color:var(--c-surface);font-size:14px;line-height:1.4;text-align:center;opacity:0;pointer-events:none;transition:opacity .18s,transform .18s}
+  #toast.show{transform:translate(-50%,0);opacity:1}
+  #modalOverlay{position:fixed;z-index:800;inset:0;display:none;align-items:center;justify-content:center;padding:20px;background:var(--c-overlay)}
+  #modalOverlay.show{display:flex}
+  #modalBox{width:min(100%,360px);padding:24px;border:1px solid var(--c-line);border-radius:16px;background:var(--c-surface)}
+  #modalBox p{margin:0 0 20px;font-size:16px;line-height:1.75}
+  #modalBox .modal-actions{display:flex;justify-content:flex-end;gap:8px}
+  #modalBox button{min-height:44px;padding:8px 16px;border:1px solid var(--c-line);border-radius:10px;background:var(--c-surface);font-size:14px}
+  #modalConfirm{border-color:var(--c-text);background:var(--c-text);color:var(--c-surface)}
+  #gate{position:fixed;z-index:1000;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--c-bg)}
+  #gateBox{width:min(100%,440px);padding:28px;border:1px solid var(--c-line);border-radius:16px;background:var(--c-surface)}
+  #gateBox h1{margin:0 0 8px;font-size:var(--fs-h1);font-weight:400;line-height:var(--lh-title);text-wrap:balance}
+  #gateBox p{margin:0 0 20px;color:var(--c-text-2);font-size:16px;line-height:1.75}
+  #gateBox button{min-height:44px;padding:10px 18px;border:1px solid var(--c-accent);border-radius:10px;background:var(--c-accent);color:var(--c-text);font-size:16px}
+  #gateBox button:hover{background:#C6D55A;border-color:#C6D55A}
+  #unsupportedNote{display:block;margin:16px 0 0;padding:12px 14px;border-radius:10px;background:var(--c-bg);color:var(--c-text-2);font-size:14px;line-height:1.7}
+  #gateBox.unsupported #unsupportedNote{display:block}
+  input[type=file]{display:none}
+  @media(max-width:760px){
+    #app{flex-direction:column}
+    #sidebar{width:100%;flex:0 0 auto;max-height:48vh;padding:20px 16px;gap:18px;border-right:0;border-bottom:1px solid var(--c-line)}
+    #canvasScroll{min-height:52vh}
+  }
+  @media(max-width:760px){
+    #gateBtn{display:none!important}
+    #unsupportedNote{display:block!important}
+  }
+  @media(max-width:480px){
+    :root{--fs-h1:28px;--fs-h2:20px}
+    #gate{padding:16px}
+    #gateBox{padding:22px 18px}
+    #sidebar{max-height:46vh;padding:16px 14px;gap:16px}
+    .brand{padding-bottom:14px}
+    .add-cat{gap:6px}
+    #canvasScroll{min-height:54vh}
+    .empty-hint{top:24px;left:16px;padding:16px}
+  }
+
+  /* 第一次打開的說明頁（三頁，看過一次就不再自動出現，右上「？」可以再叫出來） */
+  #guideBtn{position:fixed;z-index:1100;top:16px;right:16px;width:40px;height:40px;border:1px solid var(--c-line);border-radius:50%;background:var(--c-surface);color:var(--c-text);font-family:inherit;font-size:16px;line-height:1;cursor:pointer}
+  #guideBtn:hover{background:var(--c-accent-soft);border-color:var(--c-text)}
+  #guide{position:fixed;z-index:1200;inset:0;display:none;align-items:center;justify-content:center;padding:20px;background:var(--c-overlay)}
+  #guide.show{display:flex}
+  #guideBox{width:min(100%,420px);border:1px solid var(--c-line);border-radius:16px;background:var(--c-surface);overflow:hidden}
+  .g-fig{display:flex;align-items:center;justify-content:center;height:200px;background:var(--c-bg);border-bottom:1px solid var(--c-line)}
+  .g-fig svg{width:260px;height:180px}
+  .g-body{min-height:168px;padding:20px 24px 8px}
+  .g-step{margin:0 0 4px;color:var(--c-text-2);font-size:14px;line-height:1.5}
+  .g-title{margin:0 0 6px;color:var(--c-text);font-size:var(--fs-h3);font-weight:400;line-height:1.5}
+  .g-text{margin:0;color:var(--c-text-2);font-size:16px;line-height:1.75}
+  .g-text b{color:var(--c-text);font-weight:400;background:var(--c-accent-soft);padding:0 4px;border-radius:4px}
+  .g-foot{display:flex;align-items:center;gap:12px;padding:16px 24px 20px}
+  .g-dots{display:flex;gap:6px;flex:1}
+  .g-dots span{width:8px;height:8px;border-radius:50%;background:var(--c-line)}
+  .g-dots span.on{background:var(--c-text)}
+  .g-skip,.g-next{min-height:44px;padding:8px 16px;border-radius:10px;font-family:inherit;font-size:16px;font-weight:400;cursor:pointer}
+  .g-skip{border:1px solid transparent;background:transparent;color:var(--c-text-2)}
+  .g-skip:hover{color:var(--c-text)}
+  .g-next{border:1px solid var(--c-accent);background:var(--c-accent);color:var(--c-text)}
+  .g-next:hover{border-color:var(--c-text)}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div id="gateBox">
+    <h1>靈感畫布</h1>
+    <p id="gateText">圖片直接從資料夾讀取，分類和註記存回 moodboard-data.json，不會上傳。</p>
+    <button id="gateBtn" style="display:none">選擇資料夾</button>
+    <p id="unsupportedNote">需要桌機版 Chrome 或 Edge 才能連結資料夾。Safari 和手機目前不支援這項功能。</p>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
+  <aside id="sidebar">
+    <div class="brand">
+      <h1>靈感畫布</h1>
+      <p>資料夾版：圖片留在原地，標註自動存回資料夾。</p>
+    </div>
+
+    <div class="side-section">
+      <h2>資料夾</h2>
+      <div class="folder-status">
+        <div class="name" id="folderName">—</div>
+        <div class="saved" id="savedStatus">尚未儲存</div>
+      </div>
+      <button class="tool-btn" id="syncBtn">同步資料夾（偵測新增/刪除的圖片）</button>
+      <button class="tool-btn" id="addImgBtn">＋ 新增圖片到這個資料夾</button>
+      <button class="tool-btn" id="switchFolderBtn">切換資料夾</button>
+    </div>
+
+    <div class="side-section">
+      <h2>分類</h2>
+      <div id="catList"></div>
+      <div class="add-cat">
+        <input type="color" id="newCatColor" value="#4A6FA5">
+        <input type="text" id="newCatName" placeholder="新增分類名稱" maxlength="16">
+        <button id="addCatBtn">新增</button>
+      </div>
+    </div>
+
+    <div class="side-section" id="selSection" style="display:none;">
+      <h2 id="selTitle">已選取</h2>
+      <select class="side-select" id="selCatSelect" aria-label="把選取的圖片移到分類"></select>
+      <button class="tool-btn" id="selClearBtn">取消選取（Esc）</button>
+      <button class="tool-btn danger" id="selDeleteBtn">移除選取項目（Delete）</button>
+    </div>
+
+    <div class="side-section">
+      <h2>便條紙</h2>
+      <button class="tool-btn" id="addStickyBtn">＋ 新增便條紙</button>
+      <label class="toggle-row"><input type="checkbox" id="stickyVisible" checked><span id="stickyVisibleLabel">顯示便條紙</span></label>
+      <p class="side-hint">在畫布空白處連點兩下，也可以直接新增便條紙。</p>
+    </div>
+
+    <div class="side-section">
+      <h2>檢視</h2>
+      <div class="zoom-row">
+        <input type="range" id="zoomSlider" min="50" max="150" value="100">
+        <span class="zoom-val" id="zoomVal">100%</span>
+      </div>
+      <button class="tool-btn" id="resetViewBtn">重置檢視</button>
+      <p class="side-hint">多選：按住 Shift 或 ⌘／Ctrl 點擊，或在空白處拖曳框選。⌘／Ctrl＋A 全選。</p>
+    </div>
+
+    <div class="side-footer" id="sideFooter">分類、標註與便條紙都存在資料夾裡的 moodboard-data.json，換電腦時把這個檔案和圖片一起帶著走就好。</div>
+  </aside>
+
+  <main id="canvasScroll">
+    <div id="canvasInner">
+      <div class="empty-hint" id="emptyHint">
+        <strong>這個資料夾裡還沒有圖片</strong>
+        把圖片放進資料夾，再按左側「同步資料夾」，或直接用「新增圖片」加入。
+      </div>
+      <div id="marquee"></div>
+    </div>
+  </main>
+</div>
+
+<div id="toast"></div>
+<div id="modalOverlay">
+  <div id="modalBox">
+    <p id="modalText"></p>
+    <div class="modal-actions">
+      <button id="modalCancel">取消</button>
+      <button id="modalConfirm">確定</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="addImgInput" accept="image/*" multiple>
+
+<script>
+(function () {
+  "use strict";
+
+  var SUPPORTED = "showDirectoryPicker" in window;
+  var META_NAME = "moodboard-data.json";
+  var IMG_EXT = ["jpg","jpeg","png","gif","webp","avif","bmp"];
+  var DB_NAME = "moodboardFolderDB", STORE = "handles", DB_KEY = "lastDir";
+  var PALETTE = ["#4A6FA5","#8A6BAE","#3F8F6F","#C98A2D","#C1554A","#4F8FA0","#7A7440","#9C5B8A"];
+  var fileHandles = {};      // filename -> FileSystemFileHandle
+  var objectUrls = {};       // filename -> blob url (cache)
+  var STICKY_COLORS = ["#FBE7A1","#F7C8C2","#C9DDF2","#CDE5C4","#F3D2A8"];
+
+  var dirHandle = null;
+  function emptyState(){ return { images: {}, categories: [], uncatVisible: true, zTop: 1, stickies: [], stickiesVisible: true }; }
+  var state = emptyState();
+  var zoom = 1;
+  var selection = new Set();   // keys: "i:"+filename or "n:"+stickyId
+
+  function byId(id){ return document.getElementById(id); }
+
+  // ---------- tiny IndexedDB helper for remembering the folder handle ----------
+  function idbGet(key){
+    return new Promise(function(resolve){
+      var req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = function(){ req.result.createObjectStore(STORE); };
+      req.onsuccess = function(){
+        var tx = req.result.transaction(STORE, "readonly");
+        var r = tx.objectStore(STORE).get(key);
+        r.onsuccess = function(){ resolve(r.result || null); };
+        r.onerror = function(){ resolve(null); };
+      };
+      req.onerror = function(){ resolve(null); };
+    });
+  }
+  function idbSet(key, val){
+    return new Promise(function(resolve){
+      var req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = function(){ req.result.createObjectStore(STORE); };
+      req.onsuccess = function(){
+        var tx = req.result.transaction(STORE, "readwrite");
+        tx.objectStore(STORE).put(val, key);
+        tx.oncomplete = function(){ resolve(true); };
+        tx.onerror = function(){ resolve(false); };
+      };
+      req.onerror = function(){ resolve(false); };
+    });
+  }
+  function idbDel(key){
+    return new Promise(function(resolve){
+      var req = indexedDB.open(DB_NAME, 1);
+      req.onsuccess = function(){
+        var tx = req.result.transaction(STORE, "readwrite");
+        tx.objectStore(STORE).delete(key);
+        tx.oncomplete = function(){ resolve(true); };
+        tx.onerror = function(){ resolve(false); };
+      };
+      req.onerror = function(){ resolve(false); };
+    });
+  }
+
+  // ---------- toast / modal ----------
+  var toastTimer = null;
+  function showToast(msg){
+    var t = byId("toast");
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 2600);
+  }
+  function confirmModal(msg, onYes){
+    byId("modalText").textContent = msg;
+    byId("modalOverlay").classList.add("show");
+    function cleanup(){ byId("modalOverlay").classList.remove("show"); byId("modalConfirm").onclick=null; byId("modalCancel").onclick=null; }
+    byId("modalConfirm").onclick = function(){ cleanup(); onYes(); };
+    byId("modalCancel").onclick = cleanup;
+  }
+
+  // ---------- gate screen ----------
+  if (!SUPPORTED) {
+    byId("gateBox").classList.add("unsupported");
+    byId("gateText").textContent = "靈感畫布會在你的電腦本機整理圖片，不會上傳。";
+    byId("gateBtn").style.display = "none";
+  } else {
+    byId("unsupportedNote").style.display = "none";
+    byId("gateBtn").style.display = "";
+    byId("gateBtn").onclick = pickFolder;  // onclick (not addEventListener) so the reconnect/switch flows replace it instead of stacking
+    tryReconnect();
+  }
+
+  async function tryReconnect(){
+    var handle = await idbGet(DB_KEY);
+    if (!handle) return;
+    try {
+      var perm = await handle.queryPermission({ mode: "readwrite" });
+      if (perm === "granted") { await connectFolder(handle); return; }
+      byId("gateText").textContent = "上次連結的資料夾是「" + handle.name + "」，按下面的按鈕重新授權即可繼續使用。";
+      byId("gateBtn").textContent = "重新連接「" + handle.name + "」";
+      byId("gateBtn").onclick = async function(){
+        try {
+          var p2 = await handle.requestPermission({ mode: "readwrite" });
+          if (p2 === "granted") await connectFolder(handle);
+          else showToast("沒有取得資料夾存取權限");
+        } catch (e) { showToast("重新連接失敗，請改用「選擇資料夾」"); }
+      };
+    } catch (e) { /* stored handle unusable, ignore */ }
+  }
+
+  async function pickFolder(){
+    try {
+      var handle = await window.showDirectoryPicker({ mode: "readwrite" });
+      await connectFolder(handle);
+    } catch (e) { /* user cancelled */ }
+  }
+
+  async function connectFolder(handle){
+    dirHandle = handle;
+    byId("gate").style.display = "none";
+    byId("app").style.display = "flex";
+    byId("folderName").textContent = "📁 " + handle.name;
+    await idbSet(DB_KEY, handle);
+    await loadMetaAndScan();
+    setZoom(100);
+    wireOnce();
+  }
+
+  // ---------- load metadata + scan folder ----------
+  async function loadMetaAndScan(){
+    var meta = null;
+    try {
+      var metaHandle = await dirHandle.getFileHandle(META_NAME);
+      var file = await metaHandle.getFile();
+      meta = JSON.parse(await file.text());
+    } catch (e) { meta = null; }
+    if (meta && typeof meta === "object") {
+      state.images = meta.images || {};
+      state.categories = meta.categories || [];
+      state.uncatVisible = meta.uncatVisible !== false;
+      state.zTop = meta.zTop || 1;
+      state.stickies = Array.isArray(meta.stickies) ? meta.stickies : [];
+      state.stickiesVisible = meta.stickiesVisible !== false;
+    } else {
+      state = emptyState();
+    }
+    selection = new Set();
+    await scanFolderImages();
+    renderCategories();
+    await renderAllCards();
+    renderStickies();
+  }
+
+  async function scanFolderImages(){
+    var found = {};
+    for await (var entry of dirHandle.entries()) {
+      var name = entry[0], handle = entry[1];
+      if (handle.kind !== "file" || name === META_NAME) continue;
+      var ext = name.split(".").pop().toLowerCase();
+      if (IMG_EXT.indexOf(ext) === -1) continue;
+      found[name] = handle;
+    }
+    Object.keys(state.images).forEach(function(fn){ if (!found[fn]) delete state.images[fn]; });
+    var names = Object.keys(found).sort();
+    var i = 0;
+    names.forEach(function(fn){
+      if (!state.images[fn]) {
+        state.zTop++;
+        var col = i % 4, row = Math.floor(i / 4);
+        state.images[fn] = { x: 40 + col * 260 + row * 20, y: 40 + row * 260 + col * 14, w: 220, note: "", categoryId: null, z: state.zTop };
+        i++;
+      }
+    });
+    fileHandles = found;
+  }
+
+  // ---------- persistence ----------
+  var saveTimer = null;
+  function scheduleSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(saveMeta, 400); }
+  async function saveMeta(){
+    if (!dirHandle) return;
+    try {
+      var fh = await dirHandle.getFileHandle(META_NAME, { create: true });
+      var w = await fh.createWritable();
+      await w.write(JSON.stringify({ images: state.images, categories: state.categories, uncatVisible: state.uncatVisible, zTop: state.zTop, stickies: state.stickies, stickiesVisible: state.stickiesVisible }, null, 2));
+      await w.close();
+      byId("savedStatus").textContent = "已自動存檔 " + new Date().toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" });
+    } catch (e) {
+      byId("savedStatus").textContent = "自動存檔失敗，請確認資料夾權限";
+    }
+  }
+
+  // ---------- categories ----------
+  function catById(id){ for (var i=0;i<state.categories.length;i++) if (state.categories[i].id===id) return state.categories[i]; return null; }
+
+  function renderCategories(){
+    var list = byId("catList"); list.innerHTML = "";
+    var uncatCount = Object.keys(state.images).filter(function(fn){ return !state.images[fn].categoryId; }).length;
+    list.appendChild(buildCatRow({ id:null, name:"未分類", color:null, visible: state.uncatVisible }, uncatCount, false));
+    state.categories.forEach(function(cat){
+      var count = Object.keys(state.images).filter(function(fn){ return state.images[fn].categoryId === cat.id; }).length;
+      list.appendChild(buildCatRow(cat, count, true));
+    });
+  }
+
+  function buildCatRow(cat, count, deletable){
+    var row = document.createElement("div"); row.className = "cat-row";
+    var cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = cat.visible;
+    cb.addEventListener("change", function(){
+      if (cat.id === null) state.uncatVisible = cb.checked; else cat.visible = cb.checked;
+      scheduleSave(); applyFilter();
+    });
+    row.appendChild(cb);
+    var dot = document.createElement("span"); dot.className = "cat-dot"; dot.style.background = cat.color || "var(--uncat-dot)"; row.appendChild(dot);
+    var name = document.createElement("div"); name.className = "cat-name"; name.textContent = cat.name;
+    if (deletable) {
+      name.contentEditable = "true"; name.spellcheck = false;
+      name.addEventListener("blur", function(){ var v = name.textContent.trim().slice(0,16) || cat.name; cat.name=v; name.textContent=v; renderCategorySelects(); scheduleSave(); });
+      name.addEventListener("keydown", function(e){ if (e.key==="Enter"){ e.preventDefault(); name.blur(); } });
+    }
+    row.appendChild(name);
+    var cnt = document.createElement("span"); cnt.className = "cat-count"; cnt.textContent = count; row.appendChild(cnt);
+    if (deletable) {
+      var del = document.createElement("button"); del.className = "cat-del"; del.textContent = "×"; del.setAttribute("aria-label","刪除分類「"+cat.name+"」");
+      del.addEventListener("click", function(){
+        confirmModal("刪除分類「"+cat.name+"」？裡面的圖片會變成未分類。", function(){
+          Object.keys(state.images).forEach(function(fn){ if (state.images[fn].categoryId===cat.id) state.images[fn].categoryId=null; });
+          state.categories = state.categories.filter(function(c){ return c.id!==cat.id; });
+          scheduleSave(); renderCategories(); renderCategorySelects(); applyFilter();
+          document.querySelectorAll(".card").forEach(function(c){ if (c._applyCat) c._applyCat(); });
+        });
+      });
+      row.appendChild(del);
+    }
+    return row;
+  }
+
+  function renderCategorySelects(){
+    document.querySelectorAll(".card").forEach(function(cardEl){
+      var fn = cardEl.dataset.fn;
+      if (state.images[fn]) populateCardSelect(cardEl, fn);
+    });
+    populateSelCatSelect();
+  }
+  function populateCardSelect(cardEl, fn){
+    var sel = cardEl.querySelector(".card-select"); sel.innerHTML = "";
+    var opt0 = document.createElement("option"); opt0.value=""; opt0.textContent="未分類"; sel.appendChild(opt0);
+    state.categories.forEach(function(cat){ var o=document.createElement("option"); o.value=cat.id; o.textContent=cat.name; sel.appendChild(o); });
+    sel.value = state.images[fn].categoryId || "";
+  }
+
+  function applyFilter(){
+    document.querySelectorAll(".card").forEach(function(cardEl){
+      var im = state.images[cardEl.dataset.fn]; if (!im) return;
+      var visible;
+      if (!im.categoryId) visible = state.uncatVisible; else { var c = catById(im.categoryId); visible = c ? c.visible : true; }
+      cardEl.style.display = visible ? "" : "none";
+    });
+    refreshSelectionUI();
+  }
+
+  // ---------- cards ----------
+  var canvasInner = byId("canvasInner");
+  var emptyHint = byId("emptyHint");
+
+  function clearCardsDOM(){ document.querySelectorAll(".card").forEach(function(n){ n.remove(); }); }
+  function toggleEmptyHint(){ emptyHint.style.display = Object.keys(state.images).length ? "none" : ""; }
+
+  async function getObjUrl(fn){
+    if (objectUrls[fn]) return objectUrls[fn];
+    var handle = fileHandles[fn]; if (!handle) return "";
+    var file = await handle.getFile();
+    var url = URL.createObjectURL(file);
+    objectUrls[fn] = url;
+    return url;
+  }
+
+  async function renderAllCards(){
+    clearCardsDOM();
+    var names = Object.keys(state.images);
+    for (var i=0;i<names.length;i++) await addCardEl(names[i]);
+    toggleEmptyHint(); applyFilter();
+  }
+
+  async function addCardEl(fn){
+    var im = state.images[fn]; if (!im) return null;
+    var url = await getObjUrl(fn);
+    var card = document.createElement("div");
+    card.className = "card"; card.dataset.fn = fn; card.dataset.key = "i:"+fn;
+    card.style.left = im.x+"px"; card.style.top = im.y+"px"; card.style.width = im.w+"px"; card.style.zIndex = im.z;
+
+    var bar = document.createElement("div"); bar.className = "card-bar";
+    var cat = im.categoryId ? catById(im.categoryId) : null;
+    bar.style.background = cat ? cat.color : "var(--uncat-dot)";
+    card.appendChild(bar);
+
+    var media = document.createElement("div"); media.className = "card-media";
+    var img = document.createElement("img"); img.src = url; img.alt = im.note || fn; img.draggable = false; media.appendChild(img);
+    var del = document.createElement("button"); del.className = "card-del"; del.textContent = "×"; del.setAttribute("aria-label","從畫布移除（不刪除原始檔案）");
+    del.addEventListener("click", function(e){
+      e.stopPropagation();
+      confirmModal("把「"+fn+"」從畫布移除？（資料夾裡的圖片檔案不會被刪除，之後同步資料夾會再出現。）", function(){
+        delete state.images[fn]; card.remove(); renderCategories(); toggleEmptyHint(); refreshSelectionUI(); scheduleSave();
+      });
+    });
+    media.appendChild(del); card.appendChild(media);
+
+    var body = document.createElement("div"); body.className = "card-body";
+    var fnLabel = document.createElement("div"); fnLabel.className = "card-fn"; fnLabel.textContent = fn; body.appendChild(fnLabel);
+
+    var note = document.createElement("div"); note.className = "card-note"; note.contentEditable = "true";
+    note.setAttribute("data-placeholder","加上標註…"); note.textContent = im.note || "";
+    note.addEventListener("blur", function(){ im.note = note.textContent.trim(); img.alt = im.note || fn; scheduleSave(); });
+    note.addEventListener("keydown", function(e){ if (e.key==="Enter"){ e.preventDefault(); note.blur(); } });
+    body.appendChild(note);
+
+    var selRow = document.createElement("div"); selRow.className = "card-select-row";
+    var selDot = document.createElement("span"); selDot.className = "card-select-dot"; selDot.style.background = cat ? cat.color : "var(--uncat-dot)"; selRow.appendChild(selDot);
+    var sel = document.createElement("select"); sel.className = "card-select";
+    card._applyCat = function(){
+      var c = im.categoryId ? catById(im.categoryId) : null;
+      bar.style.background = c ? c.color : "var(--uncat-dot)";
+      selDot.style.background = c ? c.color : "var(--uncat-dot)";
+      sel.value = c ? c.id : "";
+    };
+    sel.addEventListener("change", function(){
+      im.categoryId = sel.value || null;
+      card._applyCat();
+      renderCategories(); applyFilter(); scheduleSave();
+    });
+    selRow.appendChild(sel); body.appendChild(selRow);
+    card.appendChild(body);
+    populateCardSelect(card, fn);
+
+    var resize = document.createElement("div"); resize.className = "card-resize"; card.appendChild(resize);
+    canvasInner.appendChild(card);
+    bindDrag(media, "i:"+fn); bindResize(card, resize, im);
+    bindSelect(card, "i:"+fn);
+    return card;
+  }
+
+  // ---------- selection (images + stickies) ----------
+  function stickyById(id){ for (var i=0;i<state.stickies.length;i++) if (state.stickies[i].id===id) return state.stickies[i]; return null; }
+  function itemFor(key){ var id = key.slice(2); return key.charAt(0)==="i" ? state.images[id] : stickyById(id); }
+  function elFor(key){ return canvasInner.querySelector('[data-key="'+CSS.escape(key)+'"]'); }
+  function isShown(el){ return el && el.style.display !== "none"; }
+  function allItemEls(){ return Array.prototype.filter.call(canvasInner.querySelectorAll(".card, .sticky"), isShown); }
+
+  function refreshSelectionUI(){
+    document.querySelectorAll(".card.selected, .sticky.selected").forEach(function(el){ el.classList.remove("selected"); });
+    Array.from(selection).forEach(function(k){
+      var el = elFor(k);
+      if (isShown(el) && itemFor(k)) el.classList.add("selected"); else selection.delete(k);
+    });
+    var nImg = 0, nNote = 0;
+    selection.forEach(function(k){ if (k.charAt(0)==="i") nImg++; else nNote++; });
+    var total = nImg + nNote;
+    byId("selSection").style.display = total > 1 ? "" : "none";
+    if (total > 1) {
+      var parts = []; if (nImg) parts.push(nImg+" 張圖片"); if (nNote) parts.push(nNote+" 張便條紙");
+      byId("selTitle").textContent = "已選取 " + parts.join("、");
+      byId("selCatSelect").style.display = nImg ? "" : "none";
+    }
+  }
+  function setSelection(keys){ selection = new Set(keys); refreshSelectionUI(); }
+  function bringToFront(key){
+    var it = itemFor(key), el = elFor(key); if (!it || !el) return;
+    state.zTop++; it.z = state.zTop; el.style.zIndex = it.z;
+  }
+  function bindSelect(el, key){
+    // capture phase so the selection is settled before a drag handle starts moving the group
+    el.addEventListener("pointerdown", function(e){
+      if (e.button !== 0) return;
+      if (e.shiftKey || e.metaKey || e.ctrlKey) {
+        if (selection.has(key)) selection.delete(key); else selection.add(key);
+      } else if (!selection.has(key)) {
+        selection = new Set([key]);
+      }
+      if (selection.has(key)) bringToFront(key);
+      refreshSelectionUI(); scheduleSave();
+    }, true);
+    // with a modifier held, clicking only toggles selection: no text highlight, no focusing the note/textarea
+    el.addEventListener("mousedown", function(e){
+      if (e.shiftKey || e.metaKey || e.ctrlKey) { e.preventDefault(); if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur(); }
+    }, true);
+  }
+
+  function canvasPoint(e){
+    var rect = canvasInner.getBoundingClientRect();
+    return { x:(e.clientX-rect.left)/zoom, y:(e.clientY-rect.top)/zoom };
+  }
+
+  function bindDrag(handle, key){
+    var group = null, start = null;
+    handle.addEventListener("pointerdown", function(e){
+      if (e.button !== 0 || e.target.closest(".card-del, .sticky-del, .sticky-swatch")) return;
+      if (!selection.has(key)) return;
+      handle.setPointerCapture(e.pointerId);
+      start = canvasPoint(e);
+      group = Array.from(selection).map(function(k){ var it = itemFor(k); return { it:it, el:elFor(k), x0:it.x, y0:it.y }; })
+        .filter(function(g){ return g.it && isShown(g.el); });
+    });
+    handle.addEventListener("pointermove", function(e){
+      if (!group) return;
+      var p = canvasPoint(e), dx = p.x-start.x, dy = p.y-start.y;
+      group.forEach(function(g){ dx = Math.max(dx, -g.x0); dy = Math.max(dy, -g.y0); });
+      group.forEach(function(g){ g.it.x = g.x0+dx; g.it.y = g.y0+dy; g.el.style.left = g.it.x+"px"; g.el.style.top = g.it.y+"px"; });
+    });
+    function end(e){ if (!group) return; group = null; try{handle.releasePointerCapture(e.pointerId);}catch(er){} scheduleSave(); }
+    handle.addEventListener("pointerup", end); handle.addEventListener("pointercancel", end);
+  }
+
+  function populateSelCatSelect(){
+    var sel = byId("selCatSelect"); sel.innerHTML = "";
+    var head = document.createElement("option"); head.value = "__"; head.textContent = "把選取的圖片移到分類…"; sel.appendChild(head);
+    var o0 = document.createElement("option"); o0.value = ""; o0.textContent = "未分類"; sel.appendChild(o0);
+    state.categories.forEach(function(cat){ var o=document.createElement("option"); o.value=cat.id; o.textContent=cat.name; sel.appendChild(o); });
+    sel.value = "__";
+  }
+
+  function deleteSelection(){
+    var imgs = [], notes = [];
+    selection.forEach(function(k){ if (k.charAt(0)==="i") imgs.push(k.slice(2)); else notes.push(k.slice(2)); });
+    if (!imgs.length && !notes.length) return;
+    var parts = [];
+    if (imgs.length) parts.push(imgs.length+" 張圖片從畫布移除（資料夾裡的檔案不會被刪除）");
+    if (notes.length) parts.push(notes.length+" 張便條紙刪除（內容無法復原）");
+    confirmModal("確定要把 " + parts.join("，並把 ") + "？", function(){
+      imgs.forEach(function(fn){ delete state.images[fn]; var el = elFor("i:"+fn); if (el) el.remove(); });
+      state.stickies = state.stickies.filter(function(n){ return notes.indexOf(n.id) === -1; });
+      notes.forEach(function(id){ var el = elFor("n:"+id); if (el) el.remove(); });
+      selection = new Set();
+      renderCategories(); toggleEmptyHint(); refreshSelectionUI(); updateStickyLabel(); scheduleSave();
+    });
+  }
+
+  // ---------- sticky notes ----------
+  function clearStickiesDOM(){ document.querySelectorAll(".sticky").forEach(function(n){ n.remove(); }); }
+  function renderStickies(){
+    clearStickiesDOM();
+    state.stickies.forEach(addStickyEl);
+    byId("stickyVisible").checked = state.stickiesVisible;
+    applyStickyVisibility();
+  }
+  function applyStickyVisibility(){
+    document.querySelectorAll(".sticky").forEach(function(el){ el.style.display = state.stickiesVisible ? "" : "none"; });
+    updateStickyLabel(); refreshSelectionUI();
+  }
+  function updateStickyLabel(){ byId("stickyVisibleLabel").textContent = "顯示便條紙（" + state.stickies.length + "）"; }
+
+  function addStickyEl(n){
+    var el = document.createElement("div");
+    el.className = "sticky"; el.dataset.key = "n:"+n.id;
+    el.style.left = n.x+"px"; el.style.top = n.y+"px"; el.style.width = n.w+"px"; el.style.height = n.h+"px";
+    el.style.zIndex = n.z; el.style.background = n.color;
+
+    var head = document.createElement("div"); head.className = "sticky-head";
+    STICKY_COLORS.forEach(function(c){
+      var sw = document.createElement("button"); sw.className = "sticky-swatch" + (c===n.color ? " on" : "");
+      sw.style.background = c; sw.setAttribute("aria-label","換便條紙顏色");
+      sw.addEventListener("click", function(){
+        n.color = c; el.style.background = c;
+        head.querySelectorAll(".sticky-swatch").forEach(function(s){ s.classList.toggle("on", s===sw); });
+        scheduleSave();
+      });
+      head.appendChild(sw);
+    });
+    var del = document.createElement("button"); del.className = "sticky-del"; del.textContent = "×"; del.setAttribute("aria-label","刪除便條紙");
+    del.addEventListener("click", function(){
+      var doDelete = function(){
+        state.stickies = state.stickies.filter(function(s){ return s.id !== n.id; });
+        el.remove(); selection.delete("n:"+n.id); refreshSelectionUI(); updateStickyLabel(); scheduleSave();
+      };
+      if (n.text.trim()) confirmModal("刪除這張便條紙？內容無法復原。", doDelete); else doDelete();
+    });
+    head.appendChild(del);
+    el.appendChild(head);
+
+    var ta = document.createElement("textarea"); ta.className = "sticky-text"; ta.placeholder = "寫點什麼…"; ta.value = n.text || "";
+    ta.addEventListener("input", function(){ n.text = ta.value; scheduleSave(); });
+    el.appendChild(ta);
+
+    var rs = document.createElement("div"); rs.className = "sticky-resize"; el.appendChild(rs);
+    var resizing = null;
+    rs.addEventListener("pointerdown", function(e){ e.stopPropagation(); rs.setPointerCapture(e.pointerId); resizing = { x:e.clientX, y:e.clientY, w:n.w, h:n.h }; });
+    rs.addEventListener("pointermove", function(e){
+      if (!resizing) return;
+      n.w = Math.min(520, Math.max(140, resizing.w + (e.clientX-resizing.x)/zoom));
+      n.h = Math.min(600, Math.max(90, resizing.h + (e.clientY-resizing.y)/zoom));
+      el.style.width = n.w+"px"; el.style.height = n.h+"px";
+    });
+    function endRs(e){ if (!resizing) return; resizing = null; try{rs.releasePointerCapture(e.pointerId);}catch(er){} scheduleSave(); }
+    rs.addEventListener("pointerup", endRs); rs.addEventListener("pointercancel", endRs);
+
+    canvasInner.appendChild(el);
+    bindSelect(el, "n:"+n.id); bindDrag(head, "n:"+n.id);
+    return el;
+  }
+
+  function createSticky(x, y){
+    if (!state.stickiesVisible) { state.stickiesVisible = true; byId("stickyVisible").checked = true; applyStickyVisibility(); }
+    state.zTop++;
+    var n = { id:"n"+Date.now().toString(36)+Math.random().toString(36).slice(2,6), x:Math.max(0,Math.round(x)), y:Math.max(0,Math.round(y)), w:200, h:160, text:"", color:STICKY_COLORS[state.stickies.length % STICKY_COLORS.length], z:state.zTop };
+    state.stickies.push(n);
+    var el = addStickyEl(n);
+    setSelection(["n:"+n.id]); updateStickyLabel(); scheduleSave();
+    el.querySelector(".sticky-text").focus();
+  }
+  function bindResize(card, handle, im){
+    var resizing=false, startW=0, startX=0;
+    handle.addEventListener("pointerdown", function(e){ e.stopPropagation(); resizing=true; handle.setPointerCapture(e.pointerId); startW=im.w; startX=e.clientX; });
+    handle.addEventListener("pointermove", function(e){ if(!resizing) return; var dx=(e.clientX-startX)/zoom; im.w=Math.min(640,Math.max(120,startW+dx)); card.style.width=im.w+"px"; });
+    function end(e){ if(!resizing) return; resizing=false; try{handle.releasePointerCapture(e.pointerId);}catch(er){} scheduleSave(); }
+    handle.addEventListener("pointerup", end); handle.addEventListener("pointercancel", end);
+  }
+
+  // ---------- zoom ----------
+  function setZoom(v){ zoom=v/100; canvasInner.style.transform="scale("+zoom+")"; byId("zoomVal").textContent=v+"%"; }
+
+  // ---------- add images (copies bytes into the connected folder) ----------
+  async function addFilesToFolder(fileList){
+    var files = Array.prototype.filter.call(fileList, function(f){ return f.type.indexOf("image/")===0; });
+    if (!files.length) return;
+    var i = Object.keys(state.images).length;
+    for (var k=0;k<files.length;k++){
+      var file = files[k];
+      var targetName = await uniqueName(file.name);
+      try {
+        var fh = await dirHandle.getFileHandle(targetName, { create: true });
+        var w = await fh.createWritable();
+        await w.write(file);
+        await w.close();
+        fileHandles[targetName] = fh;
+        state.zTop++;
+        var col=i%4, row=Math.floor(i/4);
+        state.images[targetName] = { x:40+col*260+row*20, y:40+row*260+col*14, w:220, note:"", categoryId:null, z:state.zTop };
+        i++;
+        await addCardEl(targetName);
+      } catch (e) { showToast("寫入「"+file.name+"」失敗"); }
+    }
+    toggleEmptyHint(); applyFilter(); renderCategories(); scheduleSave();
+    showToast("已加入 "+files.length+" 張圖片到資料夾");
+  }
+  async function uniqueName(name){
+    var exists = true, n = name, i = 1;
+    while (exists) {
+      try { await dirHandle.getFileHandle(n); n = name.replace(/(\.[^.]+)$/, "-"+(++i)+"$1"); }
+      catch (e) { exists = false; }
+    }
+    return n;
+  }
+
+  // ---------- wiring ----------
+  var wired = false;
+  function wireOnce(){
+    if (wired) return; wired = true;
+
+    byId("newCatColor").value = PALETTE[0];
+    byId("newCatName").addEventListener("keydown", function(e){ if (e.key==="Enter"){ e.preventDefault(); byId("addCatBtn").click(); } });
+    byId("addCatBtn").addEventListener("click", function(){
+      var input = byId("newCatName"); var name = input.value.trim().slice(0,16);
+      if (!name) { input.focus(); return; }
+      var color = byId("newCatColor").value;
+      state.categories.push({ id:"c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6), name:name, color:color, visible:true });
+      input.value = ""; byId("newCatColor").value = PALETTE[state.categories.length % PALETTE.length];
+      renderCategories(); renderCategorySelects(); scheduleSave();
+    });
+
+    byId("zoomSlider").addEventListener("input", function(e){ setZoom(parseInt(e.target.value,10)); });
+    byId("resetViewBtn").addEventListener("click", function(){
+      byId("zoomSlider").value = 100; setZoom(100);
+      byId("canvasScroll").scrollTo({ left:0, top:0, behavior:"smooth" });
+    });
+
+    populateSelCatSelect();
+    byId("selCatSelect").addEventListener("change", function(e){
+      var v = e.target.value; if (v === "__") return;
+      selection.forEach(function(k){
+        if (k.charAt(0) !== "i") return;
+        var im = itemFor(k); if (!im) return;
+        im.categoryId = v || null;
+        var el = elFor(k); if (el && el._applyCat) el._applyCat();
+      });
+      e.target.value = "__";
+      renderCategories(); applyFilter(); scheduleSave();
+      showToast("已更新分類");
+    });
+    byId("selClearBtn").addEventListener("click", function(){ setSelection([]); });
+    byId("selDeleteBtn").addEventListener("click", deleteSelection);
+
+    byId("addStickyBtn").addEventListener("click", function(){
+      var sb = byId("canvasScroll");
+      createSticky((sb.scrollLeft + sb.clientWidth/2)/zoom - 100, (sb.scrollTop + sb.clientHeight/2)/zoom - 80);
+    });
+    byId("stickyVisible").addEventListener("change", function(e){ state.stickiesVisible = e.target.checked; applyStickyVisibility(); scheduleSave(); });
+
+    document.addEventListener("keydown", function(e){
+      if (byId("app").style.display === "none" || byId("modalOverlay").classList.contains("show")) return;
+      var a = document.activeElement;
+      if (a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA" || a.tagName === "SELECT" || a.isContentEditable)) return;
+      if (e.key === "Escape") { setSelection([]); }
+      else if ((e.key === "Delete" || e.key === "Backspace") && selection.size) { e.preventDefault(); deleteSelection(); }
+      else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "a") { e.preventDefault(); setSelection(allItemEls().map(function(el){ return el.dataset.key; })); }
+    });
+
+    byId("syncBtn").addEventListener("click", async function(){
+      await scanFolderImages(); renderCategories(); await renderAllCards(); scheduleSave();
+      showToast("已同步資料夾");
+    });
+
+    byId("addImgBtn").addEventListener("click", function(){ byId("addImgInput").click(); });
+    byId("addImgInput").addEventListener("change", function(e){ addFilesToFolder(e.target.files); e.target.value=""; });
+
+    byId("switchFolderBtn").addEventListener("click", function(){
+      confirmModal("切換到另一個資料夾？目前畫面會關閉（資料夾裡的標註已經自動存檔，不會遺失）。", async function(){
+        await idbDel(DB_KEY);
+        Object.values(objectUrls).forEach(function(u){ URL.revokeObjectURL(u); });
+        objectUrls = {}; fileHandles = {}; dirHandle = null;
+        state = emptyState(); selection = new Set();
+        clearCardsDOM(); clearStickiesDOM(); refreshSelectionUI();
+        byId("app").style.display = "none";
+        byId("gate").style.display = "flex";
+        byId("gateText").textContent = "選一個放靈感圖的資料夾，圖片會直接讀取，標註與分類會自動存回同一個資料夾（moodboard-data.json），不會另外複製或上傳圖片。";
+        byId("gateBtn").textContent = "選擇資料夾";
+        byId("gateBtn").onclick = pickFolder;
+      });
+    });
+
+    var scrollBox = byId("canvasScroll");
+    var marquee = byId("marquee"), mq = null;
+    function isEmptyCanvas(t){ return t===scrollBox || t===canvasInner || t===emptyHint; }
+    scrollBox.addEventListener("pointerdown", function(e){
+      if (e.button !== 0 || !isEmptyCanvas(e.target)) return;
+      var sbRect = scrollBox.getBoundingClientRect();
+      if (e.clientX - sbRect.left > scrollBox.clientWidth || e.clientY - sbRect.top > scrollBox.clientHeight) return; // scrollbar
+      if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
+      var additive = e.shiftKey || e.metaKey || e.ctrlKey;
+      mq = { start: canvasPoint(e), base: additive ? new Set(selection) : new Set(), moved: false, additive: additive };
+      scrollBox.setPointerCapture(e.pointerId);
+    });
+    scrollBox.addEventListener("pointermove", function(e){
+      if (!mq) return;
+      var p = canvasPoint(e);
+      var x1 = Math.min(p.x, mq.start.x), y1 = Math.min(p.y, mq.start.y), x2 = Math.max(p.x, mq.start.x), y2 = Math.max(p.y, mq.start.y);
+      if (!mq.moved && (x2-x1)*zoom < 4 && (y2-y1)*zoom < 4) return;
+      mq.moved = true;
+      marquee.style.display = "block";
+      marquee.style.left = x1+"px"; marquee.style.top = y1+"px"; marquee.style.width = (x2-x1)+"px"; marquee.style.height = (y2-y1)+"px";
+      var keys = new Set(mq.base);
+      allItemEls().forEach(function(el){
+        var it = itemFor(el.dataset.key); if (!it) return;
+        if (it.x < x2 && it.x + el.offsetWidth > x1 && it.y < y2 && it.y + el.offsetHeight > y1) keys.add(el.dataset.key);
+      });
+      setSelection(Array.from(keys));
+    });
+    function endMarquee(e){
+      if (!mq) return;
+      if (!mq.moved && !mq.additive) setSelection([]);
+      mq = null; marquee.style.display = "none";
+      try{ scrollBox.releasePointerCapture(e.pointerId); }catch(er){}
+    }
+    scrollBox.addEventListener("pointerup", endMarquee); scrollBox.addEventListener("pointercancel", endMarquee);
+    scrollBox.addEventListener("dblclick", function(e){
+      if (!isEmptyCanvas(e.target)) return;
+      var p = canvasPoint(e); createSticky(p.x - 20, p.y - 12);
+    });
+    ["dragover","dragenter"].forEach(function(evt){ scrollBox.addEventListener(evt, function(e){ e.preventDefault(); }); });
+    scrollBox.addEventListener("drop", function(e){
+      e.preventDefault();
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) addFilesToFolder(e.dataTransfer.files);
+    });
+  }
+})();
+</script>
+
+<button id="guideBtn" type="button" aria-label="怎麼用">？</button>
+<div id="guide" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+  <div id="guideBox">
+    <div class="g-fig" id="guideFig"></div>
+    <div class="g-body">
+      <p class="g-step" id="guideStep"></p>
+      <h2 class="g-title" id="guideTitle"></h2>
+      <p class="g-text" id="guideText"></p>
+    </div>
+    <div class="g-foot">
+      <div class="g-dots" id="guideDots"><span></span><span></span><span></span></div>
+      <button class="g-skip" id="guideSkip" type="button">略過</button>
+      <button class="g-next" id="guideNext" type="button">下一步</button>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var KEY = "moodboard-guide-seen";
+  var INK = "#2A2433", LINE = "#ECE9F1", LIME = "#D9E86B", ROSE = "#F68FDB", LAV = "#CDB9FF";
+  function pic(c){ return '<rect x="0" y="0" width="34" height="34" rx="6" fill="'+c+'"/><path d="M5 28l9-10 6 7 4-4 6 7z" fill="#fff" opacity=".7"/>'; }
+  var PAGES = [
+    { title: "選一個放圖片的資料夾",
+      text: "把有感覺的圖都存進同一個資料夾，打開後選它。<b>只能用桌機的 Chrome 或 Edge</b>，手機和 Safari 打不開。",
+      fig: '<svg viewBox="0 0 260 180" aria-hidden="true"><path d="M40 50h60l12 14h108v86a8 8 0 0 1-8 8H48a8 8 0 0 1-8-8z" fill="#fff" stroke="'+INK+'" stroke-width="2"/>'
+        + '<g transform="translate(62 84)">'+pic(LIME)+'</g><g transform="translate(106 92)">'+pic(ROSE)+'</g><g transform="translate(150 84)">'+pic(LAV)+'</g>'
+        + '<rect x="128" y="18" width="124" height="30" rx="15" fill="'+LIME+'" stroke="'+INK+'" stroke-width="1.5"/><text x="190" y="38" text-anchor="middle" font-size="12" fill="'+INK+'">桌機 Chrome／Edge</text></svg>' },
+    { title: "請 AI 幫你分類",
+      text: "讓 AI 工具（例如 Claude）讀這個資料夾、幫圖片分好類。分類會存在資料夾裡，打開畫布就直接出現在畫面上。",
+      fig: '<svg viewBox="0 0 260 180" aria-hidden="true"><g transform="translate(20 40)">'+pic(LIME)+'</g><g transform="translate(20 84)">'+pic(ROSE)+'</g><g transform="translate(20 128)">'+pic(LIME)+'</g>'
+        + '<path d="M70 98h44" stroke="'+INK+'" stroke-width="2" marker-end="url(#ga)"/><defs><marker id="ga" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0l10 5-10 5z" fill="'+INK+'"/></marker></defs>'
+        + '<text x="92" y="86" text-anchor="middle" font-size="14" fill="'+INK+'">AI</text>'
+        + '<rect x="128" y="30" width="116" height="62" rx="10" fill="#fff" stroke="'+INK+'" stroke-width="1.5"/><circle cx="142" cy="44" r="5" fill="'+LIME+'" stroke="'+INK+'"/><text x="152" y="49" font-size="12" fill="'+INK+'">清爽系</text>'
+        + '<g transform="translate(140 56) scale(.7)">'+pic(LIME)+'</g><g transform="translate(170 56) scale(.7)">'+pic(LIME)+'</g>'
+        + '<rect x="128" y="104" width="116" height="62" rx="10" fill="#fff" stroke="'+INK+'" stroke-width="1.5"/><circle cx="142" cy="118" r="5" fill="'+ROSE+'" stroke="'+INK+'"/><text x="152" y="123" font-size="12" fill="'+INK+'">粉色系</text>'
+        + '<g transform="translate(140 130) scale(.7)">'+pic(ROSE)+'</g></svg>' },
+    { title: "在畫面上拖曳、加標籤、寫註解",
+      text: "圖片攤在畫布上，可以拖來拖去、換分類、寫註解、貼便條紙。改的東西會自動存回同一個資料夾。",
+      fig: '<svg viewBox="0 0 260 180" aria-hidden="true"><rect x="30" y="30" width="86" height="96" rx="10" fill="#fff" stroke="'+INK+'" stroke-width="1.5"/><g transform="translate(40 40) scale(1.95 1.3)">'+pic(LAV)+'</g>'
+        + '<text x="40" y="112" font-size="12" fill="#6E6878">配色可以參考</text>'
+        + '<rect x="138" y="46" width="92" height="76" rx="6" fill="#FFF3B0" stroke="'+INK+'" stroke-width="1.2" transform="rotate(4 184 84)"/><text x="150" y="80" font-size="13" fill="'+INK+'" transform="rotate(4 184 84)">下次改版用</text>'
+        + '<rect x="40" y="136" width="64" height="24" rx="12" fill="'+LIME+'" stroke="'+INK+'"/><text x="72" y="152" text-anchor="middle" font-size="12" fill="'+INK+'">清爽系</text>'
+        + '<path d="M120 116l0 26 7-7 6 12 5-2-6-12 10 0z" fill="#fff" stroke="'+INK+'" stroke-width="1.5" stroke-linejoin="round"/></svg>' }
+  ];
+  var i = 0, $ = function(id){ return document.getElementById(id); };
+  function render(){
+    var pg = PAGES[i];
+    $("guideFig").innerHTML = pg.fig;
+    $("guideStep").textContent = (i+1) + " / " + PAGES.length;
+    $("guideTitle").textContent = pg.title;
+    $("guideText").innerHTML = pg.text;
+    var ds = $("guideDots").children; for (var k=0;k<ds.length;k++) ds[k].className = k===i ? "on" : "";
+    $("guideNext").textContent = i === PAGES.length-1 ? "開始用" : "下一步";
+    $("guideSkip").style.visibility = i === PAGES.length-1 ? "hidden" : "visible";
+  }
+  function open(){ i = 0; render(); $("guide").classList.add("show"); $("guideNext").focus(); }
+  function close(){ $("guide").classList.remove("show"); try { localStorage.setItem(KEY, "1"); } catch(e){} $("guideBtn").focus(); }
+  $("guideNext").onclick = function(){ if (i < PAGES.length-1) { i++; render(); } else close(); };
+  $("guideSkip").onclick = close;
+  $("guideBtn").onclick = open;
+  $("guide").addEventListener("click", function(e){ if (e.target === this) close(); });
+  document.addEventListener("keydown", function(e){ if (e.key === "Escape" && $("guide").classList.contains("show")) close(); });
+  var seen = false; try { seen = localStorage.getItem(KEY) === "1"; } catch(e){}
+  if (!seen) open();
+})();
+</script>
+</body>
+</html>
