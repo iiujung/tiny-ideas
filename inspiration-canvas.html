@@ -36,16 +36,29 @@
   .brand h1{margin:0;color:var(--c-text);font-size:var(--fs-h1);font-weight:400;line-height:var(--lh-title);text-wrap:balance}
   .brand p{margin:6px 0 0;color:var(--c-text-2);font-size:14px;line-height:1.7}
   .side-section{display:flex;flex-direction:column;gap:10px}
-  .side-section h2{margin:0;color:var(--c-text);font-size:var(--fs-h2);font-weight:400;line-height:var(--lh-h2);text-wrap:balance}
+  .side-section h2{margin:0;color:var(--c-text-2);font-size:var(--fs-body);font-weight:400;line-height:var(--lh-h2);text-wrap:balance}
+  .side-section h2.lead{color:var(--c-text);font-size:var(--fs-h3)}
   .folder-status{display:grid;gap:2px;padding:10px 12px;border:1px solid var(--c-line);border-radius:10px;background:var(--c-bg);font-size:14px;line-height:1.5}
   .folder-status .name{font-weight:400;overflow-wrap:anywhere}
   .folder-status .saved{color:var(--c-text-2);font-size:14px}
   .tool-btn{width:100%;min-height:44px;margin-top:4px;padding:8px 12px;text-align:left;background:var(--c-surface);border:1px solid var(--c-line);border-radius:10px;color:var(--c-text);font-size:14px;line-height:1.4;transition:background-color .15s,border-color .15s}
   .tool-btn:first-child{margin-top:0}
   .tool-btn:hover{background:var(--c-accent-soft);border-color:var(--c-text)}
-  .tool-btn.primary{background:var(--c-accent);border-color:var(--c-accent);color:var(--c-text)}
+  .tool-btn.primary{margin-top:0;text-align:center;background:var(--c-accent);border-color:var(--c-accent);color:var(--c-text)}
   .tool-btn.primary:hover{background:#C6D55A;border-color:#C6D55A}
   .tool-btn.danger{color:var(--c-danger)}
+  .link-row,.sel-actions{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:6px}
+  .link-btn{min-height:32px;padding:4px 0;border:0;background:transparent;color:var(--c-text-2);font-size:14px;line-height:1.4;text-decoration:underline;text-decoration-color:var(--c-line);text-underline-offset:4px;transition:color .15s,text-decoration-color .15s}
+  .link-btn:hover{color:var(--c-text);text-decoration-color:var(--c-text)}
+  .link-btn:disabled{color:var(--c-text-3);cursor:default}
+  .link-btn.danger{color:var(--c-danger);text-decoration-color:var(--c-rose-soft)}
+  .link-btn.danger:hover{color:var(--c-danger);text-decoration-color:var(--c-danger)}
+  .link-btn.start{align-self:flex-start}
+  .side-tips{margin-top:auto;padding-top:16px;border-top:1px solid var(--c-line);color:var(--c-text-2);font-size:14px;line-height:1.7}
+  .side-tips summary{cursor:pointer;color:var(--c-text-2)}
+  .side-tips summary:hover{color:var(--c-text)}
+  .side-tips ul{margin:8px 0 0;padding-left:18px}
+  .side-tips li{margin-top:6px}
   .cat-row{display:flex;align-items:center;gap:8px;min-height:36px;padding:3px 6px;border-radius:8px}
   .cat-row:hover{background:var(--c-bg)}
   .cat-row input[type=checkbox]{width:18px;height:18px;flex:0 0 18px;margin:0;accent-color:var(--c-text)}
@@ -58,7 +71,8 @@
   .add-cat{display:flex;align-items:center;gap:8px;margin-top:4px}
   .add-cat input[type=color]{width:36px;height:36px;flex:0 0 36px;padding:2px;border:1px solid var(--c-line);border-radius:8px;background:var(--c-surface);cursor:pointer}
   .add-cat input[type=text]{width:0;min-width:0;flex:1;height:40px;padding:6px 9px;border:1px solid var(--c-line);border-radius:10px;background:var(--c-surface);font-size:14px}
-  .add-cat button{min-height:40px;padding:6px 12px;border:0;border-radius:10px;background:var(--c-text);color:var(--c-surface);font-size:14px}
+  .add-cat button{min-height:40px;padding:6px 12px;border:1px solid var(--c-line);border-radius:10px;background:var(--c-surface);color:var(--c-text);font-size:14px;transition:background-color .15s,border-color .15s}
+  .add-cat button:hover{background:var(--c-accent-soft);border-color:var(--c-text)}
   .zoom-row{display:flex;align-items:center;gap:10px;min-height:36px}
   .zoom-row input[type=range]{min-width:0;flex:1;accent-color:var(--c-text)}
   .zoom-val{width:48px;flex:0 0 48px;color:var(--c-text-2);font-size:14px;text-align:right}
@@ -100,7 +114,7 @@
   .layout-seg{display:flex;gap:6px}
   .layout-seg button{flex:1;min-height:44px;padding:8px 6px;border:1px solid var(--c-line);border-radius:10px;background:var(--c-surface);color:var(--c-text);font-family:inherit;font-size:14px;line-height:1.4;cursor:pointer}
   .layout-seg button:hover{border-color:var(--c-text)}
-  .layout-seg button[aria-pressed="true"]{background:var(--c-accent);border-color:var(--c-accent)}
+  .layout-seg button[aria-pressed="true"]{background:var(--c-accent-soft);border-color:var(--c-text)}
   .frame{position:absolute;z-index:0;border:1.5px solid #DCD8E3;border-radius:20px;background:rgba(255,255,255,.6);pointer-events:none}
   .frame-label{position:absolute;top:14px;left:20px;display:flex;align-items:center;gap:8px;color:var(--c-text);font-size:22px;line-height:1.4;white-space:nowrap}
   .frame-label i{width:14px;height:14px;border-radius:50%;border:1px solid var(--c-line)}
@@ -196,22 +210,22 @@
   <aside id="sidebar">
     <div class="brand">
       <h1>靈感畫布</h1>
-      <p>資料夾版：圖片留在原地，標註自動存回資料夾。</p>
     </div>
 
     <div class="side-section">
-      <h2>資料夾</h2>
       <div class="folder-status">
         <div class="name" id="folderName">—</div>
         <div class="saved" id="savedStatus">尚未儲存</div>
+        <div class="link-row">
+          <button class="link-btn" id="syncBtn" title="偵測資料夾裡新增或刪除的圖片">同步資料夾</button>
+          <button class="link-btn" id="switchFolderBtn">切換資料夾</button>
+        </div>
       </div>
-      <button class="tool-btn" id="syncBtn">同步資料夾（偵測新增/刪除的圖片）</button>
-      <button class="tool-btn" id="addImgBtn">＋ 新增圖片到這個資料夾</button>
-      <button class="tool-btn" id="switchFolderBtn">切換資料夾</button>
+      <button class="tool-btn primary" id="addImgBtn">＋ 新增圖片</button>
     </div>
 
     <div class="side-section">
-      <h2>分類</h2>
+      <h2 class="lead">分類</h2>
       <div id="catList"></div>
       <div class="add-cat">
         <input type="color" id="newCatColor" value="#4A6FA5">
@@ -223,15 +237,16 @@
     <div class="side-section" id="selSection" style="display:none;">
       <h2 id="selTitle">已選取</h2>
       <select class="side-select" id="selCatSelect" aria-label="把選取的圖片移到分類"></select>
-      <button class="tool-btn" id="selClearBtn">取消選取（Esc）</button>
-      <button class="tool-btn danger" id="selDeleteBtn">移除選取項目（Delete）</button>
+      <div class="sel-actions">
+        <button class="link-btn" id="selClearBtn">取消選取</button>
+        <button class="link-btn danger" id="selDeleteBtn">移除選取項目</button>
+      </div>
     </div>
 
     <div class="side-section">
       <h2>便條紙</h2>
       <button class="tool-btn" id="addStickyBtn">＋ 新增便條紙</button>
       <label class="toggle-row"><input type="checkbox" id="stickyVisible" checked><span id="stickyVisibleLabel">顯示便條紙</span></label>
-      <p class="side-hint">在畫布空白處連點兩下，也可以直接新增便條紙。</p>
     </div>
 
     <div class="side-section">
@@ -244,18 +259,25 @@
         <input type="range" id="zoomSlider" min="50" max="150" value="100">
         <span class="zoom-val" id="zoomVal">100%</span>
       </div>
-      <button class="tool-btn" id="resetViewBtn">重置檢視</button>
-      <p class="side-hint">多選：按住 Shift 或 ⌘／Ctrl 點擊，或在空白處拖曳框選。⌘／Ctrl＋A 全選。</p>
+      <button class="link-btn start" id="resetViewBtn">重置檢視</button>
     </div>
 
-    <div class="side-footer" id="sideFooter">分類、標註與便條紙都存在資料夾裡的 moodboard-data.json，換電腦時把這個檔案和圖片一起帶著走就好。</div>
+    <details class="side-tips">
+      <summary>操作提示</summary>
+      <ul>
+        <li>在畫布空白處連點兩下，可以新增便條紙。</li>
+        <li>多選：按住 Shift 或 ⌘／Ctrl 點擊，或在空白處拖曳框選；⌘／Ctrl＋A 全選。</li>
+        <li>取消選取按 Esc，移除選取項目按 Delete。</li>
+        <li id="sideFooter">分類、標註與便條紙都存在資料夾裡的 moodboard-data.json，換電腦時連圖片一起帶走就好。</li>
+      </ul>
+    </details>
   </aside>
 
   <main id="canvasScroll">
     <div id="canvasInner">
       <div class="empty-hint" id="emptyHint">
-        <strong>這個資料夾裡還沒有圖片</strong>
-        把圖片放進資料夾，再按左側「同步資料夾」，或直接用「新增圖片」加入。
+        <strong id="emptyTitle">這個資料夾裡還沒有支援的圖片</strong>
+        <span id="emptyMessage">把圖片放進資料夾，再按左側「同步資料夾」，或直接用「新增圖片」加入。</span>
       </div>
       <div id="marquee"></div>
     </div>
@@ -272,7 +294,7 @@
     </div>
   </div>
 </div>
-<input type="file" id="addImgInput" accept="image/*" multiple>
+<input type="file" id="addImgInput" accept=".jpg,.jpeg,.png,.gif,.webp,.avif,.bmp,.ico" multiple>
 
 <script>
 (function () {
@@ -280,7 +302,8 @@
 
   var SUPPORTED = "showDirectoryPicker" in window;
   var META_NAME = "moodboard-data.json";
-  var IMG_EXT = ["jpg","jpeg","png","gif","webp","avif","bmp"];
+  var IMG_EXT = ["jpg","jpeg","png","gif","webp","avif","bmp","ico"];
+  var UNSUPPORTED_IMG_EXT = ["heic","heif","tif","tiff","raw","dng","cr2","nef","arw","orf","rw2","psd","svg"];
   var DB_NAME = "moodboardFolderDB", STORE = "handles", DB_KEY = "lastDir";
   var PALETTE = ["#4A6FA5","#8A6BAE","#3F8F6F","#C98A2D","#C1554A","#4F8FA0","#7A7440","#9C5B8A"];
   var fileHandles = {};      // filename -> FileSystemFileHandle
@@ -288,6 +311,8 @@
   var STICKY_COLORS = ["#FBE7A1","#F7C8C2","#C9DDF2","#CDE5C4","#F3D2A8"];
 
   var dirHandle = null;
+  var unsupportedImages = [];
+  var unreadableImages = [];
   function emptyState(){ return { images: {}, categories: [], uncatVisible: true, zTop: 1, stickies: [], stickiesVisible: true, layout: null }; }
   var state = emptyState();
   var zoom = 1;
@@ -343,6 +368,20 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 2600);
   }
+  function showGateMessage(message, buttonText){
+    byId("gate").style.display = "flex";
+    byId("app").style.display = "none";
+    byId("gateText").textContent = message;
+    byId("gateBtn").disabled = false;
+    byId("gateBtn").textContent = buttonText || "重新選擇資料夾";
+    byId("gateBtn").onclick = pickFolder;
+  }
+  function errorMessage(error){
+    if (error && (error.name === "NotAllowedError" || error.name === "SecurityError")) return "瀏覽器沒有授權讀取這個資料夾。請重新選擇資料夾並允許存取。";
+    if (error && error.name === "InvalidStateError") return "瀏覽器裡記住的資料夾連結已失效。請重新選擇資料夾；原有資料沒有被更動。";
+    if (error && error.name === "SyntaxError") return "資料夾裡的 moodboard-data.json 格式有誤。原檔沒有被更動，請先修復或備份這個檔案再重試。";
+    return "讀取資料夾時發生問題。原有資料沒有被更動，請重新選擇資料夾；若仍失敗，請確認 moodboard-data.json 和圖片檔案可讀取。";
+  }
   function confirmModal(msg, onYes){
     byId("modalText").textContent = msg;
     byId("modalOverlay").classList.add("show");
@@ -368,101 +407,188 @@
     if (!handle) return;
     try {
       var perm = await handle.queryPermission({ mode: "readwrite" });
-      if (perm === "granted") { await connectFolder(handle); return; }
+      if (perm === "granted") {
+        byId("gateText").textContent = "正在重新連接上次使用的資料夾…";
+        try { await connectFolder(handle); }
+        catch (e) { showGateMessage(errorMessage(e)); }
+        return;
+      }
       byId("gateText").textContent = "上次連結的資料夾是「" + handle.name + "」，按下面的按鈕重新授權即可繼續使用。";
       byId("gateBtn").textContent = "重新連接「" + handle.name + "」";
       byId("gateBtn").onclick = async function(){
+        byId("gateBtn").disabled = true;
+        byId("gateText").textContent = "正在確認資料夾權限…";
         try {
           var p2 = await handle.requestPermission({ mode: "readwrite" });
           if (p2 === "granted") await connectFolder(handle);
-          else showToast("沒有取得資料夾存取權限");
-        } catch (e) { showToast("重新連接失敗，請改用「選擇資料夾」"); }
+          else showGateMessage("沒有取得資料夾讀寫權限。資料沒有被更動；可以重新授權或選擇資料夾。", "重新選擇資料夾");
+        } catch (e) { showGateMessage(errorMessage(e)); }
+        finally { byId("gateBtn").disabled = false; }
       };
-    } catch (e) { /* stored handle unusable, ignore */ }
+    } catch (e) {
+      showGateMessage(errorMessage(e));
+    }
   }
 
   async function pickFolder(){
     try {
       var handle = await window.showDirectoryPicker({ mode: "readwrite" });
       await connectFolder(handle);
-    } catch (e) { /* user cancelled */ }
+    } catch (e) {
+      if (e && e.name !== "AbortError") showGateMessage(errorMessage(e));
+    }
   }
 
   async function connectFolder(handle){
-    dirHandle = handle;
-    byId("gate").style.display = "none";
-    byId("app").style.display = "flex";
-    byId("folderName").textContent = "📁 " + handle.name;
-    await idbSet(DB_KEY, handle);
-    await loadMetaAndScan();
-    setZoom(100);
-    wireOnce();
+    byId("gate").style.display = "flex";
+    byId("app").style.display = "none";
+    byId("gateText").textContent = "正在讀取「" + handle.name + "」裡的圖片和分類…";
+    byId("gateBtn").disabled = true;
+    try {
+      var loaded = await readFolderData(handle);
+      dirHandle = handle;
+      state = loaded.state;
+      fileHandles = loaded.fileHandles;
+      unsupportedImages = loaded.unsupportedImages;
+      unreadableImages = [];
+      objectUrls = {};
+      byId("folderName").textContent = "📁 " + handle.name;
+      renderCategories();
+      var failures = await renderAllCards();
+      unreadableImages = failures;
+      renderStickies();
+      updateLayoutBtns(); drawFrames();
+      setZoom(100);
+      wireOnce();
+      await idbSet(DB_KEY, handle);
+      hasUnsavedChanges = false;
+      byId("savedStatus").textContent = loaded.hasMeta ? "已連接 · 尚未有新變更" : "已連接 · 尚未建立資料紀錄";
+      byId("app").style.display = "flex";
+      byId("gate").style.display = "none";
+      if (unsupportedImages.length || unreadableImages.length) {
+        showToast("已載入 " + (Object.keys(state.images).filter(function(fn){ return !!fileHandles[fn]; }).length - unreadableImages.length) + " 張；另有圖片格式或檔案無法讀取");
+      }
+    } catch (e) {
+      Object.values(objectUrls).forEach(function(url){ URL.revokeObjectURL(url); });
+      dirHandle = null;
+      fileHandles = {};
+      state = emptyState();
+      objectUrls = {};
+      clearCardsDOM(); clearStickiesDOM();
+      throw e;
+    } finally {
+      byId("gateBtn").disabled = false;
+    }
   }
 
-  // ---------- load metadata + scan folder ----------
-  async function loadMetaAndScan(){
-    var meta = null;
+  // ---------- read metadata + scan folder before replacing the current screen ----------
+  async function scanFolderFiles(handle){
+    var found = {}, unsupported = [];
+    for await (var entry of handle.entries()) {
+      var name = entry[0], fileHandle = entry[1];
+      if (fileHandle.kind !== "file" || name === META_NAME) continue;
+      var ext = name.split(".").pop().toLowerCase();
+      if (IMG_EXT.indexOf(ext) !== -1) found[name] = fileHandle;
+      else if (UNSUPPORTED_IMG_EXT.indexOf(ext) !== -1) unsupported.push(name);
+    }
+    return { fileHandles: found, unsupportedImages: unsupported };
+  }
+  function reconcileImages(imageState, found, unsupported, zTop){
+    var unsupportedNames = new Set(unsupported);
+    Object.keys(imageState).forEach(function(fn){ if (!found[fn] && !unsupportedNames.has(fn)) delete imageState[fn]; });
+    var i = 0;
+    Object.keys(found).sort().forEach(function(fn){
+      if (imageState[fn]) return;
+      var col = i % 4, row = Math.floor(i / 4);
+      imageState[fn] = { x: 40 + col * 260 + row * 20, y: 40 + row * 260 + col * 14, w: 220, note: "", categoryId: null, z: ++zTop };
+      i++;
+    });
+    return zTop;
+  }
+
+  async function readFolderData(handle){
+    var meta = null, metaHandle = null, hasMeta = false;
     try {
-      var metaHandle = await dirHandle.getFileHandle(META_NAME);
+      metaHandle = await handle.getFileHandle(META_NAME);
+    } catch (e) {
+      if (!e || e.name !== "NotFoundError") throw e;
+    }
+    if (metaHandle) {
       var file = await metaHandle.getFile();
       meta = JSON.parse(await file.text());
-    } catch (e) { meta = null; }
-    if (meta && typeof meta === "object") {
-      state.images = meta.images || {};
-      state.categories = meta.categories || [];
-      state.uncatVisible = meta.uncatVisible !== false;
-      state.zTop = meta.zTop || 1;
-      state.stickies = Array.isArray(meta.stickies) ? meta.stickies : [];
-      state.stickiesVisible = meta.stickiesVisible !== false;
-      state.layout = meta.layout === "flow" || meta.layout === "frames" ? meta.layout : null;
-    } else {
-      state = emptyState();
+      hasMeta = true;
+      if (!meta || typeof meta !== "object" || Array.isArray(meta)) throw new SyntaxError("metadata must be an object");
+      if (meta.images !== undefined && (!meta.images || typeof meta.images !== "object" || Array.isArray(meta.images))) throw new SyntaxError("images must be an object");
+      if (meta.categories !== undefined && !Array.isArray(meta.categories)) throw new SyntaxError("categories must be an array");
+      if (meta.stickies !== undefined && !Array.isArray(meta.stickies)) throw new SyntaxError("stickies must be an array");
+      if (Object.keys(meta.images || {}).some(function(fn){ return !meta.images[fn] || typeof meta.images[fn] !== "object" || Array.isArray(meta.images[fn]); })) throw new SyntaxError("an image entry is invalid");
+      if ((meta.categories || []).some(function(cat){ return !cat || typeof cat !== "object" || typeof cat.id !== "string" || typeof cat.name !== "string"; })) throw new SyntaxError("a category entry is invalid");
+      if ((meta.stickies || []).some(function(sticky){ return !sticky || typeof sticky !== "object" || typeof sticky.id !== "string"; })) throw new SyntaxError("a sticky entry is invalid");
     }
-    selection = new Set();
-    await scanFolderImages();
-    renderCategories();
-    await renderAllCards();
-    renderStickies();
-    updateLayoutBtns(); drawFrames();
-  }
-
-  async function scanFolderImages(){
-    var found = {};
-    for await (var entry of dirHandle.entries()) {
-      var name = entry[0], handle = entry[1];
-      if (handle.kind !== "file" || name === META_NAME) continue;
-      var ext = name.split(".").pop().toLowerCase();
-      if (IMG_EXT.indexOf(ext) === -1) continue;
-      found[name] = handle;
+    var nextState = emptyState();
+    if (meta) {
+      nextState.images = meta.images || {};
+      nextState.categories = meta.categories || [];
+      nextState.uncatVisible = meta.uncatVisible !== false;
+      nextState.zTop = meta.zTop || 1;
+      nextState.stickies = meta.stickies || [];
+      nextState.stickiesVisible = meta.stickiesVisible !== false;
+      nextState.layout = meta.layout === "flow" || meta.layout === "frames" ? meta.layout : null;
     }
-    Object.keys(state.images).forEach(function(fn){ if (!found[fn]) delete state.images[fn]; });
-    var names = Object.keys(found).sort();
-    var i = 0;
-    names.forEach(function(fn){
-      if (!state.images[fn]) {
-        state.zTop++;
-        var col = i % 4, row = Math.floor(i / 4);
-        state.images[fn] = { x: 40 + col * 260 + row * 20, y: 40 + row * 260 + col * 14, w: 220, note: "", categoryId: null, z: state.zTop };
-        i++;
-      }
-    });
-    fileHandles = found;
+    var scan = await scanFolderFiles(handle);
+    nextState.zTop = reconcileImages(nextState.images, scan.fileHandles, scan.unsupportedImages, nextState.zTop);
+    return { state: nextState, fileHandles: scan.fileHandles, unsupportedImages: scan.unsupportedImages, hasMeta: hasMeta };
   }
 
   // ---------- persistence ----------
-  var saveTimer = null;
-  function scheduleSave(){ drawFrames(); clearTimeout(saveTimer); saveTimer = setTimeout(saveMeta, 400); }
+  var saveTimer = null, savePromise = null, saveRevision = 0, hasUnsavedChanges = false;
+  function scheduleSave(){
+    drawFrames(); hasUnsavedChanges = true; saveRevision++; clearTimeout(saveTimer);
+    saveTimer = setTimeout(async function(){ saveTimer = null; await saveMeta(); }, 400);
+  }
   async function saveMeta(){
-    if (!dirHandle) return;
-    try {
-      var fh = await dirHandle.getFileHandle(META_NAME, { create: true });
-      var w = await fh.createWritable();
-      await w.write(JSON.stringify({ images: state.images, categories: state.categories, uncatVisible: state.uncatVisible, zTop: state.zTop, stickies: state.stickies, stickiesVisible: state.stickiesVisible, layout: state.layout }, null, 2));
-      await w.close();
-      byId("savedStatus").textContent = "已自動存檔 " + new Date().toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" });
-    } catch (e) {
-      byId("savedStatus").textContent = "自動存檔失敗，請確認資料夾權限";
+    if (!dirHandle) return false;
+    if (savePromise) {
+      var previous = savePromise;
+      if (!(await previous)) return false;
+      if (!hasUnsavedChanges) return true;
     }
+    var revision = saveRevision, targetHandle = dirHandle;
+    var snapshot = JSON.stringify({ images: state.images, categories: state.categories, uncatVisible: state.uncatVisible, zTop: state.zTop, stickies: state.stickies, stickiesVisible: state.stickiesVisible, layout: state.layout }, null, 2);
+    var writePromise = (async function(){
+      try {
+        var fh = await targetHandle.getFileHandle(META_NAME, { create: true });
+        var w = await fh.createWritable();
+        await w.write(snapshot);
+        await w.close();
+        return true;
+      } catch (e) { return false; }
+    })();
+    savePromise = writePromise;
+    var written = await writePromise;
+    if (savePromise === writePromise) savePromise = null;
+    if (!written) {
+      byId("savedStatus").textContent = "自動存檔失敗 · 請重新授權資料夾";
+      return false;
+    }
+    if (revision === saveRevision) {
+      hasUnsavedChanges = false;
+      byId("savedStatus").textContent = "已自動存檔 " + new Date().toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" });
+    } else {
+      hasUnsavedChanges = true;
+      byId("savedStatus").textContent = "還有變更待存檔…";
+      if (saveTimer === null) scheduleSave();
+    }
+    return true;
+  }
+  async function flushPendingSave(){
+    while (hasUnsavedChanges) {
+      if (saveTimer !== null) { clearTimeout(saveTimer); saveTimer = null; }
+      if (savePromise && !(await savePromise)) return false;
+      if (!hasUnsavedChanges) break;
+      if (!(await saveMeta())) return false;
+    }
+    return true;
   }
 
   // ---------- categories ----------
@@ -470,10 +596,10 @@
 
   function renderCategories(){
     var list = byId("catList"); list.innerHTML = "";
-    var uncatCount = Object.keys(state.images).filter(function(fn){ return !state.images[fn].categoryId; }).length;
+    var uncatCount = Object.keys(state.images).filter(function(fn){ return !!fileHandles[fn] && !state.images[fn].categoryId; }).length;
     list.appendChild(buildCatRow({ id:null, name:"未分類", color:null, visible: state.uncatVisible }, uncatCount, false));
     state.categories.forEach(function(cat){
-      var count = Object.keys(state.images).filter(function(fn){ return state.images[fn].categoryId === cat.id; }).length;
+      var count = Object.keys(state.images).filter(function(fn){ return !!fileHandles[fn] && state.images[fn].categoryId === cat.id; }).length;
       list.appendChild(buildCatRow(cat, count, true));
     });
   }
@@ -540,7 +666,24 @@
   var emptyHint = byId("emptyHint");
 
   function clearCardsDOM(){ document.querySelectorAll(".card").forEach(function(n){ n.remove(); }); }
-  function toggleEmptyHint(){ emptyHint.style.display = Object.keys(state.images).length ? "none" : ""; }
+  function toggleEmptyHint(){
+    var visibleFiles = Object.keys(state.images).filter(function(fn){ return !!fileHandles[fn] && !unreadableImages.some(function(item){ return item.name === fn; }); });
+    var title = byId("emptyTitle");
+    var message = byId("emptyMessage");
+    if (visibleFiles.length) { emptyHint.style.display = "none"; return; }
+    emptyHint.style.display = "";
+    if (unsupportedImages.length) {
+      var exts = Array.from(new Set(unsupportedImages.map(function(name){ return name.split(".").pop().toUpperCase(); })));
+      title.textContent = "找到圖片，但格式目前不支援";
+      message.textContent = "目前可讀 JPG、PNG、GIF、WebP、AVIF、BMP、ICO；「" + exts.join("、") + "」檔案和既有標註會保留，轉成支援格式後再同步即可。";
+    } else if (unreadableImages.length) {
+      title.textContent = "部分圖片目前讀不到";
+      message.textContent = "資料夾與標註沒有被清除。請確認檔案可讀取，再按左側「同步資料夾」。";
+    } else {
+      title.textContent = "這個資料夾裡還沒有支援的圖片";
+      message.textContent = "把 JPG、PNG、GIF、WebP、AVIF、BMP 或 ICO 圖片放進資料夾，再按左側「同步資料夾」，或直接用「新增圖片」加入。";
+    }
+  }
 
   async function getObjUrl(fn){
     if (objectUrls[fn]) return objectUrls[fn];
@@ -553,9 +696,19 @@
 
   async function renderAllCards(){
     clearCardsDOM();
-    var names = Object.keys(state.images);
-    for (var i=0;i<names.length;i++) await addCardEl(names[i]);
+    var names = Object.keys(state.images).filter(function(fn){ return !!fileHandles[fn]; }).sort();
+    var failures = [];
+    for (var i=0;i<names.length;i+=12) {
+      var batch = names.slice(i, i+12);
+      var results = await Promise.all(batch.map(async function(fn){
+        try { return await addCardEl(fn); }
+        catch (e) { failures.push({ name:fn, error:e }); return null; }
+      }));
+      if (byId("gate").style.display !== "none") byId("gateText").textContent = "正在載入「" + (dirHandle ? dirHandle.name : "資料夾") + "」的圖片… " + Math.min(i + results.length, names.length) + " / " + names.length;
+    }
+    unreadableImages = failures;
     toggleEmptyHint(); applyFilter();
+    return failures;
   }
 
   async function addCardEl(fn){
@@ -801,7 +954,7 @@
   }
   function layoutGroups(){
     var groups = state.categories.map(function(c){ return { cat:c, fns:[] }; }), uncat = { cat:null, fns:[] };
-    Object.keys(state.images).sort().forEach(function(fn){
+    Object.keys(state.images).filter(function(fn){ return !!fileHandles[fn]; }).sort().forEach(function(fn){
       var id = state.images[fn].categoryId, g = null;
       for (var i=0;i<groups.length;i++) if (groups[i].cat.id === id) g = groups[i];
       (g || uncat).fns.push(fn);
@@ -864,13 +1017,22 @@
 
   // ---------- add images (copies bytes into the connected folder) ----------
   async function addFilesToFolder(fileList){
-    var files = Array.prototype.filter.call(fileList, function(f){ return f.type.indexOf("image/")===0; });
-    if (!files.length) return;
+    var files = [], unsupported = [];
+    Array.prototype.forEach.call(fileList, function(file){
+      var ext = file.name.split(".").pop().toLowerCase();
+      if (IMG_EXT.indexOf(ext) !== -1) files.push(file);
+      else if (file.type.indexOf("image/") === 0 || UNSUPPORTED_IMG_EXT.indexOf(ext) !== -1) unsupported.push(file.name);
+    });
+    if (!files.length) {
+      if (unsupported.length) showToast("略過不支援的圖片格式：" + Array.from(new Set(unsupported.map(function(name){ return name.split(".").pop().toUpperCase(); }))).join("、"));
+      return;
+    }
     var i = Object.keys(state.images).length;
+    var added = 0, failed = 0;
     for (var k=0;k<files.length;k++){
       var file = files[k];
-      var targetName = await uniqueName(file.name);
       try {
+        var targetName = await uniqueName(file.name);
         var fh = await dirHandle.getFileHandle(targetName, { create: true });
         var w = await fh.createWritable();
         await w.write(file);
@@ -881,18 +1043,30 @@
         state.images[targetName] = { x:40+col*260+row*20, y:40+row*260+col*14, w:220, note:"", categoryId:null, z:state.zTop };
         i++;
         await addCardEl(targetName);
-      } catch (e) { showToast("寫入「"+file.name+"」失敗"); }
+        added++;
+      } catch (e) { failed++; }
     }
     toggleEmptyHint(); applyFilter(); renderCategories(); scheduleSave();
-    showToast("已加入 "+files.length+" 張圖片到資料夾");
+    if (failed || unsupported.length) {
+      var parts = ["已加入 " + added + " 張"];
+      if (failed) parts.push(failed + " 張寫入失敗");
+      if (unsupported.length) parts.push("略過 " + unsupported.length + " 張不支援格式");
+      showToast(parts.join("；"));
+    } else if (added) showToast("已加入 " + added + " 張圖片到資料夾");
   }
   async function uniqueName(name){
-    var exists = true, n = name, i = 1;
-    while (exists) {
-      try { await dirHandle.getFileHandle(n); n = name.replace(/(\.[^.]+)$/, "-"+(++i)+"$1"); }
-      catch (e) { exists = false; }
+    var match = name.match(/^(.*?)(\.[^.]+)?$/), base = match[1], ext = match[2] || "";
+    for (var i=1;;i++) {
+      var candidate = i === 1 ? name : base + "-" + i + ext;
+      try { await dirHandle.getFileHandle(candidate); }
+      catch (e) {
+        if (e && (e.name === "NotFoundError" || e.name === "TypeMismatchError")) {
+          if (e.name === "TypeMismatchError") continue;
+          return candidate;
+        }
+        throw e;
+      }
     }
-    return n;
   }
 
   // ---------- wiring ----------
@@ -950,18 +1124,35 @@
     });
 
     byId("syncBtn").addEventListener("click", async function(){
-      await scanFolderImages(); renderCategories(); await renderAllCards(); scheduleSave();
-      showToast("已同步資料夾");
+      byId("syncBtn").disabled = true;
+      try {
+        var scan = await scanFolderFiles(dirHandle);
+        unsupportedImages = scan.unsupportedImages;
+        state.zTop = reconcileImages(state.images, scan.fileHandles, scan.unsupportedImages, state.zTop);
+        fileHandles = scan.fileHandles;
+        Object.values(objectUrls).forEach(function(url){ URL.revokeObjectURL(url); }); objectUrls = {};
+        unreadableImages = [];
+        renderCategories();
+        var failures = await renderAllCards();
+        unreadableImages = failures;
+        renderCategories();
+        scheduleSave();
+        var loadedCount = Object.keys(state.images).filter(function(fn){ return !!fileHandles[fn]; }).length - failures.length;
+        showToast("已同步 · 載入 " + Math.max(0, loadedCount) + " 張圖片" + (unsupportedImages.length ? "，另有格式不支援的圖片" : ""));
+      } catch (e) {
+        showToast("同步失敗 · 資料和標註沒有被清除，請確認資料夾權限");
+      } finally { byId("syncBtn").disabled = false; }
     });
 
     byId("addImgBtn").addEventListener("click", function(){ byId("addImgInput").click(); });
     byId("addImgInput").addEventListener("change", function(e){ addFilesToFolder(e.target.files); e.target.value=""; });
 
     byId("switchFolderBtn").addEventListener("click", function(){
-      confirmModal("切換到另一個資料夾？目前畫面會關閉（資料夾裡的標註已經自動存檔，不會遺失）。", async function(){
+      confirmModal("切換到另一個資料夾？我會先保存目前變更；若存檔失敗，會留在這個資料夾。", async function(){
+        if (!(await flushPendingSave())) { showToast("目前變更還沒存好，已取消切換"); return; }
         await idbDel(DB_KEY);
         Object.values(objectUrls).forEach(function(u){ URL.revokeObjectURL(u); });
-        objectUrls = {}; fileHandles = {}; dirHandle = null;
+        objectUrls = {}; fileHandles = {}; dirHandle = null; unsupportedImages = []; unreadableImages = [];
         state = emptyState(); selection = new Set();
         clearCardsDOM(); clearStickiesDOM(); refreshSelectionUI();
         byId("app").style.display = "none";
