@@ -301,13 +301,13 @@ button.mcell:not(.out):not(.future):hover { box-shadow: inset 0 0 0 1.5px var(--
 .tool.sound[aria-pressed="false"] { color: var(--c-text-3); }
 
 /* ─── 版面：手機一欄；桌機日曆在左、工具在右 ─── */
-.stage { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); grid-template-areas: "chips" "cal" "side"; }
+.stage { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); grid-template-areas: "chips" "quote" "cal" "side"; }
 .stage > .chips { grid-area: chips; }
 .stage > .cal { grid-area: cal; }
 .stage > .side { grid-area: side; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 @media (min-width: 900px) {
   .wrap { max-width: 1040px; padding-inline: 32px; gap: 24px; }
-  .stage { grid-template-columns: minmax(0, 480px) minmax(0, 1fr); grid-template-rows: auto 1fr; grid-template-areas: "cal chips" "cal side"; column-gap: 48px; row-gap: 16px; align-items: start; }
+  .stage { grid-template-columns: minmax(0, 480px) minmax(0, 1fr); grid-template-rows: auto auto 1fr; grid-template-areas: "cal chips" "cal quote" "cal side"; column-gap: 48px; row-gap: 16px; align-items: start; }
   .stage > .side { position: sticky; top: 24px; }
   .mstage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 640px); grid-template-areas: "info cal" "nav cal"; grid-template-rows: auto 1fr; column-gap: 48px; row-gap: 16px; align-items: start; }
   .mstage > .card { grid-area: info; }
@@ -363,13 +363,29 @@ button.mcell:not(.out):not(.future):hover { box-shadow: inset 0 0 0 1.5px var(--
 
 /* ─── 3D 層：html 上的 class 決定現在是哪個狀態；全部拿掉就是 CSS 版 ─── */
 /* t3-wait 載入中｜t3-rest 看 3D｜t3-fly 鏡頭移動中｜t3-draw 平面畫圖 */
-#garden { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; transform-origin: 50% 100%; animation: garden-in 0.9s cubic-bezier(.2, .8, .2, 1) both; }
-@keyframes garden-in { from { opacity: 0; transform: translateY(5%) scaleY(0.94); } }
-@media (prefers-reduced-motion: reduce) { #garden { animation: none; } }
+#garden { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
 .wrap { position: relative; z-index: 2; }
 #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: none; z-index: 1; }
 html.t3 #scene { display: block; }
 html.t3-draw #scene { visibility: hidden; }
+/* 今天做什麼 */
+.task { display: flex; align-items: center; gap: 12px; height: 40px; }
+.task input[type="checkbox"] { appearance: none; -webkit-appearance: none; flex: none; width: 24px; height: 24px; margin: 0; border: 1.5px solid var(--p-ink); border-radius: 7px; background: transparent; display: grid; place-content: center; cursor: pointer; }
+.task input[type="checkbox"]:checked { background: var(--p-accent); }
+.task input[type="checkbox"]:checked::after { content: ""; width: 12px; height: 6px; margin-top: -3px; border-left: 2px solid var(--p-ink); border-bottom: 2px solid var(--p-ink); transform: rotate(-45deg); }
+.task input[type="text"] { flex: 1; min-width: 0; height: 34px; padding: 0 2px; border: 0; border-bottom: 1.5px dashed color-mix(in srgb, var(--p-ink) 25%, transparent); border-radius: 0; background: transparent; color: var(--p-ink); font-size: var(--fs-body); }
+.task input[type="text"]::placeholder { color: color-mix(in srgb, var(--p-ink) 55%, transparent); }
+.task input[type="text"]:focus { outline: none; border-bottom-style: solid; }
+/* 標題小字、今日一句 */
+.eyebrow { display: flex; flex-wrap: wrap; gap: 2px 12px; }
+.goal-tag { color: var(--c-text-2); }
+.quote { grid-area: quote; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.quote figcaption { font-size: var(--fs-tag); line-height: var(--lh-ui); color: var(--c-text-2); }
+.quote blockquote { margin: 0; font-size: var(--fs-sm); line-height: var(--lh-sm); text-wrap: balance; }
+@media (min-width: 900px) {
+  .quote { margin-top: 24px; gap: 12px; }
+  .quote blockquote { font-size: 34px; line-height: 1.7; }
+}
 .t3-b-rest, .t3-b-draw, .t3-hint { display: none; }
 html.t3-rest .t3-b-rest, html.t3-draw .t3-b-draw, html.t3-fly .t3-b-draw { display: inline-flex; }
 html.t3-rest .t3-hint { display: block; }
@@ -380,45 +396,63 @@ html.t3-draw .drawbar { animation: t3-in 0.2s ease-out; }
 @keyframes t3-in { from { opacity: 0; } }
 html.t3-rest, html.t3-rest body { height: 100%; overflow: hidden; overscroll-behavior: none; }
 html.t3-rest body { touch-action: none; user-select: none; -webkit-user-select: none; }
-html.t3-rest .wrap { height: 100dvh; padding-block: 16px 12px; gap: 8px; }
-html.t3-rest .stage { flex: 1 1 auto; min-height: 0; grid-template-rows: auto minmax(0, 1fr) auto; gap: 8px; }
+html.t3-rest .wrap { height: 100dvh; padding-block: 16px 88px; gap: 8px; }
+html.t3-rest .stage { flex: 1 1 auto; min-height: 0; grid-template-rows: auto auto minmax(0, 1fr); gap: 8px; }
 html.t3-rest .cal { display: block; min-height: 0; height: 100%; }
 html.t3-rest .cal > * { position: absolute; left: 0; right: 0; visibility: hidden; pointer-events: none; }
 html.t3-rest .cal::after { content: none; }
 html.t3-rest .drawbar, html.t3-rest .foot { display: none; }
-html.t3-rest .side { gap: 8px; }
 html.t3-rest .status { min-height: 24px; }
 html.t3-rest .status:empty { display: none; }
 html.t3-rest .t3-hint:has(+ .status:not(:empty)) { display: none; }
 html.t3 .btn:not(:disabled), html.t3 .seg, html.t3 .tool { box-shadow: 0 2px 0 rgba(42, 36, 51, 0.08); }
 html.t3-rest .btn:disabled { background: var(--c-surface); }
-html.t3-rest .t3-hint, html.t3-rest .status { align-self: flex-start; padding: 2px 10px; border-radius: 8px; background: var(--c-bg); color: var(--c-text); box-shadow: 0 2px 0 rgba(42, 36, 51, 0.08); }
+html.t3 .t3-hint, html.t3 .side .status { position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); width: max-content; max-width: calc(100vw - 32px); margin: 0; padding: 2px 10px; border-radius: 8px; background: var(--c-bg); color: var(--c-text); box-shadow: 0 2px 0 rgba(42, 36, 51, 0.08); }
+html.t3 .side .status:empty { display: none; }
 .chip.lime { box-shadow: 0 2px 0 rgba(42, 36, 51, 0.06); }
 html.t3-hot, html.t3-hot body { cursor: pointer; }
 html.t3-grab, html.t3-grab body { cursor: grabbing; }
-@media (min-width: 900px) {
-  html.t3-rest .stage { grid-template-rows: auto minmax(0, 1fr); row-gap: 16px; }
-  html.t3-rest .wrap { padding-block: 24px; gap: 16px; }
+/* 互動列：浮在畫面底部 */
+html.t3 .stage > .side {
+  position: fixed; z-index: 5; top: auto; left: 50%; bottom: max(14px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  display: flex; flex-direction: row; align-items: center; gap: 12px; width: max-content; max-width: calc(100vw - 24px);
+  padding: 8px; background: var(--c-bg); border: 1px solid var(--c-line); border-radius: var(--radius-md); box-shadow: 0 8px 24px rgba(42, 36, 51, 0.12);
 }
-/* 手機畫圖：鏡頭拉近到只看紙，整張紙在畫面裡，工具固定在底部 */
-@media (max-width: 899px) and (min-height: 501px) {
-  html.t3-draw .top, html.t3-fly .top, html.t3-draw #chips, html.t3-fly #chips,
+html.t3 .side .actions { flex-wrap: nowrap; }
+html.t3 .side .actions .btn { flex: 0 0 auto; }
+html.t3 .drawbar { flex-direction: row; align-items: center; gap: 12px; padding: 0; border: 0; background: none; }
+html.t3 .drawbar .tools { flex-wrap: nowrap; }
+html.t3 .drawbar .spacer { display: none; }
+@media (min-width: 900px) {
+  html.t3-rest .stage { grid-template-rows: auto auto minmax(0, 1fr); row-gap: 16px; }
+  html.t3-rest .wrap { padding-block: 24px 84px; gap: 16px; }
+  html.t3-rest .stage { grid-template-areas: "cal chips" "cal quote" "cal ."; }
+}
+/* 畫圖：鏡頭拉近到只看紙，整張紙都在畫面裡 */
+@media (min-height: 501px) {
+  html.t3-draw .top, html.t3-fly .top, html.t3-draw .chips, html.t3-fly .chips,
   html.t3-draw .foot, html.t3-fly .foot { display: none; }
   html.t3-draw .cal > .nail, html.t3-draw .cal > .hanger, html.t3-draw .cal > .board,
   html.t3-fly .cal > .nail, html.t3-fly .cal > .hanger, html.t3-fly .cal > .board { display: none; }
   html.t3-draw .wrap, html.t3-fly .wrap { padding-block: 12px 0; }
-  html.t3-draw .cal, html.t3-fly .cal { width: min(100%, calc(100dvh - 330px)); margin-inline: auto; }
-  html.t3-draw .side, html.t3-fly .side {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; gap: 8px;
+  html.t3-draw .stage, html.t3-fly .stage { row-gap: 0; }
+  html.t3-draw .cal, html.t3-fly .cal { width: min(100%, calc(100dvh - 300px)); }
+}
+@media (max-width: 899px) and (min-height: 501px) {
+  html.t3-draw .quote, html.t3-fly .quote { display: none; }
+  html.t3-draw .cal, html.t3-fly .cal { width: min(100%, calc(100dvh - 372px)); margin-inline: auto; }
+  html.t3-draw .stage > .side, html.t3-fly .stage > .side {
+    left: 0; right: 0; bottom: 0; transform: none; width: auto; max-width: none; flex-direction: column; align-items: stretch; gap: 8px;
     padding: 8px max(16px, env(safe-area-inset-right, 0px)) max(8px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
-    background: var(--c-bg); border-top: 1px solid var(--c-line);
+    border-width: 1px 0 0; border-radius: 0;
   }
-  html.t3-draw .drawbar, html.t3-fly .drawbar { padding: 0; border: 0; background: none; }
-  html.t3-draw .status:empty, html.t3-fly .status:empty { display: none; }
+  html.t3-draw .drawbar, html.t3-fly .drawbar { flex-direction: column; align-items: stretch; gap: 8px; }
+  html.t3-draw .drawbar .spacer, html.t3-fly .drawbar .spacer { display: block; }
+  html.t3 .side .actions .btn { flex: 1 1 auto; }
 }
 /* 手機橫放：跟桌機一樣左右排，不然日曆太小 */
 @media (max-width: 899px) and (max-height: 500px) {
-  html.t3-rest .stage { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "cal chips" "cal side"; }
+  html.t3-rest .stage { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); grid-template-areas: "cal chips" "cal quote" "cal ."; }
 }
 </style>
 
@@ -449,7 +483,7 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
     eraser: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 20H8l-4-4 10-10 6 6-7 7"/><path d="M9 11l6 6"/></svg>',
     undo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>',
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
-    gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/></svg>',
+    gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>',
     x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
     soundOn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h4l5-4v12l-5-4H4z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/></svg>',
     soundOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h4l5-4v12l-5-4H4z"/><path d="M17 10l4 4M21 10l-4 4"/></svg>',
@@ -496,6 +530,24 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
     flip() { this.paper({ dur: 0.32, from: 900, to: 2200, vol: 0.45, crackle: 0.0015, attack: 0.25 }); },
   };
   const reduceMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+  // ───────── 每日一句：同一天看到同一句 ─────────
+  const QUOTES = [
+    "事情一天做一件就好。", "今天只要比昨天多撕一頁。", "做不完的，明天的你會接手。", "小事做完，心裡就有一塊地方亮起來。",
+    "先做五分鐘，剩下的等一下再說。", "完成比完美早到。", "畫得醜也算畫了。", "今天的你，已經比想像中努力。",
+    "慢慢來，比較快到得了明天。", "一件事做完，就值得撕一頁。", "沒靈感的日子，就畫一朵花。", "把今天過完，就是很厲害的事。",
+    "休息也是今天的一件事。", "不用每天都很棒，有來就好。", "偶爾跳過一天，日曆不會生氣。", "想太多的時候，先動手。",
+    "一天一張紙，一年就是一本書。", "今天沒做到的，就撕掉重來。", "小小的一步，也是往前。", "喜歡的事，每天留一點時間給它。",
+    "你做的事，比你記得的還多。", "先寫下來，就不會一直掛在心上。", "再忙也留一格給自己。", "今天的進度，今天開心就好。",
+    "做完一件事，去喝杯水。", "別跟別人比，跟昨天的自己打個招呼。", "難的事切小塊，一天吃一口。", "開始的時候，總是亂亂的。",
+    "有畫就有今天的痕跡。", "明天會來，你也會。",
+  ];
+  function dailyQuote() {
+    const d = todayStr(); let h = 7;
+    for (const c of d) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    h = (h ^ (h >>> 13)) * 2654435761 >>> 0;
+    return QUOTES[h % QUOTES.length];
+  }
 
   // ───────── 風格 ─────────
   const PRESETS = [
@@ -581,7 +633,7 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
       setTimeout(() => URL.revokeObjectURL(url), 4000);
     },
   };
-  const defaultCal = () => ({ goal: "每天畫一張畫", start: todayStr(), len: 30, style: { ...PRESETS[0] }, createdAt: Date.now() });
+  const defaultCal = () => ({ goal: "每天畫一張畫或做一件事", start: todayStr(), len: 30, style: { ...PRESETS[0] }, createdAt: Date.now() });
   const S = {
     store: null, sample: null, aiImages: false, downloads: webDownloads,
     cal: null, calSaved: false, days: {}, view: "today", msg: "", msgErr: false,
@@ -590,6 +642,8 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
   };
   const imgSrc = (rec) => (rec?.asset ? "/_blob/" + rec.asset : rec?.data || "");
   const hasArt = (rec) => !!(rec && (rec.asset || rec.data));
+  const doneTask = (rec) => !!(rec && rec.task && rec.done);
+  const didDay = (rec) => hasArt(rec) || doneTask(rec); // 畫了一張畫，或做完一件事，今天就算數
 
   function rangeDays() {
     const out = [];
@@ -615,11 +669,12 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
     const days = rangeDays();
     const t = todayStr();
     const drawn = days.filter((d) => hasArt(S.days[dayKey(d)])).length;
+    const did = days.filter((d) => doneTask(S.days[dayKey(d)])).length;
     const torn = days.filter((d) => S.days[dayKey(d)]?.torn).length;
     let streak = 0;
-    let d = hasArt(S.days[dayKey(t)]) ? t : addDays(t, -1);
-    while (d >= S.cal.start && hasArt(S.days[dayKey(d)])) { streak++; d = addDays(d, -1); }
-    return { drawn, torn, streak, total: days.length };
+    let d = didDay(S.days[dayKey(t)]) ? t : addDays(t, -1);
+    while (d >= S.cal.start && didDay(S.days[dayKey(d)])) { streak++; d = addDays(d, -1); }
+    return { drawn, did, torn, streak, total: days.length };
   }
 
   function setMsg(text, err = false) { S.msg = text; S.msgErr = err; const el = $("#status"); if (el) { el.textContent = text; el.classList.toggle("err", err); } }
@@ -718,7 +773,8 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
     await ensureCal();
     const key = dayKey(date);
     const prev = S.days[key] || {};
-    const rec = { torn: !!prev.torn, savedAt: Date.now() };
+    const rec = { ...prev, torn: !!prev.torn, savedAt: Date.now() }; // 待辦欄位跟著留下來
+    delete rec.data; delete rec.asset;
     if (!board.isEmpty()) {
       const out = document.createElement("canvas");
       out.width = out.height = CANVAS_PX;
@@ -740,7 +796,26 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
     setMsg("畫畫中⋯");
     saveTimer = setTimeout(() => flushSave(date), 1200);
   }
+  // 今天做什麼：打字時先記在畫面上，停一下才存
+  let taskTimer = null, taskDate = null;
+  function changeTask(date, patch) {
+    const key = dayKey(date);
+    S.days[key] = { torn: false, ...S.days[key], ...patch };
+    if (!S.days[key].task) S.days[key].done = false;
+    taskDate = date;
+    clearTimeout(taskTimer);
+    taskTimer = setTimeout(flushTask, 500);
+    refreshTodayBits(date);
+  }
+  async function flushTask() {
+    clearTimeout(taskTimer); taskTimer = null;
+    if (!taskDate) return;
+    const date = taskDate; taskDate = null;
+    try { await ensureCal(); await S.store.set(dayKey(date), { ...S.days[dayKey(date)], savedAt: Date.now() }); }
+    catch { setMsg("存不起來，網路好像斷了", true); }
+  }
   async function flushSave(date) {
+    await flushTask();
     clearTimeout(saveTimer); saveTimer = null;
     if (savePromise) await savePromise;
     if (!S.live || !S.live.dirty) return;
@@ -753,10 +828,10 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
   }
   // 不重畫整頁（畫布會被洗掉），只更新數字和按鈕
   function refreshTodayBits(date) {
-    const art = hasArt(S.days[dayKey(date)]);
+    const art = didDay(S.days[dayKey(date)]);
     const tearBtn = $('[data-act="tear"]'); if (tearBtn) tearBtn.disabled = !art;
     const saveBtn = $('[data-act="save"]'); if (saveBtn) saveBtn.disabled = !art;
-    const foot = $("#sheet-note"); if (foot) foot.textContent = art ? "畫好了，可以撕" : "";
+    const foot = $("#sheet-note"); if (foot) foot.textContent = art ? "可以撕了" : "";
     const chips = $("#chips"); if (chips) chips.innerHTML = chipsHTML();
   }
 
@@ -774,7 +849,7 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
     return `
       <header class="top">
         <div>
-          <div class="eyebrow mono">ORDER #404 · DAY 6</div>
+          <div class="eyebrow"><span class="mono">ORDER #404 · DAY 6</span><span class="goal-tag">${esc(S.cal.goal)}</span></div>
           <h1>自製日曆</h1>
         </div>
         <div class="top-right">
@@ -796,6 +871,7 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
   function chipsHTML() {
     const s = stats();
     return `<span class="chip lime">畫了 ${s.drawn} 張</span>
+      ${s.did ? `<span class="chip lime">做了 ${s.did} 件</span>` : ""}
       <span class="chip lime">撕了 ${s.torn} / ${s.total} 頁</span>
       ${s.streak > 1 ? `<span class="chip lime">連續 ${s.streak} 天</span>` : ""}`;
   }
@@ -827,7 +903,7 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
           <div class="ym mono">${d.getFullYear()}.${pad2(d.getMonth() + 1)}</div>
           <div class="month">${MONTH_ZH[d.getMonth()]}</div>
         </div>
-        <div class="goal">${esc(goal)}</div>
+        ${goal ? `<div class="goal">${esc(goal)}</div>` : ""}
         <div class="staples" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
       </div>`;
   }
@@ -853,14 +929,18 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
     const pb = padBits(st, s.torn, S.cal.len - s.torn - 1);
     if (cur.kind === "open") {
       const rec = S.days[dayKey(cur.date)];
-      const art = hasArt(rec);
+      const art = didDay(rec);
       const late = cur.date < t ? `${parse(cur.date).getMonth() + 1}/${parse(cur.date).getDate()} 那頁還沒撕` : "";
       sheet = sheetHTML(cur.date, st, {
         id: "top-sheet", curl: true,
-        foot: late || (art ? "畫好了，可以撕" : ""),
-        art: `<div class="art live" style="background:${st.paper}">
+        foot: late || (art ? "可以撕了" : ""),
+        art: `<div class="task">
+                <input type="checkbox" id="task-done" aria-label="今天這件事做完了" ${rec?.done ? "checked" : ""}>
+                <input type="text" id="task-text" maxlength="24" placeholder="今天做什麼呢" aria-label="今天做什麼呢" autocomplete="off" value="${esc(rec?.task || "")}">
+              </div>
+              <div class="art live" style="background:${st.paper}">
                 <canvas id="live" width="${CANVAS_PX}" height="${CANVAS_PX}" aria-label="今天這頁的畫布，可以畫畫、寫字"></canvas>
-                ${art ? "" : `<div class="ph" id="ph">${ICON.pencil}<span>直接在這裡畫畫、寫字</span></div>`}
+                ${hasArt(rec) ? "" : `<div class="ph" id="ph">${ICON.pencil}<span>直接在這裡畫畫、寫字</span></div>`}
               </div>`,
       });
       below = `
@@ -886,8 +966,9 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
     return `
       <div class="stage">
         <div class="chips" id="chips">${chipsHTML()}</div>
+        <figure class="quote"><figcaption>今日一句</figcaption><blockquote>${esc(dailyQuote())}</blockquote></figure>
         <section class="cal" style="${styleVars(st)}" aria-label="撕日曆">
-          ${boardHTML(cur.date || t, st, S.cal.goal)}
+          ${boardHTML(cur.date || t, st, "")}
           <div class="pad ${pb.cls} ${padClass}" id="pad">${pb.top}${sheet}${padClass === "empty" ? "" : pb.bottom}</div>
         </section>
         <div class="side">
@@ -930,7 +1011,7 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
           <div class="legend"><span>✓ 撕下來了</span><span><span style="color:var(--c-rose-deep)">●</span> 那天沒畫，點了可以補</span></div>
         </div>
         <section class="cal" style="${styleVars(st)}" aria-label="月曆">
-          ${boardHTML(months[i] + "-01", st, S.cal.goal)}
+          ${boardHTML(months[i] + "-01", st, "")}
           <div class="pad ${pb.cls}">
             <div class="mpages" id="mpages">${monthPageHTML(months[i])}</div>
             ${pb.bottom || `<div class="edges" style="--thick:3px" aria-hidden="true"></div>`}
@@ -964,12 +1045,12 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
         const rec = S.days[dayKey(ds)];
         if (!inRange.has(ds)) { cells += `<div class="mcell out"><span>${n}</span></div>`; continue; }
         const future = ds > t;
-        const art = hasArt(rec);
-        const cls = ["mcell", art ? "has" : "", future ? "future" : "", ds === t ? "today" : "", rec?.torn && art ? "kept" : "", !future && !art && ds < t ? "miss" : ""].join(" ");
-        const label = `${mo} 月 ${n} 日` + (art ? "，已畫" : future ? "，還沒到" : "，還沒畫");
+        const art = hasArt(rec), did = didDay(rec);
+        const cls = ["mcell", art ? "has" : "", future ? "future" : "", ds === t ? "today" : "", rec?.torn && did ? "kept" : "", !future && !did && ds < t ? "miss" : ""].join(" ");
+        const label = `${mo} 月 ${n} 日` + (art ? "，已畫" : did ? "，做完了" : future ? "，還沒到" : "，還沒畫");
         cells += future
           ? `<div class="${cls}" aria-label="${label}"><span>${n}</span></div>`
-          : `<button type="button" class="${cls}" data-act="${art ? "view" : "draw"}" data-date="${ds}" aria-label="${label}"><span>${n}</span>${art ? `<img src="${esc(imgSrc(rec))}" alt="" loading="lazy">` : ""}</button>`;
+          : `<button type="button" class="${cls}" data-act="${did ? "view" : "draw"}" data-date="${ds}" aria-label="${label}"><span>${n}</span>${art ? `<img src="${esc(imgSrc(rec))}" alt="" loading="lazy">` : ""}</button>`;
       }
       const tail = (7 - ((lead + count) % 7)) % 7;
       for (let i = 0; i < tail; i++) cells += `<div class="mcell out"><span>.</span></div>`;
@@ -1048,6 +1129,15 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
       openSettings();
     }));
 
+    const tt = $("#task-text"), td = $("#task-done");
+    if (tt) {
+      const date = currentPage().date;
+      tt.addEventListener("input", () => { changeTask(date, { task: tt.value.trim() }); if (!tt.value.trim()) td.checked = false; });
+      td.addEventListener("change", () => {
+        if (!tt.value.trim()) { td.checked = false; tt.focus(); return; }
+        changeTask(date, { done: td.checked });
+      });
+    }
     const cv = $("#live");
     if (cv) {
       const date = currentPage().date;
@@ -1094,7 +1184,7 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
     if (T3.busy()) return;
     if (T3.drawing()) await T3.exitDraw(); // 先把畫好的貼回 3D 的紙，再撕
     await flushSave(date);
-    if (!hasArt(S.days[dayKey(date)])) { setMsg("先畫點東西再撕", true); T3.springBack(); return; }
+    if (!didDay(S.days[dayKey(date)])) { setMsg("畫一張畫或做完一件事再撕", true); T3.springBack(); return; }
     const sheet = $("#top-sheet");
     const rec = { ...S.days[dayKey(date)], torn: true, tornAt: Date.now() };
     try { await S.store.set(dayKey(date), rec); }
@@ -1145,10 +1235,11 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
     const d = parse(date);
     const { el, close } = openModal(`
       <div class="card-head"><h2>${d.getMonth() + 1} 月 ${d.getDate()} 日 ${WEEK[d.getDay()]}</h2><p class="hint">${rec?.torn ? "已經撕下來了" : "還在日曆上"}</p></div>
-      <div class="canvas-wrap"><img src="${esc(imgSrc(rec))}" alt="${date} 的畫" style="width:100%;height:100%;object-fit:cover;display:block"></div>
+      ${rec?.task ? `<p class="hint">${rec.done ? "✓" : "□"} ${esc(rec.task)}</p>` : ""}
+      ${hasArt(rec) ? `<div class="canvas-wrap"><img src="${esc(imgSrc(rec))}" alt="${date} 的畫" style="width:100%;height:100%;object-fit:cover;display:block"></div>` : ""}
       <div class="actions">
         ${S.downloads ? `<button type="button" class="btn primary" data-x="save">存成圖片</button>` : ""}
-        <button type="button" class="btn" data-x="redo">重畫</button>
+        <button type="button" class="btn" data-x="redo">${hasArt(rec) ? "重畫" : "補畫"}</button>
       </div>
       <div class="status" id="vstatus" role="status"></div>`);
     $('[data-x="redo"]', el).addEventListener("click", () => {
@@ -1200,7 +1291,7 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
         <div class="card-head"><h2>設定</h2><p class="hint">目標、天數和日曆的樣子。</p></div>
         <div class="field">
           <label for="s-goal">你想每天做什麼？</label>
-          <input class="input" id="s-goal" maxlength="24" placeholder="每天畫一張畫" value="${esc(sd.goal)}" autocomplete="off">
+          <input class="input" id="s-goal" maxlength="24" placeholder="每天畫一張畫或做一件事" value="${esc(sd.goal)}" autocomplete="off">
         </div>
         <div class="row2">
           <div class="field">
@@ -1259,7 +1350,7 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
       $('[data-x="ok"]', body).addEventListener("click", async (ev) => {
         const btn = ev.currentTarget;
         btn.disabled = true;
-        const next = { ...S.cal, goal: sd.goal.trim() || "每天畫一張畫", len: sd.len, start: sd.start, style: sd.style };
+        const next = { ...S.cal, goal: sd.goal.trim() || "每天畫一張畫或做一件事", len: sd.len, start: sd.start, style: sd.style };
         try { await S.store.set("cal", next); }
         catch { sd.msg = "存不起來，等一下再試"; sd.err = true; draw(); return; }
         S.cal = next; S.calSaved = true;
@@ -1328,7 +1419,8 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
       x.fillStyle = st.ink; x.font = `400 220px ${sans}`; x.fillText(String(d.getDate()), P + 40, top + 230);
       x.font = `400 48px ${sans}`; x.textAlign = "right"; x.fillText(WEEK[d.getDay()], W - P - 40, top + 150);
       x.font = `500 28px ${mono}`; x.globalAlpha = 0.7; x.fillText(`第 ${diffDays(S.cal.start, date) + 1} / ${S.cal.len} 頁`, W - P - 40, top + 210); x.globalAlpha = 1; x.textAlign = "left";
-      const artTop = top + 280, artSize = W - P * 2 - 80;
+      if (rec?.task) { x.font = `400 34px ${sans}`; x.fillStyle = st.ink; x.fillText(`${rec.done ? "✓" : "□"} ${rec.task}`, P + 40, top + 272); }
+      const artTop = top + (rec?.task ? 300 : 280), artSize = W - P * 2 - 80 - (rec?.task ? 20 : 0);
       if (hasArt(rec)) {
         const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = imgSrc(rec); });
         x.save(); roundRect(x, P + 40, artTop, artSize, artSize, 20); x.clip(); x.drawImage(img, P + 40, artTop, artSize, artSize); x.restore();
@@ -1353,7 +1445,7 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
       butter: "#FFFFCD", butter2: "#FBEFA6", butter3: "#E7C76A",
       blush: "#F2E9EC", blush2: "#EFD3DB", blush3: "#DDA9BA",
     };
-    let cv = null, lastW = 0, lastH = 0;
+    let cv = null, lastW = 0, lastH = 0; // 畫布和上次的視窗大小
     function rng(seed) { return () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 
     // 蠟筆線：沿路一點一點蓋上去，粗細抖動、偶爾斷掉
@@ -1461,31 +1553,19 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
       rose: { fill: C.blush2, mid: C.blush3, line: C.blush, eye: C.butter3 },
     };
 
-    function flower(x, R, baseX, baseY, cx, cy, r, kind, tone, u) {
+    function flower(xs, xh, R, baseX, baseY, cx, cy, r, kind, tone, u) {
       const mx = (baseX + cx) / 2 + (R() - 0.5) * r, p = [];
       for (let i = 0; i <= 18; i++) { const t = i / 18, a = (1 - t) * (1 - t), b = 2 * (1 - t) * t, c = t * t; p.push([a * baseX + b * mx + c * cx, a * baseY + b * (baseY + cy) / 2 + c * cy]); }
-      crayon(x, R, p, C.sage4, 6 * u);
+      crayon(xs, R, p, C.sage4, 6 * u);
       const leaf = (t, s) => {
         const [lx, ly] = p[Math.round(t * 18)], len = r * (0.55 + R() * 0.25), a = -Math.PI / 2 + s * (0.7 + R() * 0.3);
         const tip = [lx + Math.cos(a) * len, ly + Math.sin(a) * len], out = [];
         for (let i = 0; i <= 14; i++) { const q = i / 14, w = Math.sin(q * Math.PI) * len * 0.2; out.push([lx + (tip[0] - lx) * q - Math.sin(a) * w, ly + (tip[1] - ly) * q + Math.cos(a) * w]); }
         for (let i = 14; i >= 0; i--) { const q = i / 14, w = Math.sin(q * Math.PI) * len * 0.2; out.push([lx + (tip[0] - lx) * q + Math.sin(a) * w, ly + (tip[1] - ly) * q - Math.cos(a) * w]); }
-        patch(x, R, out, C.sage3, C.sage4, u);
+        patch(xs, R, out, C.sage3, C.sage4, u);
       };
       leaf(0.3, 1); leaf(0.52, -1);
-      KINDS[kind](x, R, cx, cy, r, u, TONES[tone]);
-    }
-
-    function grass(x, R, w, h, top, u) {
-      const band = (y, color, mottle, amp, ph) => {
-        const p = [];
-        for (let i = 0; i <= 90; i++) { const t = i / 90; p.push([t * (w + 40) - 20, y + Math.sin(t * 7 + ph) * amp + Math.sin(t * 17 + ph * 2) * amp * 0.4]); }
-        p.push([w + 20, h + 20], [-20, h + 20]);
-        patch(x, R, p, color, mottle, u);
-      };
-      band(top, C.sage, C.sage2, 12 * u, 1.2);
-      blades(x, R, w, top + 6 * u, h, u, 150, [C.sage2, C.sage3]);
-      return (y) => { band(y, C.sage2, C.sage3, 9 * u, 3.4); blades(x, R, w, y + 4 * u, h, u, 240, [C.sage3, C.sage4, C.sage]); };
+      KINDS[kind](xh, R, cx, cy, r, u, TONES[tone]);
     }
     function blades(x, R, w, y0, h, u, count, cols) {
       const n = Math.round((count * w) / (1000 * u));
@@ -1494,44 +1574,114 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
         crayon(x, R, [[bx, by], [bx + s * 0.3, by - L * 0.55], [bx + s, by - L]], cols[Math.floor(R() * cols.length)], 3.4 * u);
       }
     }
+    function band(x, R, w, h, y, color, mottle, amp, ph, u) {
+      const p = [];
+      for (let i = 0; i <= 90; i++) { const t = i / 90; p.push([t * (w + 120) - 60, y + Math.sin(t * 7 + ph) * amp + Math.sin(t * 17 + ph * 2) * amp * 0.4]); }
+      p.push([w + 60, h + 20], [-60, h + 20]);
+      patch(x, R, p, color, mottle, u);
+    }
+    // 一層一層畫成小畫布，動的時候只要貼上去
+    function layer(l, t, r, b, dpr) {
+      const c = document.createElement("canvas");
+      c.width = Math.ceil((r - l) * dpr); c.height = Math.ceil((b - t) * dpr);
+      const x = c.getContext("2d"); x.setTransform(dpr, 0, 0, dpr, -l * dpr, -t * dpr);
+      return { c, x, l, t, w: r - l, h: b - t };
+    }
+    const put = (x, s) => x.drawImage(s.c, s.l, s.t, s.w, s.h);
 
-    function paint() {
-      const w = window.innerWidth, h = window.innerHeight, dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let scene = null;
+    function build() {
+      const w = window.innerWidth, h = window.innerHeight;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(4200000 / (w * h)));
       cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
-      const x = cv.getContext("2d"), R = rng(404);
-      x.setTransform(dpr, 0, 0, dpr, 0, 0);
-      x.fillStyle = C.wall; x.fillRect(0, 0, w, h);
-      const wide = w >= 900, u = wide ? 1 : 0.72;
-      const top = wide ? h * 0.8 : h - 118;
-      const front = grass(x, R, w, h, top, u);
-      const m = Math.min(w, h);
+      const R = rng(404), wide = w >= 900, u = wide ? 1 : 0.72, m = Math.min(w, h);
+      const top = wide ? h * 0.8 : h - 118, ftop = wide ? h * 0.9 : h - 62;
+      const back = layer(-70, top - 50, w + 70, h + 24, dpr);
+      band(back.x, R, w, h, top, C.sage, C.sage2, 12 * u, 1.2, u);
+      blades(back.x, R, w, top + 6 * u, h, u, 150, [C.sage2, C.sage3]);
+      const front = layer(-70, ftop - 50, w + 70, h + 24, dpr);
+      band(front.x, R, w, h, ftop, C.sage2, C.sage3, 9 * u, 3.4, u);
+      blades(front.x, R, w, ftop + 4 * u, h, u, 240, [C.sage3, C.sage4, C.sage]);
       const list = wide
         ? [[0.92, 0.46, 0.15, "rose", "sage"], [0.73, 0.55, 0.115, "round", "butter"], [0.985, 0.7, 0.11, "cross", "rose"], [0.84, 0.69, 0.1, "round", "blush"], [0.655, 0.72, 0.075, "pom", "gold"], [0.77, 0.77, 0.07, "daisy", "deep"], [0.94, 0.85, 0.06, "pom", "gold"],
            [0.045, 0.56, 0.1, "round", "blush"], [0.095, 0.72, 0.075, "cross", "sage"], [0.012, 0.76, 0.07, "pom", "gold"]]
-        : [[0.99, (h - 268) / h, 0.15, "round", "blush"], [0.02, (h - 244) / h, 0.145, "rose", "sage"], [0.93, (h - 168) / h, 0.11, "pom", "gold"], [0.075, (h - 150) / h, 0.1, "cross", "rose"], [0.5, (h - 118) / h, 0.0, "pom", "gold"]];
-      for (const [fx, fy, fr, kind, tone] of list) {
-        if (!fr) continue;
-        const bx = fx * w + (fx > 0.5 ? -1 : 1) * 40 * u * R();
-        flower(x, R, bx, h + 10, fx * w, fy * h, fr * m, kind, tone, u);
-      }
-      front(wide ? h * 0.9 : h - 62);
+        : [[0.99, (h - 268) / h, 0.15, "round", "blush"], [0.02, (h - 244) / h, 0.145, "rose", "sage"], [0.93, (h - 168) / h, 0.11, "pom", "gold"], [0.075, (h - 150) / h, 0.1, "cross", "rose"]];
+      const flowers = list.map(([fx, fy, fr, kind, tone], i) => {
+        const r = fr * m, cx = fx * w, cy = fy * h, bx = cx + (fx > 0.5 ? -1 : 1) * 40 * u * R(), by = h + 10, pad = r * 1.35;
+        const stem = layer(Math.min(bx, cx) - pad, cy - 10, Math.max(bx, cx) + pad, by + 8, dpr);
+        const head = layer(cx - pad, cy - pad, cx + pad, cy + pad, dpr);
+        flower(stem.x, head.x, R, bx, by, cx, cy, r, kind, tone, u);
+        return { stem, head, bx, by, cx, cy, r, ph: i * 1.7, a: 0, v: 0, depth: 0.6 + (r / m) * 3 };
+      });
+      scene = { w, h, dpr, back, front, flowers };
     }
+
+    // 風：幾個不同快慢的波疊起來，偶爾來一陣；滑鼠位置讓花往那邊偏，滑過花附近會推它一下
+    const mouse = { x: 0, y: 0, tx: 0, ty: 0, px: null, py: null };
+    function draw(t) {
+      const { w, h, dpr, back, front, flowers } = scene, x = cv.getContext("2d");
+      mouse.x += (mouse.tx - mouse.x) * 0.06; mouse.y += (mouse.ty - mouse.y) * 0.06;
+      const gust = Math.pow(Math.max(0, Math.sin(t * 0.37)), 6) * 0.02;
+      x.setTransform(dpr, 0, 0, dpr, 0, 0);
+      x.fillStyle = C.wall; x.fillRect(0, 0, w, h);
+      const shear = (s, k) => { x.save(); x.transform(1, 0, s, 1, -s * h, 0); put(x, k); x.restore(); };
+      shear(0.008 * Math.sin(t * 1.1) + gust * 0.5 + mouse.x * 0.012, back);
+      for (const f of flowers) {
+        const wind = 0.011 * Math.sin(t * 1.05 + f.ph) + 0.005 * Math.sin(t * 2.6 + f.ph * 1.8) + gust;
+        f.v += (wind + mouse.x * 0.03 * f.depth - f.a) * 0.03; f.v *= 0.9; f.a += f.v;
+        x.save();
+        x.translate(f.bx - mouse.x * 9 * f.depth, f.by); x.rotate(f.a); x.translate(-f.bx, -f.by);
+        put(x, f.stem);
+        x.translate(f.cx, f.cy); x.rotate(f.a * 1.5 + 0.018 * Math.sin(t * 1.5 + f.ph * 2)); x.translate(-f.cx, -f.cy);
+        put(x, f.head);
+        x.restore();
+      }
+      shear(0.013 * Math.sin(t * 1.3 + 1) + gust + mouse.x * 0.02, front);
+    }
+
+    let raf = 0, last = 0, frames = [], slowCb = null;
+    function loop(now) {
+      raf = requestAnimationFrame(loop);
+      const dt = now - last;
+      if (dt < 30) return; // 30 幀就夠，省電
+      last = now;
+      if (frames) {
+        frames.push(dt);
+        if (frames.length === 40) {
+          const med = frames.slice(5).sort((a, b) => a - b)[17]; frames = null;
+          if (med > 80 && new URLSearchParams(location.search).get("perf") !== "0") { stop(); slowCb?.(); return; }
+        }
+      }
+      draw(now / 1000);
+    }
+    const stop = () => { cancelAnimationFrame(raf); raf = 0; };
+    const still = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    function run() { if (!raf && !still() && !document.hidden) { last = 0; raf = requestAnimationFrame(loop); } }
 
     function init() {
       cv = document.createElement("canvas"); cv.id = "garden"; cv.setAttribute("aria-hidden", "true");
       document.body.prepend(cv);
-      lastW = window.innerWidth; lastH = window.innerHeight; paint();
+      lastW = window.innerWidth; lastH = window.innerHeight; build(); draw(0); run();
+      document.addEventListener("visibilitychange", () => { if (document.hidden) stop(); else run(); });
+      window.addEventListener("pointermove", (e) => {
+        mouse.tx = (e.clientX / window.innerWidth - 0.5) * 2; mouse.ty = (e.clientY / window.innerHeight - 0.5) * 2;
+        if (mouse.px != null && scene) {
+          const dx = e.clientX - mouse.px;
+          for (const f of scene.flowers) { const d = Math.hypot(e.clientX - f.cx, e.clientY - f.cy); if (d < f.r * 1.5) f.v += dx * 0.00022; }
+        }
+        mouse.px = e.clientX; mouse.py = e.clientY;
+      }, { passive: true });
       let t = 0;
       window.addEventListener("resize", () => {
         clearTimeout(t);
         t = setTimeout(() => {
           // 手機網址列收合只差幾十 px，不重畫
           if (window.innerWidth === lastW && Math.abs(window.innerHeight - lastH) < 120) return;
-          lastW = window.innerWidth; lastH = window.innerHeight; paint();
+          lastW = window.innerWidth; lastH = window.innerHeight; build(); draw(performance.now() / 1000);
         }, 160);
       });
     }
-    return { init };
+    return { init, onSlow: (fn) => { slowCb = fn; } };
   })();
 
   // ───────── 3D 層：牆上那本日曆用 three.js 畫；載入不了、跑不動就留在上面的 CSS 版 ─────────
@@ -1541,7 +1691,7 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
     const query = new URLSearchParams(location.search);
     // 可以調的數字都在這：1 個世界單位 = 一張紙的寬
     const FOV = 24, TEX_W = 1024, NX = 44, NY = 60;
-    const LOAD_TIMEOUT = 6000, TEAR_MS = 1250, CAM_MS = 520, INTRO_S = 2.85;
+    const LOAD_TIMEOUT = 6000, TEAR_MS = 1250, CAM_MS = 520;
     const ARM = 0.42;              // 拖過這個距離放開才會撕
     const STACK_Z = 0.1;           // 紙疊離牆多遠
     const BOARD_D = 0.2;           // 裝訂條多厚
@@ -1557,9 +1707,9 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
     let THREE = null, renderer = null, canvas = null, scene = null, camera = null;
     let L = null, cal = null, grainCv = null, grainTex = null;
     const st = {
-      ready: false, failed: false, on: false, shown: false, mode: "rest", busy: false, intro: false, skip: false,
+      ready: false, failed: false, on: false, shown: false, mode: "rest", busy: false,
       drag: null, dragTear: false, top: null, under: null, spare: null, cam: null,
-      par: { x: 0, y: 0, tx: 0, ty: 0, run: false }, queue: Promise.resolve(), frames: [],
+      par: { x: 0, y: 0, tx: 0, ty: 0, run: false }, queue: Promise.resolve(),
     };
 
     const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
@@ -1665,7 +1815,6 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
       window.addEventListener("pointercancel", onCancel);
-      document.addEventListener("keydown", () => { if (st.intro) st.skip = true; });
       document.fonts?.ready.then(() => { if (st.ready && cal) { cal.boardKey = ""; cal.sheets.forEach((s) => { s.key = ""; }); sync(); } });
     }
 
@@ -1679,7 +1828,6 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
       for (const a of [...anims]) if (a(dt) === false) anims.delete(a);
       if (!renderer || !st.on) return;
       renderer.render(scene, camera);
-      if (st.intro) watchFrames(dt);
       if (anims.size || dirty) raf = requestAnimationFrame(loop); else lastT = 0;
     }
     const kick = () => { dirty = true; if (!raf) raf = requestAnimationFrame(loop); };
@@ -1690,24 +1838,18 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
         anims.add(a); kick();
       });
     }
-    // 開場時量一下幀數，手機撐不住就退回 CSS 版
-    function watchFrames(dt) {
-      st.frames.push(dt);
-      if (st.frames.length !== 46 || query.get("perf") === "0") return;
-      const med = st.frames.slice(6).sort((a, b) => a - b)[20];
-      if (med > 66) giveUp();
-    }
-
     // ───── 量 DOM，讓 3D 的比例跟平面版一樣 ─────
     function measure() {
       const rest = root.classList.contains("t3-rest");
       root.classList.remove("t3-rest");
       const sheet = $("#app .cal .sheet"), board = $("#app .cal .board"), hanger = $("#app .cal .hanger");
-      const px = sheet?.getBoundingClientRect().width || 340;
       const b = board?.getBoundingClientRect();
       const hh = hanger?.getBoundingClientRect().height || 36;
+      root.classList.add("t3-draw");
+      const px = sheet?.getBoundingClientRect().width || 340;
+      root.classList.remove("t3-draw");
       if (rest) root.classList.add("t3-rest");
-      return { px, H: (px + 130) / px, boardW: (b?.width || px + 6) / px, boardH: (b?.height || 80) / px, hangH: hh / px, zig: S.cal.style.corner === "zigzag" };
+      return { px, H: (px + 182) / px, boardW: 1 + 6 / px, boardH: (b?.height || 80) / (b?.width || px + 6) * (1 + 6 / px), hangH: Math.min(hh, 36) / px, zig: S.cal.style.corner === "zigzag" };
     }
     const sameL = (a, b) => a && Math.abs(a.px - b.px) < 1 && Math.abs(a.boardH - b.boardH) < 0.004 && a.zig === b.zig;
 
@@ -1877,7 +2019,7 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
       if (cur.kind === "open") {
         const rec = S.days[dayKey(cur.date)], art = hasArt(rec);
         const late = cur.date < t ? `${parse(cur.date).getMonth() + 1}/${parse(cur.date).getDate()} 那頁還沒撕` : "";
-        return { kind: "open", date: cur.date, src: art ? imgSrc(rec) : "", stamp: rec?.savedAt || 0, foot: late || (art ? "畫好了，可以撕" : "") };
+        return { kind: "open", date: cur.date, src: art ? imgSrc(rec) : "", stamp: rec?.savedAt || 0, task: rec?.task || "", done: !!rec?.done, foot: late || (didDay(rec) ? "可以撕了" : "") };
       }
       if (cur.kind === "tomorrow") return { kind: "lock", date: cur.date, lines: ["明天再來撕下一頁。"], foot: "" };
       if (cur.kind === "notyet") { const d = parse(cur.date); return { kind: "lock", date: cur.date, lines: [`${d.getMonth() + 1} 月 ${d.getDate()} 日開始撕第一頁`], foot: "還沒開始" }; }
@@ -1895,7 +2037,7 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
     function drawSheet(cv, d, img, k) {
       const s = S.cal.style, W = cv.width, H = cv.height, x = cv.getContext("2d");
       const PAD = 16 * k, TOP = 22 * k, ART = (L.px - 34) * k;
-      const artX = 17 * k, artY = (22 + 79 + 12 + 1) * k;
+      const artX = 17 * k, artY = (22 + 79 + 12 + 40 + 12 + 1) * k, rowY = (22 + 79 + 12 + 20) * k;
       x.globalCompositeOperation = "source-over"; x.globalAlpha = 1;
       x.clearRect(0, 0, W, H);
       x.fillStyle = s.paper; x.fillRect(0, 0, W, H);
@@ -1912,6 +2054,17 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
         x.fillText(WEEK[dt.getDay()], W - PAD, TOP + 72 * k);
       }
       if (d.kind === "open") {
+        // 今天做什麼：打勾框和文字
+        x.lineWidth = 1.5 * k; x.strokeStyle = s.ink; x.lineJoin = "round";
+        roundPath(x, PAD + 1 * k, rowY - 12 * k, 24 * k, 24 * k, 7 * k);
+        if (d.done) { x.fillStyle = s.accent; x.fill(); }
+        x.stroke();
+        if (d.done) { x.lineWidth = 2 * k; x.beginPath(); x.moveTo(PAD + 7 * k, rowY); x.lineTo(PAD + 12 * k, rowY + 5 * k); x.lineTo(PAD + 20 * k, rowY - 6 * k); x.stroke(); }
+        x.fillStyle = s.ink; x.textAlign = "left"; x.textBaseline = "middle"; x.font = `400 ${16 * k}px ${SANS}`;
+        x.globalAlpha = d.task ? 1 : 0.55; x.fillText(d.task || "今天做什麼呢", PAD + 36 * k, rowY + 1 * k); x.globalAlpha = 1;
+        x.textBaseline = "alphabetic";
+        x.strokeStyle = s.ink; x.globalAlpha = 0.25; x.lineWidth = 1.5 * k; x.setLineDash([5 * k, 5 * k]);
+        x.beginPath(); x.moveTo(PAD + 36 * k, rowY + 17 * k); x.lineTo(W - PAD, rowY + 17 * k); x.stroke(); x.setLineDash([]); x.globalAlpha = 1;
         roundPath(x, artX, artY, ART, ART, 10 * k);
         if (img) {
           x.save(); x.clip(); x.globalCompositeOperation = "darken"; x.drawImage(img, artX, artY, ART, ART); x.restore(); // 舊圖的純白底換成紙色
@@ -1941,10 +2094,10 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
 
     async function paintSheet(sh, d) {
       const s = S.cal.style;
-      const key = [d.kind, d.date, d.stamp, (d.src || "").length, d.foot, (d.lines || []).join(), s.paper, s.ink, s.numberStyle, L.px].join("|");
+      const key = [d.kind, d.date, d.stamp, (d.src || "").length, d.task, d.done, d.foot, (d.lines || []).join(), s.paper, s.ink, s.numberStyle, L.px].join("|");
       if (sh.key === key) return;
       const img = d.src ? await loadImg(d.src) : null;
-      await fontsFor((d.lines || []).join("") + (d.foot || "") + "星期一二三四五六日點紙面開始畫畫、寫字");
+      await fontsFor((d.lines || []).join("") + (d.foot || "") + (d.task || "") + "星期一二三四五六日點紙面開始畫畫、寫字今天做什麼呢");
       drawSheet(sh.cv, d, img, cal.k);
       sh.tex.needsUpdate = true; sh.key = key;
       sh.back.material.color.set(s.paper).multiply(BACK_TINT);
@@ -1971,10 +2124,10 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
     }
 
     async function paintBoard(date) {
-      const s = S.cal.style, d = parse(date), goal = S.cal.goal;
-      const key = [date.slice(0, 7), goal, s.accent, s.accent2, s.pattern, s.ink, L.px].join("|");
+      const s = S.cal.style, d = parse(date);
+      const key = [date.slice(0, 7), s.accent, s.accent2, s.pattern, s.ink, L.px].join("|");
       if (cal.boardKey === key) return;
-      await fontsFor(goal + MONTH_ZH[d.getMonth()]);
+      await fontsFor(MONTH_ZH[d.getMonth()]);
       const cv = cal.boardCv, W = cv.width, H = cv.height, k = W / (L.boardW * L.px), x = cv.getContext("2d");
       x.clearRect(0, 0, W, H);
       x.fillStyle = s.accent; x.fillRect(0, 0, W, H);
@@ -1985,10 +2138,6 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
       const ym = 12 * k + 14 * k;
       x.font = `500 ${13 * k}px ${MONO}`; x.fillText(`${d.getFullYear()}.${pad2(d.getMonth() + 1)}`, 16 * k, ym);
       x.font = `400 ${22 * k}px ${SANS}`; x.fillText(MONTH_ZH[d.getMonth()], 16 * k, ym + 29 * k);
-      x.font = `400 ${14 * k}px ${SANS}`; x.textAlign = "right";
-      const maxW = W * 0.56, lines = [""];
-      for (const ch of goal) { const n = lines[lines.length - 1] + ch; if (x.measureText(n).width > maxW && lines.length < 2) lines.push(ch); else lines[lines.length - 1] = n; }
-      lines.forEach((t, i) => x.fillText(t, W - 16 * k, ym + 29 * k - (lines.length - 1 - i) * 20 * k));
       cal.boardSide.color.set(s.accent);
       cal.boardTex.needsUpdate = true; cal.boardKey = key;
     }
@@ -2096,7 +2245,7 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
     function layout() {
       renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
       const n = measure();
-      if (!st.busy && !st.intro && !sameL(L, n)) { L = n; buildCal(); }
+      if (!st.busy && !sameL(L, n)) { L = n; buildCal(); }
     }
 
     function onResize() {
@@ -2119,14 +2268,14 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
       await paintSheet(st.top, d);
       if (kind === "open") await paintSheet(st.under, describe(pageAfter(cur.date)));
       for (const m of cal.stackMats) if (m.map == null) m.color.set(S.cal.style.paper);
-      if (!st.intro) {
+      {
         setDepth(kind === "done" ? 0 : depthFor(under));
         st.top.g.visible = true;
         if (st.under) st.under.g.visible = kind === "open" && !st.busy ? true : st.under.g.visible;
         if (!st.drag && !st.busy) hintFold(st.top, d.kind);
       }
       const hint = $(".t3-hint");
-      if (hint) hint.textContent = d.src ? "也可以抓著紙角拖下來" : "畫完才能撕";
+      if (hint) hint.textContent = didDay(S.days[dayKey(cur.date || "")]) ? "也可以抓著紙角拖下來" : "畫一張畫或做完一件事，就能撕";
       kick();
     }
 
@@ -2154,102 +2303,7 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
       await sync();
       root.classList.remove("t3-wait");
       cal.pivot.visible = true;
-      if (!reduceMotion() && query.get("intro") !== "0") await playIntro();
-      else kick();
-      sync();
-    }
-
-    // ───── 開場：紛飛的日曆頁聚攏成冊，裝訂條扣上，掛繩晃一下 ─────
-    function introTextures() {
-      const out = [], w = 256, h = Math.round(w * L.H), k = w / L.px, s = S.cal.style;
-      const base = parse(S.cal.start);
-      for (let i = 0; i < 4; i++) {
-        const c = newCanvas(w, h), x = c.getContext("2d");
-        x.fillStyle = s.paper; x.fillRect(0, 0, w, h); grainOver(x, w, h, 0.5);
-        x.fillStyle = s.ink; x.font = `400 ${88 * k}px ${SANS}`; x.textBaseline = "alphabetic";
-        const d = new Date(base); d.setDate(d.getDate() + 3 + i * 5);
-        x.fillText(String(d.getDate()), 16 * k, 94 * k);
-        x.globalAlpha = 0.25; x.lineWidth = 1.5 * k; x.setLineDash([7 * k, 6 * k]);
-        roundPath(x, 17 * k, 114 * k, (L.px - 34) * k, (L.px - 34) * k, 10 * k); x.stroke();
-        const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; out.push(t);
-      }
-      return out;
-    }
-
-    function playIntro() {
-      return new Promise((done) => {
-        st.intro = true; st.skip = false; st.frames = []; st.sun.shadow.intensity = SHADOW_AIR;
-        const box = sheetBox(), D = Math.hypot(st.cam.px - st.cam.lx, st.cam.py - st.cam.ly, st.cam.pz - st.cam.lz);
-        const vis = 2 * D * Math.tan((FOV * Math.PI) / 360);
-        const depth = depthFor(S.cal.len - stats().torn - 1);
-        setDepth(depth, true);
-        const n = window.innerWidth < 600 ? 12 : 18;
-        const texs = introTextures();
-        const group = new THREE.Group();
-        const rnd = (a) => (Math.random() - 0.5) * a;
-        const items = [];
-        for (let i = 0; i < n; i++) {
-          const geo = new THREE.PlaneGeometry(1, L.H, 6, 8);
-          const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: texs[i % texs.length], side: THREE.DoubleSide, shadowSide: THREE.DoubleSide }));
-          m.castShadow = true; m.visible = false; group.add(m);
-          items.push({
-            m, geo, base: geo.attributes.position.array.slice(), delay: 0.04 + (i * 1.1) / n, dur: 0.82 + Math.random() * 0.12,
-            sx: rnd(vis * 0.9), sy: box.cy + vis * (0.62 + Math.random() * 0.4), sz: 0.3 + Math.random() * 1.1,
-            rx: rnd(1.8), ry: rnd(2.2), rz: rnd(2.6), ph: Math.random() * 6, tz: STACK_Z + (depth * (i + 1)) / n,
-          });
-        }
-        cal.pivot.add(group);
-        const top = st.top, under = st.under;
-        top.g.visible = false; under.g.visible = false; cal.stub.visible = false;
-        cal.stack.scale.z = 0.02;
-        const finish = () => {
-          group.traverse((o) => { o.geometry?.dispose(); o.material?.dispose(); });
-          cal.pivot.remove(group); texs.forEach((t) => t.dispose());
-          cal.pivot.rotation.z = 0; cal.top.position.y = 0; cal.stack.scale.z = 1; cal.stub.visible = true;
-          top.g.rotation.set(0, 0, 0); top.g.position.set(-0.5, cal.ySheet, cal.topZ); top.g.visible = true; top.wave = null;
-          under.g.visible = true; hintFold(top, describe(currentPage()).kind);
-          st.sun.shadow.intensity = SHADOW; st.intro = false; kick(); done();
-        };
-        let t = 0;
-        const a = (dt) => {
-          t += dt / 1000;
-          if (!cal || st.failed) { st.intro = false; done(); return false; }
-          if (st.skip || t >= INTRO_S) { finish(); return false; }
-          st.sun.shadow.intensity = lerp(SHADOW_AIR, SHADOW, clamp((t - 1.5) / 0.6));
-          let landed = 0;
-          for (const it of items) {
-            const u = clamp((t - it.delay) / it.dur);
-            if (u <= 0) continue;
-            if (u >= 1) { it.m.visible = false; landed++; continue; }
-            const e = easeInOut(u), o = 1 - e;
-            it.m.visible = true;
-            it.m.position.set(lerp(it.sx, 0, e) + Math.sin(u * 7 + it.ph) * 0.26 * o, lerp(it.sy, box.cy, e), lerp(it.sz, it.tz, e));
-            it.m.rotation.set(it.rx * o + Math.sin(u * 6 + it.ph) * 0.25 * o, it.ry * o, it.rz * o);
-            const p = it.geo.attributes.position, A = 0.09 * o;
-            for (let i = 0; i < p.array.length; i += 3) p.array[i + 2] = A * Math.sin(it.base[i] * 4 + it.base[i + 1] * 1.3 + it.ph + u * 8);
-            p.needsUpdate = true; it.geo.computeVertexNormals();
-          }
-          cal.stack.scale.z = Math.max(0.02, landed / n);
-          // 最上面那頁最後到
-          const u = clamp((t - 1.12) / 0.74);
-          if (u > 0) {
-            const e = easeInOut(u), o = 1 - e;
-            top.g.visible = true;
-            top.g.position.set(-0.5 + Math.sin(u * 6) * 0.14 * o, cal.ySheet + vis * 0.8 * o, lerp(0.9, cal.topZ, e));
-            top.g.rotation.set(0.5 * o, -0.4 * o, 0.5 * o);
-            top.wave = { a: 0.05 * o, k: 4, ph: u * 8 }; top.fold = null; deform(top);
-          }
-          // 裝訂條扣上
-          const b = clamp((t - 1.32) / 0.5);
-          cal.top.position.y = b < 1 ? (1 - easeBack(b)) * vis * 0.55 + (b <= 0 ? vis : 0) : 0;
-          if (b >= 1) cal.stub.visible = true;
-          // 掛繩晃一下停住
-          const w = t - 1.86;
-          cal.pivot.rotation.z = w > 0 ? 0.034 * Math.exp(-3.6 * w) * Math.sin(10.5 * w) : 0;
-          return true;
-        };
-        anims.add(a); kick();
-      });
+      kick();
     }
 
     // ───── 手指和滑鼠 ─────
@@ -2265,7 +2319,6 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
     const uiTarget = (e) => e.target.closest?.("button, a, input, label, .modal");
 
     function onDown(e) {
-      if (st.intro) { st.skip = true; return; }
       if (!st.on || st.mode !== "rest" || st.busy || !cal || uiTarget(e) || document.querySelector(".modal")) return;
       if (e.button) return;
       const p = pickRay(e);
@@ -2273,7 +2326,7 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
       const cur = currentPage();
       if (cur.kind !== "open") return;
       const cx = p.x >= 0 ? 0.5 : -0.5, cy = p.y >= 0 ? L.H / 2 : -L.H / 2;
-      st.drag = { id: e.pointerId, sx: e.clientX, sy: e.clientY, p0: p, cx, cy, moved: false, armed: false, date: cur.date, art: hasArt(S.days[dayKey(cur.date)]) };
+      st.drag = { id: e.pointerId, sx: e.clientX, sy: e.clientY, p0: p, cx, cy, moved: false, armed: false, date: cur.date, art: didDay(S.days[dayKey(cur.date)]) };
     }
 
     function onMove(e) {
@@ -2302,9 +2355,19 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
       const d = st.drag;
       if (!d || e.pointerId !== d.id) return;
       st.drag = null; root.classList.remove("t3-grab");
-      if (!d.moved) { enterDraw(); return; }
+      if (!d.moved) {
+        // 點到待辦那一列：有字就直接打勾，沒字就拉近去打字
+        const rowTop = L.H / 2 - (22 + 79 + 12) / L.px, rowBot = rowTop - 40 / L.px, rec = S.days[dayKey(d.date)];
+        if (d.p0.y <= rowTop && d.p0.y >= rowBot) {
+          if (rec?.task && d.p0.x < -0.5 + 48 / L.px) { changeTask(d.date, { done: !rec.done }); const cb = $("#task-done"); if (cb) cb.checked = !!S.days[dayKey(d.date)].done; sync(); return; }
+          enterDraw(() => $("#task-text")?.focus());
+          return;
+        }
+        enterDraw();
+        return;
+      }
       if (d.armed) { st.dragTear = true; tear(d.date); return; }
-      if (!d.art) setMsg("先畫點東西再撕", true); else setMsg("");
+      if (!d.art) setMsg("畫一張畫或做完一件事再撕", true); else setMsg("");
       springBack();
     }
     function onCancel(e) {
@@ -2316,7 +2379,7 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
 
     // 滑鼠移到紙上：游標提示，鏡頭跟著微微轉一點
     function hover(e) {
-      if (!st.on || st.mode !== "rest" || e.pointerType !== "mouse" || !cal || st.intro) return;
+      if (!st.on || st.mode !== "rest" || e.pointerType !== "mouse" || !cal) return;
       const can = !st.busy && !uiTarget(e) && !document.querySelector(".modal") && currentPage().kind === "open";
       root.classList.toggle("t3-hot", can && onPage(pickRay(e)));
       st.par.tx = (e.clientX / window.innerWidth - 0.5) * -0.07;
@@ -2326,7 +2389,7 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
       anims.add(() => {
         const q = st.par;
         q.x += (q.tx - q.x) * 0.08; q.y += (q.ty - q.y) * 0.08;
-        if (st.on && st.mode === "rest" && !st.intro) setCam(restPose());
+        if (st.on && st.mode === "rest") setCam(restPose());
         if (Math.abs(q.tx - q.x) + Math.abs(q.ty - q.y) < 0.0006) { q.run = false; return false; }
       });
       kick();
@@ -2388,10 +2451,10 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
     }
 
     // ───── 畫圖：鏡頭拉正，3D 的紙換成平面的畫布 ─────
-    function enterDraw() {
-      if (!st.on || st.mode !== "rest" || st.busy || st.intro || !$("#live")) return;
+    function enterDraw(then) {
+      if (!st.on || st.mode !== "rest" || st.busy || !$("#live")) return;
       setMsg("");
-      if (reduceMotion()) { root.classList.remove("t3-rest"); root.classList.add("t3-draw"); st.mode = "draw"; return; }
+      if (reduceMotion()) { root.classList.remove("t3-rest"); root.classList.add("t3-draw"); st.mode = "draw"; if (typeof then === "function") then(); return; }
       const from = st.cam;
       root.classList.remove("t3-rest", "t3-hot"); root.classList.add("t3-fly");
       window.scrollTo(0, 0);
@@ -2406,6 +2469,7 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
         if (st.mode !== "fly") return;
         st.mode = "draw";
         root.classList.remove("t3-fly"); root.classList.add("t3-draw");
+        if (typeof then === "function") then();
       });
     }
 
@@ -2433,13 +2497,15 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
       init, afterRender, enterDraw, exitDraw, startTear, springBack,
       active: () => st.on && !st.failed,
       drawing: () => st.on && st.mode === "draw",
-      busy: () => st.on && (st.busy || st.intro || st.mode === "fly"),
+      busy: () => st.on && (st.busy || st.mode === "fly"),
+      slow: giveUp,
     };
   })();
 
   // ───────── 開機：一進來就是今天那頁 ─────────
   async function boot() {
     Garden.init();
+    Garden.onSlow(() => { if (T3.active()) T3.slow(); }); // 手機撐不住就退回 CSS 版
     T3.init();
     const use = (n) => (window.claude?.use ? window.claude.use(n).catch(() => null) : Promise.resolve(null));
     S.store = await makeStore();
@@ -2459,7 +2525,7 @@ html.t3-grab, html.t3-grab body { cursor: grabbing; }
       const cur = currentPage();
       const bar = $(".actions");
       if (cur.kind === "open" && bar && !$('[data-act="save"]')) {
-        const art = hasArt(S.days[dayKey(cur.date)]);
+        const art = didDay(S.days[dayKey(cur.date)]);
         bar.insertAdjacentHTML("beforeend", `<button type="button" class="btn" data-act="save" data-date="${cur.date}" ${art ? "" : "disabled"}>存成圖片</button>`);
         $('[data-act="save"]').addEventListener("click", async () => { await flushSave(cur.date); savePageImage(cur.date); });
       }
