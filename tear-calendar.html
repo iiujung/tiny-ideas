@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="zh-Hant">
 <meta charset="utf-8">
-<title>自製日曆</title>
+<title>手撕日曆吧</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -313,7 +313,6 @@ button.mcell:not(.out):not(.future):hover { box-shadow: inset 0 0 0 1.5px var(--
   .mstage > .card { grid-area: info; }
   .mstage > .cal { grid-area: cal; }
   .mstage > .mside { grid-area: nav; position: sticky; top: 24px; display: flex; flex-direction: column; gap: 16px; }
-  .wrap > .foot { margin-top: 24px; }
 }
 
 /* ─── 彈窗 ─── */
@@ -359,7 +358,9 @@ button.mcell:not(.out):not(.future):hover { box-shadow: inset 0 0 0 1.5px var(--
 .modal-body .card-head { padding-right: 36px; }
 .danger { display: flex; justify-content: center; padding-top: 8px; border-top: 1px dashed var(--c-line); }
 .loading { padding: 48px 0; text-align: center; color: var(--c-text-2); font-size: var(--fs-body); }
-.foot { align-self: center; margin: 0; padding: 4px 12px; border-radius: 8px; background: var(--c-bg); font-size: var(--fs-tag); line-height: var(--lh-sm); color: var(--c-text-2); text-align: center; text-wrap: balance; }
+.top-side { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.where { margin: 0; font-size: var(--fs-tag); line-height: var(--lh-ui); color: var(--c-text-2); }
+@media (min-width: 900px) { .top-side { align-items: flex-end; } }
 
 /* ─── 3D 層：html 上的 class 決定現在是哪個狀態；全部拿掉就是 CSS 版 ─── */
 /* t3-wait 載入中｜t3-rest 看 3D｜t3-fly 鏡頭移動中｜t3-draw 平面畫圖 */
@@ -401,7 +402,7 @@ html.t3-rest .stage { flex: 1 1 auto; min-height: 0; grid-template-rows: auto au
 html.t3-rest .cal { display: block; min-height: 0; height: 100%; }
 html.t3-rest .cal > * { position: absolute; left: 0; right: 0; visibility: hidden; pointer-events: none; }
 html.t3-rest .cal::after { content: none; }
-html.t3-rest .drawbar, html.t3-rest .foot { display: none; }
+html.t3-rest .drawbar { display: none; }
 html.t3-rest .status { min-height: 24px; }
 html.t3-rest .status:empty { display: none; }
 html.t3-rest .t3-hint:has(+ .status:not(:empty)) { display: none; }
@@ -430,8 +431,7 @@ html.t3 .drawbar .spacer { display: none; }
 }
 /* 畫圖：鏡頭拉近到只看紙，整張紙都在畫面裡 */
 @media (min-height: 501px) {
-  html.t3-draw .top, html.t3-fly .top, html.t3-draw .chips, html.t3-fly .chips,
-  html.t3-draw .foot, html.t3-fly .foot { display: none; }
+  html.t3-draw .top, html.t3-fly .top, html.t3-draw .chips, html.t3-fly .chips { display: none; }
   html.t3-draw .cal > .nail, html.t3-draw .cal > .hanger, html.t3-draw .cal > .board,
   html.t3-fly .cal > .nail, html.t3-fly .cal > .hanger, html.t3-fly .cal > .board { display: none; }
   html.t3-draw .wrap, html.t3-fly .wrap { padding-block: 12px 0; }
@@ -840,7 +840,7 @@ html.t3 .drawbar .spacer { display: none; }
     const app = $("#app");
     if (!S.store) { app.innerHTML = '<div class="loading">翻日曆中⋯</div>'; return; }
     S.live = null;
-    app.innerHTML = headerView() + (S.view === "month" ? monthView() : todayView()) + footView();
+    app.innerHTML = headerView() + (S.view === "month" ? monthView() : todayView());
     bindMain();
     T3.afterRender();
   }
@@ -850,8 +850,10 @@ html.t3 .drawbar .spacer { display: none; }
       <header class="top">
         <div>
           <div class="eyebrow"><span class="mono">ORDER #404 · DAY 6</span><span class="goal-tag">${esc(S.cal.goal)}</span></div>
-          <h1>自製日曆</h1>
+          <h1>手撕日曆吧</h1>
         </div>
+        <div class="top-side">
+        <p class="where">${S.store.kind === "cloud" ? "畫的東西存在你的帳號裡，只有你看得到" : S.store.kind === "local" ? "現在沒登入，畫的東西只存在這台瀏覽器" : "這個畫面存不了東西，關掉就沒了"}</p>
         <div class="top-right">
           <div class="seg" role="group" aria-label="切換畫面">
             <button type="button" data-view="today" aria-pressed="${S.view === "today"}">今天</button>
@@ -860,12 +862,8 @@ html.t3 .drawbar .spacer { display: none; }
           <button type="button" class="tool sound" data-act="sound" aria-label="撕頁聲音" aria-pressed="${Sound.on}">${Sound.on ? ICON.soundOn : ICON.soundOff}</button>
           <button type="button" class="tool" data-act="settings" aria-label="設定">${ICON.gear}</button>
         </div>
+        </div>
       </header>`;
-  }
-
-  function footView() {
-    const where = S.store.kind === "cloud" ? "畫的東西存在你的帳號裡，只有你看得到" : S.store.kind === "local" ? "現在沒登入，畫的東西只存在這台瀏覽器" : "這個畫面存不了東西，關掉就沒了";
-    return `<p class="foot">${where}<br>404 廚房 · 自製日曆</p>`;
   }
 
   function chipsHTML() {
@@ -1430,7 +1428,7 @@ html.t3 .drawbar .spacer { display: none; }
       x.textAlign = "right"; x.font = `400 26px ${sans}`; x.fillText("404 廚房", W - P - 40, H - P - 40); x.textAlign = "left"; x.globalAlpha = 1;
       const blob = await canvasToBlob(c, "image/png");
       say("準備好了，確認一下就存");
-      await S.downloads.save({ filename: `自製日曆-${date.replace(/-/g, "")}.png`, data: blob });
+      await S.downloads.save({ filename: `手撕日曆吧-${date.replace(/-/g, "")}.png`, data: blob });
       say("存好了");
     } catch (err) {
       say(err?.code === "declined" || err?.name === "AbortError" ? "沒存，沒關係" : "存不了，等一下再試", true);
@@ -2088,7 +2086,7 @@ html.t3 .drawbar .spacer { display: none; }
       }
       if (d.foot) {
         x.textAlign = "right"; x.globalAlpha = 0.72; x.font = `400 ${14 * k}px ${SANS}`;
-        x.fillText(d.foot, W - PAD - 24 * k, artY + ART + 28 * k); // 右邊留給翹角 x.globalAlpha = 1;
+        x.fillText(d.foot, W - PAD - 24 * k, artY + ART + 28 * k); x.globalAlpha = 1; // 右邊留給翹角
       }
     }
 
