@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8">
+<title>捏氣球</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
+<!-- three.js 0.186.1；three.module.min.js 裡寫的是未壓縮的 core，這裡導到壓縮版（跟手撕日曆吧一樣） -->
+<script type="importmap">
+{"imports":{"three":"https://cdnjs.cloudflare.com/ajax/libs/three.js/0.186.1/three.module.min.js","https://cdnjs.cloudflare.com/ajax/libs/three.js/0.186.1/three.core.js":"https://cdnjs.cloudflare.com/ajax/libs/three.js/0.186.1/three.core.min.js"}}
+</script>
+<link rel="modulepreload" href="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.186.1/three.module.min.js" crossorigin>
+<link rel="modulepreload" href="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.186.1/three.core.min.js" crossorigin>
+<style>
+/* 工具頁：霧白底＋白卡片；手機一欄，桌機 900px 以上氣球在左、控制在右。只用亮色主題。 */
+:root {
+  --c-bg: #FFFDF6;  --c-surface: #FFFEFA;  --c-line: #E4E5D6;  --c-wall: #FAF8EF;
+  --c-text: #2A2433;  --c-text-2: #6E6878;  --c-text-3: #9C96A6;
+  --c-accent: #4C7A5F;  --c-accent-soft: #D3E5D7;
+  --radius-sm: 10px;  --radius-md: 16px;  --radius-pill: 999px;
+  --shadow: 0 8px 24px rgba(42, 36, 51, 0.08);
+  --font-sans: "Huninn", "jf-openhuninn-2.1", "PingFang TC", "Noto Sans TC", sans-serif;
+  --fs-h1: 32px;  --fs-body: 16px;  --fs-sm: 14px;  --fs-caption: 12px;
+  color-scheme: light;
+}
+@media (max-width: 480px) { :root { --fs-h1: 28px; } }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--c-bg); color: var(--c-text);
+  font-family: var(--font-sans); font-size: var(--fs-body); line-height: 1.75;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 36px;
+}
+.wrap { max-width: 480px; margin: 0 auto; display: grid; gap: 16px; }
+header h1 { margin: 0; font-size: var(--fs-h1); line-height: 1.35; font-weight: 400; }
+header p { margin: 4px 0 0; color: var(--c-text-2); font-size: var(--fs-sm); line-height: 1.7; }
+
+.stage {
+  position: relative; width: 100%; aspect-ratio: 4 / 5; max-height: 72vh; overflow: hidden;
+  border-radius: var(--radius-md); border: 1px solid var(--c-line);
+  background: radial-gradient(120% 90% at 50% 30%, #FFFFFF 0%, var(--c-wall) 62%, #F0EDDF 100%);
+  box-shadow: var(--shadow);
+  touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+.stage canvas.pinching { cursor: grabbing; }
+.hint {
+  position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+  background: rgba(42, 36, 51, 0.78); color: #FFFEFA; font-size: var(--fs-sm); line-height: 1.4;
+  padding: 8px 14px; border-radius: var(--radius-pill); white-space: nowrap; pointer-events: none;
+  transition: opacity .5s;
+}
+.hint.gone { opacity: 0; }
+.fallback {
+  position: absolute; inset: 0; display: none; align-items: center; justify-content: center; text-align: center;
+  padding: 24px; color: var(--c-text-2); font-size: var(--fs-sm);
+}
+
+.panel {
+  background: var(--c-surface); border: 1px solid var(--c-line); border-radius: var(--radius-md);
+  padding: 16px; display: grid; gap: 16px; box-shadow: var(--shadow);
+}
+.group { display: grid; gap: 8px; min-width: 0; }
+.group > .label { font-size: var(--fs-sm); color: var(--c-text-2); line-height: 1.4; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+button, .btn {
+  font: inherit; font-size: var(--fs-sm); line-height: 1.4; color: var(--c-text);
+  background: var(--c-surface); border: 1px solid var(--c-line); border-radius: var(--radius-pill);
+  padding: 8px 16px; min-height: 40px; cursor: pointer;
+}
+button:hover, .btn:hover { border-color: var(--c-accent); }
+button:focus-visible, .btn:focus-within, input:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+.chip[aria-pressed="true"] { background: var(--c-accent-soft); border-color: var(--c-accent); color: #2F5240; }
+.swatch {
+  width: 40px; height: 40px; padding: 0; border-radius: 50%; border: 2px solid var(--c-line);
+}
+.swatch[aria-pressed="true"] { border-color: var(--c-text); box-shadow: 0 0 0 2px var(--c-surface) inset; }
+.btn input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.btn { position: relative; display: inline-flex; align-items: center; }
+.primary { background: var(--c-accent); border-color: var(--c-accent); color: #FFFEFA; }
+.primary:hover { border-color: var(--c-accent); filter: brightness(1.08); }
+input[type="range"] { width: 100%; accent-color: var(--c-accent); min-height: 28px; }
+.padwrap { position: relative; width: 100%; max-width: 320px; aspect-ratio: 1; border: 1px solid var(--c-line); border-radius: var(--radius-sm);
+  background: repeating-conic-gradient(#F3F1E6 0 25%, #FFFEFA 0 50%) 0 0 / 20px 20px; overflow: hidden; }
+.padwrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+.padwrap .guide { position: absolute; inset: 0; pointer-events: none; border: 2px dashed rgba(76,122,95,.35); border-radius: 8px; }
+.pen { width: 32px; height: 32px; padding: 0; min-height: 0; border-radius: 50%; border: 2px solid var(--c-line); }
+.pen[aria-pressed="true"] { border-color: var(--c-text); box-shadow: 0 0 0 2px var(--c-surface) inset; }
+.colorpick { display: inline-flex; align-items: center; gap: 8px; font-size: var(--fs-sm); color: var(--c-text-2); }
+.colorpick input { width: 48px; height: 40px; padding: 2px; border: 1px solid var(--c-line); border-radius: var(--radius-sm); background: var(--c-surface); cursor: pointer; }
+.note { margin: 0; color: var(--c-text-3); font-size: var(--fs-caption); line-height: 1.6; }
+
+@media (min-width: 900px) {
+  body { padding-block: 32px 48px; }
+  .wrap { max-width: 960px; grid-template-columns: minmax(0, 1fr) 360px; align-items: start; column-gap: 24px; }
+  header { grid-column: 1 / -1; }
+  .stage { max-height: none; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>捏氣球</h1>
+    <p>選個形狀、上傳一張圖，印在鋁箔氣球上，然後用手指捏捏看。</p>
+  </header>
+
+  <div class="stage" id="stage">
+    <div class="hint" id="hint">在氣球上按住、拖曳，捏捏看</div>
+    <div class="fallback" id="fallback">這台裝置跑不動 3D（WebGL），換個瀏覽器試試。</div>
+  </div>
+
+  <div class="panel">
+    <div class="group">
+      <span class="label">形狀</span>
+      <div class="row" id="shapes"></div>
+    </div>
+    <div class="group">
+      <span class="label">鋁箔質感：<span id="foilName"></span></span>
+      <div class="row" id="foils"></div>
+      <div id="customwrap" hidden class="group">
+        <div class="row">
+          <label class="colorpick">主色 <input type="color" id="ca" value="#FF7AB8"></label>
+          <label class="colorpick">副色（漸層） <input type="color" id="cb" value="#7AA8FF"></label>
+        </div>
+        <div class="row" id="finishes"></div>
+      </div>
+    </div>
+    <div class="group">
+      <span class="label">自己畫（會印在氣球中央）</span>
+      <div class="padwrap"><canvas id="padview" width="640" height="640"></canvas><div class="guide"></div></div>
+      <div class="row" id="pens"></div>
+      <div class="row">
+        <button type="button" id="eraser" class="chip" aria-pressed="false">橡皮擦</button>
+        <button type="button" id="undo">上一步</button>
+        <button type="button" id="padclear">清除</button>
+      </div>
+      <label class="label" for="pensize">筆的粗細</label>
+      <input type="range" id="pensize" min="4" max="48" value="14">
+    </div>
+    <div class="group">
+      <span class="label">或印上你的圖</span>
+      <div class="row">
+        <label class="btn primary">上傳圖片<input type="file" id="file" accept="image/*"></label>
+        <button type="button" id="clear">移除圖片</button>
+      </div>
+      <div class="row" id="imodes"></div>
+      <div id="tolwrap" hidden>
+        <label class="label" for="tol">去背容許度（背景沒去乾淨就拉高，吃到主體就拉低）</label>
+        <input type="range" id="tol" min="5" max="90" value="40">
+        <div class="row"><button type="button" id="inner" class="chip" aria-pressed="false">連圖案裡面同色的洞也去掉</button></div>
+      </div>
+      <p class="note">色彩增值：白色背景會直接消失、露出鋁箔。自動去背：不管什麼純色背景，從邊緣把相近的顏色變透明。圖片會縮放後放在氣球中央，不會鋪滿。圖片只在你的瀏覽器裡處理，不會上傳到任何地方。</p>
+    </div>
+    <div class="group">
+      <label class="label" for="air">充氣量</label>
+      <input type="range" id="air" min="40" max="120" value="85">
+    </div>
+    <div class="row">
+      <button type="button" id="save">存成圖片</button>
+      <button type="button" id="reset">重新充氣</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from "three";
+
+const SHAPES = [
+  { key: "circle", name: "圓形" },
+  { key: "flower", name: "花朵" },
+  { key: "heart",  name: "愛心" },
+  { key: "star",   name: "星星" },
+  { key: "square", name: "方形" },
+];
+const FOILS = [   // stops：貼圖底色漸層；其餘是 MeshPhysicalMaterial 參數
+  { name: "霧白",     stops: ["#FFFFFF", "#F1F1EF", "#FFFFFF", "#E9E9E6"], metal: 0.0,  rough: 0.42, irid: 0.0, coat: 0.15 },
+  { name: "鏡面銀",   stops: ["#F7F9FC", "#98A2B3", "#E6EBF3", "#C4CCD8"], metal: 1.0,  rough: 0.07, irid: 0.0, coat: 0.0 },
+  { name: "珍珠白",   stops: ["#FFFFFF", "#EEE6F2", "#F8EFE4", "#F2F0FA"], metal: 0.55, rough: 0.16, irid: 0.8, coat: 0.6 },
+  { name: "玫瑰金",   stops: ["#F9D9CB", "#C98877", "#F4C9B8", "#B97A6C"], metal: 1.0,  rough: 0.13, irid: 0.0, coat: 0.0 },
+  { name: "幻彩",     stops: ["#FFC2DD", "#BFD0FF", "#FFF0B0", "#BDF3DC"], metal: 0.8,  rough: 0.10, irid: 1.0, coat: 0.8 },
+  { name: "粉紅果凍", stops: ["#FF9AB9", "#E8457F", "#FFBFD3", "#D93A73"], metal: 0.55, rough: 0.08, irid: 0.3, coat: 1.0 },
+  { name: "紫水晶",   stops: ["#D2B6FF", "#7C55C4", "#E2D2FF", "#6A44B0"], metal: 0.85, rough: 0.09, irid: 0.5, coat: 0.6 },
+  { name: "冰藍",     stops: ["#C9E8FF", "#4C9FD6", "#E0F3FF", "#3E8CC4"], metal: 0.7,  rough: 0.08, irid: 0.4, coat: 1.0 },
+  { name: "自訂", custom: true },
+];
+const FINISH = {   // 自訂顏色可選的質感
+  "鏡面": { metal: 1.0,  rough: 0.08, irid: 0.3, coat: 0.0 },
+  "霧面": { metal: 0.0,  rough: 0.42, irid: 0.0, coat: 0.15 },
+  "果凍": { metal: 0.55, rough: 0.08, irid: 0.3, coat: 1.0 },
+};
+const mixHex = (a, b, t) => { const A = parseInt(a.slice(1), 16), B = parseInt(b.slice(1), 16); let o = 0;
+  for (const sh of [16, 8, 0]) o |= Math.round(((A >> sh) & 255) * (1 - t) + ((B >> sh) & 255) * t) << sh;
+  return "#" + o.toString(16).padStart(6, "0"); };
+function foilOf(i) {
+  const f = FOILS[i];
+  if (!f.custom) return f;
+  const a = state.ca, b = state.cb;
+  return { ...f, ...FINISH[state.finish], stops: [mixHex(a, "#FFFFFF", 0.55), a, mixHex(a, b, 0.5), b, mixHex(b, "#FFFFFF", 0.45)] };
+}
+const LOBES = { circle: 18, heart: 20, star: 20, square: 20, flower: 8 };   // 邊緣的扇形數（跟真的充氣小氣球一樣有一圈荷葉邊）
+const N = 56, M = 144;      // 環數、每環段數
+const SEAM = 0.9;
+const PRINT = 0.56;        // 列印區邊長占氣球寬高（取小的）的比例
+const pad = document.createElement("canvas"); pad.width = pad.height = 640;   // 手繪板（透明底）          // 外圍多少比例是壓平的封邊
+
+const state = { shape: "circle", foil: 1, air: 0.85, img: null, imgMode: "normal", tol: 40, inner: false, ca: "#FF7AB8", cb: "#7AA8FF", finish: "鏡面" };
+
+// ───────── 場景 ─────────
+const stage = document.getElementById("stage");
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+} catch (e) {
+  document.getElementById("fallback").style.display = "flex";
+  document.getElementById("hint").style.display = "none";
+  throw e;
+}
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+stage.insertBefore(renderer.domElement, stage.firstChild);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 50);
+camera.position.set(0, -0.1, 6.2);
+
+// 金屬要「有東西可以反射」才擬真：手畫一張攝影棚環境圖（柔光箱、彩色燈、地平線反光）
+{
+  const W = 2048, Hh = 1024, c = document.createElement("canvas"); c.width = W; c.height = Hh;
+  const g = c.getContext("2d");
+  const bg = g.createLinearGradient(0, 0, 0, Hh);
+  bg.addColorStop(0, "#DCE2F2"); bg.addColorStop(0.42, "#8D97B0"); bg.addColorStop(0.5, "#F5F7FB");
+  bg.addColorStop(0.58, "#A3AAC0"); bg.addColorStop(1, "#6A728C");
+  g.fillStyle = bg; g.fillRect(0, 0, W, Hh);
+  const box = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  box(180, 150, 380, 240, "#FFFFFF"); box(760, 90, 520, 150, "#FFFFFF"); box(1500, 190, 300, 320, "#FFF1D6");
+  box(60, 520, 240, 90, "#FFB3D9"); box(1100, 330, 160, 260, "#A9D8FF"); box(1700, 560, 260, 100, "#C7B3FF");
+  box(0, 660, W, 36, "#E4E9F5");
+  for (const x of [0, 620, 1040, 1420, 1860]) box(x, 100, 50 + (x % 60), 520, "#69718A"); box(420, 430, 90, 230, "#FFE0B5"); box(1320, 120, 120, 70, "#BFF2E0");
+  for (let i = 0; i < 36; i++) box(Math.random() * W, 120 + Math.random() * 520, 80 + Math.random() * 220, 5 + Math.random() * 10, "rgba(255,255,255,.55)");
+  const tex = new THREE.CanvasTexture(c);
+  tex.mapping = THREE.EquirectangularReflectionMapping; tex.colorSpace = THREE.SRGBColorSpace;
+  const pm = new THREE.PMREMGenerator(renderer);
+  scene.environment = pm.fromEquirectangular(tex).texture;
+  pm.dispose();
+}
+const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(-2.5, 3.2, 4.5); scene.add(key);
+scene.add(new THREE.AmbientLight(0xffffff, 0.12));
+
+const group = new THREE.Group(); scene.add(group);
+
+// 皺摺凹凸圖（亂線＋小皺）
+const bumpTex = (() => {
+  const c = document.createElement("canvas"); c.width = c.height = 512;
+  const g = c.getContext("2d"); g.fillStyle = "#808080"; g.fillRect(0, 0, 512, 512);
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 260; i++) {
+    const x = rnd() * 512, y = rnd() * 512, a = rnd() * Math.PI, len = 20 + rnd() * 90;
+    g.strokeStyle = rnd() > .5 ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.18)";
+    g.lineWidth = 0.8 + rnd() * 1.8; g.beginPath(); g.moveTo(x, y);
+    g.lineTo(x + Math.cos(a) * len, y + Math.sin(a) * len); g.stroke();
+  }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+})();
+
+// ───────── 形狀輪廓（每個回傳 M 個點，最遠點縮到 1）─────────
+function outlineOf(key) {
+  const P = [];
+  for (let j = 0; j < M; j++) {
+    const t = (j / M) * Math.PI * 2;
+    if (key === "circle") P.push([Math.cos(t), Math.sin(t)]);
+    else if (key === "flower") { const r = 0.78 + 0.22 * Math.abs(Math.cos(4 * t)); P.push([r * Math.cos(t), r * Math.sin(t)]); }
+    else if (key === "square") {
+      const c = Math.cos(t), s = Math.sin(t);
+      P.push([Math.sign(c) * Math.pow(Math.abs(c), 0.42), Math.sign(s) * Math.pow(Math.abs(s), 0.42)]);
+    } else if (key === "heart") {
+      const x = 16 * Math.pow(Math.sin(t), 3);
+      const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+      P.push([x / 17, (y + 2.5) / 17]);
+    }
+  }
+  if (key === "star") {
+    const V = [];
+    for (let e = 0; e < 10; e++) {
+      const a = Math.PI / 2 + e * Math.PI / 5, r = e % 2 ? 0.52 : 1;
+      V.push([r * Math.cos(a), r * Math.sin(a)]);
+    }
+    for (let j = 0; j < M; j++) {
+      const u = (j / M) * 10, e = Math.floor(u), f = u - e, A = V[e], B = V[(e + 1) % 10];
+      P.push([A[0] + (B[0] - A[0]) * f, A[1] + (B[1] - A[1]) * f]);
+    }
+    for (let pass = 0; pass < 6; pass++) {            // 把尖角磨圓一點，像真的氣球
+      const Q = P.map((p, j) => {
+        const a = P[(j + M - 1) % M], b = P[(j + 1) % M];
+        return [(a[0] + 2 * p[0] + b[0]) / 4, (a[1] + 2 * p[1] + b[1]) / 4];
+      });
+      for (let j = 0; j < M; j++) P[j] = Q[j];
+    }
+  }
+  if (key !== "flower") {                                   // 邊緣做成一格一格的扇形，扇形交界微微內凹
+    const L = LOBES[key];
+    for (let j = 0; j < M; j++) { const f = 1 + 0.04 * (Math.abs(Math.sin(L * Math.PI * j / M)) - 1); P[j] = [P[j][0] * f, P[j][1] * f]; }
+  }
+  const mx = Math.max(...P.map(p => Math.hypot(p[0], p[1])));
+  return P.map(p => [p[0] / mx, p[1] / mx]);
+}
+
+// ───────── 氣球本體 ─────────
+let bx, by, bs, bj, prof, seamz, geoF, geoB, meshF, meshB, count, bbox, outline;
+let matF, matB, texture, texCanvas;
+const holder = new THREE.Group(); group.add(holder);
+
+function profile(s, j) {
+  if (s < SEAM) { const u = s / SEAM; return Math.pow(1 - Math.pow(u, 2.2), 0.62); }
+  return 0;
+}
+
+// 自動去背：取圖片四周的顏色當背景色，從邊緣往內填，顏色相近的變透明（邊緣做半透明漸層，比較不會有鋸齒）
+let cutCache = { img: null, tol: -1, canvas: null };
+function cutout(img, tol) {
+  const inner = state.inner;
+  if (cutCache.img === img && cutCache.tol === tol && cutCache.inner === inner) return cutCache.canvas;
+  const k = Math.min(1, 768 / Math.max(img.width, img.height));
+  const w = Math.max(1, Math.round(img.width * k)), h = Math.max(1, Math.round(img.height * k));
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  const g = c.getContext("2d", { willReadFrequently: true }); g.drawImage(img, 0, 0, w, h);
+  const id = g.getImageData(0, 0, w, h), d = id.data;
+  const ch = [[], [], []];
+  const take = (x, y) => { const i = (y * w + x) * 4; if (d[i + 3] > 200) { ch[0].push(d[i]); ch[1].push(d[i + 1]); ch[2].push(d[i + 2]); } };
+  for (let x = 0; x < w; x += 2) { take(x, 0); take(x, h - 1); }
+  for (let y = 0; y < h; y += 2) { take(0, y); take(w - 1, y); }
+  const med = (a) => a.length ? a.sort((p, q) => p - q)[a.length >> 1] : 255;
+  const bg = [med(ch[0]), med(ch[1]), med(ch[2])];
+  const T = tol * 2.2 + 4, T0 = T * 0.55;
+  const dist = (i) => d[i + 3] < 8 ? 0 : Math.hypot(d[i] - bg[0], d[i + 1] - bg[1], d[i + 2] - bg[2]);
+  const seen = new Uint8Array(w * h), stack = [];
+  const push = (x, y) => { const p = y * w + x; if (!seen[p] && dist(p * 4) < T) { seen[p] = 1; stack.push(p); } };
+  for (let x = 0; x < w; x++) { push(x, 0); push(x, h - 1); }
+  for (let y = 0; y < h; y++) { push(0, y); push(w - 1, y); }
+  if (inner) {                                                // 連被圖案包住的同色（像字母 O 的洞）也一起去掉
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) push(x, y);
+  }
+  while (stack.length) {
+    const p = stack.pop(), x = p % w, y = (p / w) | 0;
+    const dd = dist(p * 4), t = Math.min(1, Math.max(0, (dd - T0) / (T - T0)));
+    d[p * 4 + 3] = Math.round(d[p * 4 + 3] * t * t * (3 - 2 * t));
+    if (x > 0) push(x - 1, y); if (x < w - 1) push(x + 1, y); if (y > 0) push(x, y - 1); if (y < h - 1) push(x, y + 1);
+  }
+  g.putImageData(id, 0, 0);
+  cutCache = { img, tol, inner, canvas: c };
+  return c;
+}
+
+function makeTexture() {
+  const w = bbox.maxx - bbox.minx, h = bbox.maxy - bbox.miny;
+  const cw = 1024, ch = Math.max(256, Math.round(1024 * h / w));
+  if (!texCanvas) texCanvas = document.createElement("canvas");
+  texCanvas.width = cw; texCanvas.height = ch;
+  const g = texCanvas.getContext("2d");
+  const st = foilOf(state.foil).stops, base = g.createLinearGradient(0, 0, cw, ch);
+  st.forEach((c, i) => base.addColorStop(i / (st.length - 1), c));
+  g.fillStyle = base; g.fillRect(0, 0, cw, ch);
+  const glow = g.createRadialGradient(cw * .35, ch * .3, 0, cw * .35, ch * .3, cw * .7);
+  glow.addColorStop(0, "rgba(255,255,255,.35)"); glow.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = glow; g.fillRect(0, 0, cw, ch);
+  // 固定的「列印區」：氣球中央一塊正方形，圖片縮放放進去（不裁切、不滿版），手繪疊在最上面
+  const side = Math.min(cw, ch) * PRINT, px = (cw - side) / 2, py = (ch - side) / 2;
+  if (state.img) {
+    const im = state.imgMode === "cut" ? cutout(state.img, state.tol) : state.img;
+    const k = Math.min(side / im.width, side / im.height);
+    const dw = im.width * k, dh = im.height * k;
+    g.globalCompositeOperation = state.imgMode === "multiply" ? "multiply" : "source-over";   // 色彩增值：白色會消失、露出鋁箔
+    g.drawImage(im, px + (side - dw) / 2, py + (side - dh) / 2, dw, dh);
+    g.globalCompositeOperation = "source-over";
+  }
+  g.drawImage(pad, 0, 0, pad.width, pad.height, px, py, side, side);
+  if (!texture) { texture = new THREE.CanvasTexture(texCanvas); texture.colorSpace = THREE.SRGBColorSpace; texture.anisotropy = 4; }
+  texture.needsUpdate = true;
+}
+
+function applyFoil() {
+  const f = foilOf(state.foil);
+  for (const m of [matF, matB]) {
+    m.metalness = f.metal; m.roughness = f.rough; m.envMapIntensity = 0.55 + 0.95 * f.metal; m.iridescence = f.irid; m.clearcoat = f.coat; m.needsUpdate = true;
+  }
+  const lab = document.getElementById("foilName"); if (lab) lab.textContent = f.name;
+}
+
+function buildBalloon() {
+  outline = outlineOf(state.shape);
+  bbox = { minx: Infinity, maxx: -Infinity, miny: Infinity, maxy: -Infinity };
+  for (const [x, y] of outline) {
+    bbox.minx = Math.min(bbox.minx, x); bbox.maxx = Math.max(bbox.maxx, x);
+    bbox.miny = Math.min(bbox.miny, y); bbox.maxy = Math.max(bbox.maxy, y);
+  }
+  count = (N + 1) * M;
+  bx = new Float32Array(count); by = new Float32Array(count);
+  bs = new Float32Array(count); bj = new Float32Array(count); prof = new Float32Array(count); seamz = new Float32Array(count);
+  const uvF = new Float32Array(count * 2), uvB = new Float32Array(count * 2);
+  const w = bbox.maxx - bbox.minx, h = bbox.maxy - bbox.miny;
+  for (let i = 0; i <= N; i++) for (let j = 0; j < M; j++) {
+    const v = i * M + j, s = i / N;
+    bx[v] = outline[j][0] * s; by[v] = outline[j][1] * s; bs[v] = s; bj[v] = j;
+    const th = (j / M) * Math.PI * 2, ridge = 1 + 0.05 * Math.pow(Math.max(0, Math.min(1, (s - 0.6) / 0.28)), 1.2) * Math.cos(LOBES[state.shape] * th * 1);
+    prof[v] = profile(s, j) * ridge;
+    seamz[v] = s >= SEAM ? (0.015 + 0.03 * Math.abs(Math.sin(LOBES[state.shape] * th * 1.0 + (s - SEAM) * 25))) * Math.min(1, (s - SEAM) * 25) : 0;
+    const u = (bx[v] - bbox.minx) / w, vv = (by[v] - bbox.miny) / h;
+    uvF[v * 2] = u; uvF[v * 2 + 1] = vv;
+    uvB[v * 2] = 1 - u; uvB[v * 2 + 1] = vv;                 // 背面左右翻過來，從後面看圖才是正的
+  }
+  const idxF = [], idxB = [];
+  for (let i = 0; i < N; i++) for (let j = 0; j < M; j++) {
+    const a = i * M + j, b = i * M + (j + 1) % M, c = (i + 1) * M + j, d = (i + 1) * M + (j + 1) % M;
+    idxF.push(a, c, b, b, c, d); idxB.push(a, b, c, b, d, c);
+  }
+  for (const m of [meshF, meshB]) if (m) { group.remove(m); m.geometry.dispose(); }
+  geoF = new THREE.BufferGeometry(); geoB = new THREE.BufferGeometry();
+  geoF.setAttribute("position", new THREE.BufferAttribute(new Float32Array(count * 3), 3));
+  geoB.setAttribute("position", new THREE.BufferAttribute(new Float32Array(count * 3), 3));
+  geoF.setAttribute("uv", new THREE.BufferAttribute(uvF, 2)); geoB.setAttribute("uv", new THREE.BufferAttribute(uvB, 2));
+  geoF.setIndex(idxF); geoB.setIndex(idxB);
+  makeTexture();
+  if (!matF) {
+    const mk = () => new THREE.MeshPhysicalMaterial({
+      map: texture, envMapIntensity: 1.5, bumpMap: bumpTex, bumpScale: 0.5,
+      iridescenceIOR: 1.35, iridescenceThicknessRange: [120, 700], clearcoatRoughness: 0.05,
+    });
+    matF = mk(); matB = mk();
+  }
+  applyFoil();
+  meshF = new THREE.Mesh(geoF, matF); meshB = new THREE.Mesh(geoB, matB);
+  group.add(meshF, meshB);
+
+  // 氣球底部接一個喇叭形的塑膠接口（上寬下窄，窄處有銀環），再接棒子
+  while (holder.children.length) { const c = holder.children.pop(); c.geometry.dispose(); }
+  let yb = 0, best = 9;                                         // 輪廓在正下方 x≈0 的那個點
+  for (const [x, y] of outline) if (y < 0 && Math.abs(x) < best) { best = Math.abs(x); yb = y; }
+  // 照實品：氣球底下一顆圓潤的白色小星星當接口，再接一根細長的白色塑膠棒
+  const white = new THREE.MeshPhysicalMaterial({ color: 0xF7F7F5, roughness: 0.32, clearcoat: 0.5, clearcoatRoughness: 0.25 });
+  const sh = new THREE.Shape(), V = [];
+  for (let e = 0; e < 10; e++) { const a = Math.PI / 2 + e * Math.PI / 5, r = e % 2 ? 0.105 : 0.2; V.push([r * Math.cos(a), r * Math.sin(a)]); }
+  let SP = []; for (let e = 0; e < 10; e++) for (let k = 0; k < 6; k++) { const A = V[e], B = V[(e + 1) % 10], f = k / 6; SP.push([A[0] + (B[0] - A[0]) * f, A[1] + (B[1] - A[1]) * f]); }
+  for (let pass = 0; pass < 5; pass++) SP = SP.map((p, i) => { const a = SP[(i + SP.length - 1) % SP.length], c = SP[(i + 1) % SP.length]; return [(a[0] + 2 * p[0] + c[0]) / 4, (a[1] + 2 * p[1] + c[1]) / 4]; });
+  sh.moveTo(SP[0][0], SP[0][1]); for (let i = 1; i < SP.length; i++) sh.lineTo(SP[i][0], SP[i][1]); sh.closePath();
+  const sg = new THREE.ExtrudeGeometry(sh, { depth: 0.07, bevelEnabled: true, bevelThickness: 0.055, bevelSize: 0.04, bevelSegments: 6, curveSegments: 4 });
+  sg.center();
+  const star = new THREE.Mesh(sg, white); star.position.set(0, yb - 0.07, 0);
+  const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.026, 3.3, 16), white);
+  rod.position.set(0, yb - 0.07 - 0.17 - 1.65, 0);
+  holder.add(star, rod);
+  dirty = true;
+}
+
+// ───────── 捏的物理 ─────────
+const sq = { k: 0, v: 0, target: 0, qx: 0, qy: 0, tx: 0, ty: 0, rho: 0.3 };
+let dirty = true;
+
+function updateGeometry() {
+  const H = 0.62 * state.air;
+  const k = sq.k, qx = sq.qx, qy = sq.qy, rho = sq.rho, inv2 = 1 / (2 * rho * rho);
+  const w = new Float32Array(count);
+  let V0 = 0, V1 = 0;
+  for (let v = 0; v < count; v++) {
+    const dx = bx[v] - qx, dy = by[v] - qy;
+    const wv = k * Math.exp(-(dx * dx + dy * dy) * inv2);
+    w[v] = wv;
+    const z0 = prof[v];
+    V0 += z0; V1 += z0 * (1 - 0.92 * Math.min(wv, 1.1));
+  }
+  const f = k > 0.001 || k < -0.001 ? Math.min(Math.max(V0 / Math.max(V1, 1e-4), 0.7), 1.55) : 1;
+  const shrink = (1 - 0.07 * (state.air - 0.4)) * (1 - 0.07 * (f - 1));
+  const pF = geoF.attributes.position.array, pB = geoB.attributes.position.array;
+  for (let v = 0; v < count; v++) {
+    const s = bs[v], wv = w[v];
+    const dx = bx[v] - qx, dy = by[v] - qy;
+    let x = bx[v], y = by[v], z = prof[v];
+    if (wv > 0.002 || wv < -0.002) {
+      const d = Math.hypot(dx, dy);
+      const pull = wv * 0.11 * (1 - Math.pow(s, 4));                // 被捏住的地方，周圍的膜往中間擠
+      x -= dx * pull; y -= dy * pull;
+      const wrink = Math.sin(Math.atan2(dy, dx) * 7 + d * 9) * 0.05 * wv * Math.min(1, z * 8);
+      z = z * (1 - 0.92 * Math.min(wv, 1.1)) * f + wrink;
+    } else z *= f;
+    z *= H;
+    const seamZ = seamz[v];   // 封邊的荷葉邊皺褶
+    const o = v * 3;
+    pF[o] = x * shrink; pF[o + 1] = y * shrink; pF[o + 2] = z + seamZ;
+    pB[o] = x * shrink; pB[o + 1] = y * shrink; pB[o + 2] = -(z + seamZ);
+  }
+  geoF.attributes.position.needsUpdate = true; geoB.attributes.position.needsUpdate = true;
+  geoF.computeVertexNormals(); geoB.computeVertexNormals();
+  geoF.computeBoundingSphere(); geoB.computeBoundingSphere();
+}
+
+// ───────── 互動：按在氣球上＝捏；按在空白處＝轉動 ─────────
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+const dom = renderer.domElement;
+let mode = null, last = { x: 0, y: 0 }, rot = { x: 0, y: 0 };
+const hint = document.getElementById("hint");
+
+function setNdc(e) {
+  const r = dom.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+}
+function localHit() {
+  group.updateMatrixWorld(true);
+  const hit = ray.intersectObjects([meshF, meshB], false)[0];
+  return hit ? group.worldToLocal(hit.point.clone()) : null;
+}
+function localOnPlane() {
+  group.updateMatrixWorld(true);
+  const n = new THREE.Vector3(0, 0, 1).transformDirection(group.matrixWorld);
+  const p = new THREE.Vector3();
+  const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(n, group.position);
+  return ray.ray.intersectPlane(plane, p) ? group.worldToLocal(p) : null;
+}
+
+dom.addEventListener("pointerdown", (e) => {
+  try { dom.setPointerCapture(e.pointerId); } catch (_) {}
+  setNdc(e);
+  const p = localHit();
+  hint.classList.add("gone");
+  if (p) {
+    mode = "pinch"; sq.target = 1; sq.tx = sq.qx = p.x; sq.ty = sq.qy = p.y;
+    dom.classList.add("pinching");
+  } else { mode = "rotate"; last = { x: e.clientX, y: e.clientY }; }
+});
+dom.addEventListener("pointermove", (e) => {
+  if (mode === "pinch") {
+    setNdc(e); const p = localOnPlane();
+    if (p) { sq.tx = Math.max(-1.2, Math.min(1.2, p.x)); sq.ty = Math.max(-1.2, Math.min(1.2, p.y)); }
+  } else if (mode === "rotate") {
+    rot.y += (e.clientX - last.x) * 0.012; rot.x += (e.clientY - last.y) * 0.008;
+    rot.x = Math.max(-0.6, Math.min(0.6, rot.x)); last = { x: e.clientX, y: e.clientY };
+  }
+});
+const end = () => { if (mode === "pinch") sq.target = 0; mode = null; dom.classList.remove("pinching"); };
+dom.addEventListener("pointerup", end); dom.addEventListener("pointercancel", end);
+
+// ───────── 控制面板 ─────────
+const shapesEl = document.getElementById("shapes"), foilsEl = document.getElementById("foils");
+for (const s of SHAPES) {
+  const b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.textContent = s.name;
+  b.setAttribute("aria-pressed", String(s.key === state.shape));
+  b.addEventListener("click", () => {
+    state.shape = s.key;
+    shapesEl.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    sq.k = sq.v = 0; sq.target = 0; buildBalloon();
+  });
+  shapesEl.appendChild(b);
+}
+FOILS.forEach((f, i) => {
+  const b = document.createElement("button"); b.type = "button"; b.className = "swatch";
+  b.style.background = f.custom ? "conic-gradient(#ff6b6b, #ffd93d, #6bcb77, #4d96ff, #b76bff, #ff6b6b)" : "linear-gradient(135deg," + f.stops.join(",") + ")"; b.title = f.name; b.setAttribute("aria-label", "鋁箔質感：" + f.name);
+  b.setAttribute("aria-pressed", String(i === state.foil));
+  b.addEventListener("click", () => {
+    state.foil = i; foilsEl.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    document.getElementById("customwrap").hidden = !f.custom; applyFoil(); makeTexture(); dirty = true;
+  });
+  foilsEl.appendChild(b);
+});
+
+for (const id of ["ca", "cb"]) document.getElementById(id).addEventListener("input", (e) => {
+  state[id] = e.target.value; makeTexture();
+});
+const finishesEl = document.getElementById("finishes");
+for (const name of Object.keys(FINISH)) {
+  const b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.textContent = name;
+  b.setAttribute("aria-pressed", String(name === state.finish));
+  b.addEventListener("click", () => {
+    state.finish = name; finishesEl.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    applyFoil(); makeTexture();
+  });
+  finishesEl.appendChild(b);
+}
+document.getElementById("file").addEventListener("change", (e) => {
+  const file = e.target.files && e.target.files[0]; if (!file) return;
+  const url = URL.createObjectURL(file), im = new Image();
+  im.onload = () => { state.img = im; makeTexture(); URL.revokeObjectURL(url); };
+  im.onerror = () => URL.revokeObjectURL(url);
+  im.src = url; e.target.value = "";
+});
+
+const IMODES = [["normal", "原圖"], ["multiply", "色彩增值"], ["cut", "自動去背"]], imodesEl = document.getElementById("imodes");
+IMODES.forEach(([k, name]) => {
+  const b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.textContent = name;
+  b.setAttribute("aria-pressed", String(k === state.imgMode));
+  b.addEventListener("click", () => {
+    state.imgMode = k; document.getElementById("tolwrap").hidden = k !== "cut";
+    imodesEl.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); makeTexture();
+  });
+  imodesEl.appendChild(b);
+});
+document.getElementById("inner").addEventListener("click", (e) => {
+  state.inner = !state.inner; e.currentTarget.setAttribute("aria-pressed", String(state.inner)); makeTexture();
+});
+let tolPending = false;
+document.getElementById("tol").addEventListener("input", (e) => {
+  state.tol = +e.target.value;
+  if (!tolPending) { tolPending = true; requestAnimationFrame(() => { tolPending = false; makeTexture(); }); }
+});
+document.getElementById("clear").addEventListener("click", () => { state.img = null; makeTexture(); });
+
+// 手繪板：畫在透明的 pad 上，即時合成到氣球中央
+const view = document.getElementById("padview"), vg = view.getContext("2d"), pg = pad.getContext("2d");
+const PENS = ["#16131A", "#FFFFFF", "#E8457F", "#2F6FD6", "#F2B822", "#3FA66B"];
+const pen = { color: PENS[0], size: 14, erase: false }, undoStack = [];
+const pensEl = document.getElementById("pens"), eraserBtn = document.getElementById("eraser");
+PENS.forEach((c, i) => {
+  const b = document.createElement("button"); b.type = "button"; b.className = "pen"; b.style.background = c;
+  b.setAttribute("aria-label", "筆色 " + c); b.setAttribute("aria-pressed", String(i === 0));
+  b.addEventListener("click", () => {
+    pen.color = c; pen.erase = false; eraserBtn.setAttribute("aria-pressed", "false");
+    pensEl.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  });
+  pensEl.appendChild(b);
+});
+eraserBtn.addEventListener("click", () => {
+  pen.erase = !pen.erase; eraserBtn.setAttribute("aria-pressed", String(pen.erase));
+  if (pen.erase) pensEl.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", "false"));
+});
+document.getElementById("pensize").addEventListener("input", (e) => { pen.size = +e.target.value; });
+function padRefresh() { vg.clearRect(0, 0, 640, 640); vg.drawImage(pad, 0, 0); makeTexture(); }
+let padPending = false;
+const padSoon = () => { if (!padPending) { padPending = true; requestAnimationFrame(() => { padPending = false; padRefresh(); }); } };
+let stroke = null;
+const padPt = (e) => { const r = view.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * 640, (e.clientY - r.top) / r.height * 640]; };
+view.addEventListener("pointerdown", (e) => {
+  try { view.setPointerCapture(e.pointerId); } catch (_) {}
+  undoStack.push(pg.getImageData(0, 0, 640, 640)); if (undoStack.length > 20) undoStack.shift();
+  stroke = padPt(e); pg.lineCap = pg.lineJoin = "round"; pg.lineWidth = pen.size * 640 / 320;
+  pg.globalCompositeOperation = pen.erase ? "destination-out" : "source-over"; pg.strokeStyle = pg.fillStyle = pen.color;
+  pg.beginPath(); pg.arc(stroke[0], stroke[1], pg.lineWidth / 2, 0, Math.PI * 2); pg.fill(); padSoon();
+});
+view.addEventListener("pointermove", (e) => {
+  if (!stroke) return; const p = padPt(e);
+  pg.beginPath(); pg.moveTo(stroke[0], stroke[1]); pg.lineTo(p[0], p[1]); pg.stroke(); stroke = p; padSoon();
+});
+const strokeEnd = () => { stroke = null; };
+view.addEventListener("pointerup", strokeEnd); view.addEventListener("pointercancel", strokeEnd);
+document.getElementById("undo").addEventListener("click", () => {
+  const im = undoStack.pop(); if (!im) return; pg.globalCompositeOperation = "source-over"; pg.putImageData(im, 0, 0); padRefresh();
+});
+document.getElementById("padclear").addEventListener("click", () => {
+  undoStack.push(pg.getImageData(0, 0, 640, 640)); pg.clearRect(0, 0, 640, 640); padRefresh();
+});
+document.getElementById("air").addEventListener("input", (e) => { state.air = e.target.value / 100; dirty = true; });
+document.getElementById("reset").addEventListener("click", () => { sq.k = 0; sq.v = 0; sq.target = 0; rot.x = rot.y = 0; dirty = true; });
+document.getElementById("save").addEventListener("click", () => {
+  renderer.render(scene, camera);
+  dom.toBlob((blob) => {
+    if (!blob) return;
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "balloon.png";
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+});
+
+// ───────── 迴圈 ─────────
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false); camera.aspect = w / h;
+  camera.fov = w / h < 0.8 ? 32 * (0.8 / (w / h)) ** 0.6 : 32;      // 太窄時拉遠一點
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage); resize();
+
+buildBalloon();
+let tPrev = performance.now(), swayT = 0, ry = 0, rx = 0;
+function frame(now) {
+  const dt = Math.min((now - tPrev) / 1000, 1 / 30); tPrev = now; swayT += dt;
+  // 彈簧：按住往 1 走（臨界阻尼偏重），放開時阻尼小，會彈幾下
+  const stiff = 160, damp = sq.target ? 26 : 6.5;
+  const acc = -stiff * (sq.k - sq.target) - damp * sq.v;
+  const moving = Math.abs(sq.v) > 0.002 || Math.abs(sq.k - sq.target) > 0.002;
+  if (moving) { sq.v += acc * dt; sq.k += sq.v * dt; dirty = true; }
+  else if (sq.k !== sq.target) { sq.k = sq.target; sq.v = 0; dirty = true; }
+  const dxq = sq.tx - sq.qx, dyq = sq.ty - sq.qy;
+  if (Math.abs(dxq) + Math.abs(dyq) > 0.0005) { const a = Math.min(1, dt * 16); sq.qx += dxq * a; sq.qy += dyq * a; dirty = true; }
+  if (dirty) { updateGeometry(); dirty = false; }
+  // 氣球輕輕晃
+  const sy = Math.sin(swayT * 0.7) * 0.12, sx = Math.sin(swayT * 0.5 + 1) * 0.05;
+  ry += (rot.y - ry) * 0.2; rx += (rot.x - rx) * 0.2;
+  group.rotation.set(rx + sx, ry + sy, Math.sin(swayT * 0.6) * 0.025);
+  group.position.y = 0.55 + Math.sin(swayT * 1.1) * 0.03;
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+window.__balloon = { sq, state, dbg: () => ({ nz: geoF.attributes.normal.array[2], nzMid: geoF.attributes.normal.array[(20*M+5)*3+2], zMid: geoF.attributes.position.array[(20*M+5)*3+2] }), get dirty() { return dirty; }, set dirty(v) { dirty = v; } };
+</script>
+</html>
