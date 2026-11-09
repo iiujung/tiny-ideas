@@ -133,7 +133,7 @@ h1, h2, label, .btn, .tag, .tag-btn, .chip, .coin .nm, .coin .amt, .card .cat, .
 @media (min-width: 900px) { .mobile-say { display: none; } }
 
 /* ───── 彈窗：翻開兩張卡 ───── */
-.modal { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 20px; background: rgba(11, 11, 12, 0.82); overflow-y: auto; }
+.modal { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 20px; background: rgba(11, 11, 12, 0.96); overflow-y: auto; }
 .modal[hidden] { display: none; }
 .modal-in { width: min(100%, 820px); display: grid; gap: 24px; justify-items: center; }
 .modal h2 { margin: 0; font-size: 28px; font-weight: 400; line-height: 1.4; text-align: center; }
@@ -183,6 +183,43 @@ h1, h2, label, .btn, .tag, .tag-btn, .chip, .coin .nm, .coin .amt, .card .cat, .
 #big-r.open { animation-duration: 4s; animation-delay: 1.9s; }
 .big .label, .big .title, .big .text { white-space: pre-line; }
 .btn:active:not(:disabled) { scale: 0.97; }
+/* ───── 手機版：字放大（手機上最小字 15px，主要內容 17px 以上）───── */
+@media (max-width: 899px) {
+  :root { --cw: 176px; --ch: 158px; --arc-top: 196px; --arc-bottom: 150px; }
+  .brand .en { font-size: 14px; }
+  .tag, .tag-btn { font-size: 15px; height: 36px; }
+  .card .no { font-size: 14px; }
+  .card .cat { font-size: 23px; }
+  .card.shop .cat { font-size: 20px; }
+  .card .meta { font-size: 15px; line-height: 1.4; -webkit-line-clamp: 3; }
+  .card .sample { font-size: 13px; }
+  .mobile-say { font-size: 17px; line-height: 1.55; padding: 10px 14px; }
+  .center .step { font-size: 14px; }
+  .center .actions .btn { font-size: 18px; height: 60px; }
+  .note { font-size: 14px; }
+}
+@media (max-width: 640px) {
+  .hello canvas { width: 96px; }
+  .speech { font-size: 18px; padding: 14px 16px; }
+  .q-head .no { font-size: 24px; }
+  .q-head h2, .q-head label { font-size: 22px; }
+  .mood-input { height: 56px; font-size: 18px; }
+  .chip { height: 46px; font-size: 17px; padding: 0 16px; }
+  .coin { min-height: 124px; }
+  .coin .nm { font-size: 18px; }
+  .coin .amt { font-size: 16px; }
+  .btn { font-size: 20px; }
+  .btn .px { font-size: 15px; }
+  .modal h2 { font-size: 28px; }
+  .modal .en { font-size: 14px; }
+  .big { min-height: 250px; }
+  .big .no { font-size: 14px; }
+  .big .label { font-size: 17px; }
+  .big .title { font-size: 28px; }
+  .big .text { font-size: 18px; line-height: 1.6; }
+  .big .sample { font-size: 14px; }
+  .modal .btn { height: 60px; }
+}
 @media (prefers-reduced-motion: reduce) { .speech, .hello canvas, .center canvas.teller, .center .bubble, .center .bubble.pop, .big.open, .modal:not([hidden]), .modal:not([hidden]) .modal-in { animation: none !important; } .ch.cur::after { animation: none; } }
 </style>
 
