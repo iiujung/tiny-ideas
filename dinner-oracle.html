@@ -50,7 +50,7 @@ h1, h2, label, .btn, .tag, .tag-btn, .chip, .coin .nm, .coin .amt, .card .cat, .
 .ask[hidden] { display: none; }
 .ask-card { width: min(100%, 760px); display: grid; gap: 28px; }
 .hello { display: flex; align-items: flex-end; gap: 20px; }
-.hello canvas { width: 112px; flex: none; }
+.hello canvas { width: 140px; flex: none; }
 .speech { position: relative; flex: 1; background: var(--paper); color: var(--ink); padding: 16px 20px; font-size: 18px; line-height: 1.6; }
 .speech::before { content: ""; position: absolute; left: -15px; bottom: 18px; border: 8px solid transparent; border-right-color: var(--ink); border-width: 8px 12px; }
 .q { background: var(--paper); color: var(--ink); padding: 20px; display: grid; gap: 14px; }
@@ -113,7 +113,7 @@ h1, h2, label, .btn, .tag, .tag-btn, .chip, .coin .nm, .coin .amt, .card .cat, .
 /* 中間：占卜師、指示線、按鈕 */
 .center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 6; width: var(--mid); display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; pointer-events: none; }
 .center > * { pointer-events: auto; }
-.center canvas.teller { width: 120px; }
+.center canvas.teller { width: 140px; }
 .center .bubble { background: var(--paper); color: var(--ink); padding: 12px 16px; font-size: 16px; line-height: 1.6; text-wrap: balance; }
 .center .step { font-size: 13px; line-height: 1.4; color: var(--lime); }
 .center .actions { display: flex; flex-direction: column; gap: 10px; align-items: stretch; width: 100%; }
@@ -173,7 +173,8 @@ h1, h2, label, .btn, .tag, .tag-btn, .chip, .coin .nm, .coin .amt, .card .cat, .
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes rise { from { opacity: 0; translate: 0 28px; scale: 0.95; } to { opacity: 1; translate: 0 0; scale: 1; } }
 .speech { animation: bob 3.4s ease-in-out infinite; }
-.hello canvas, .center canvas.teller { animation: bob 2.6s ease-in-out infinite; }
+@keyframes glow { 0%, 100% { filter: drop-shadow(0 0 0 rgba(182, 255, 46, 0)); } 50% { filter: drop-shadow(0 0 10px rgba(182, 255, 46, 0.75)); } }
+.hello canvas, .center canvas.teller { animation: bob 2.6s ease-in-out infinite, glow 2.6s ease-in-out infinite; }
 .center .bubble { animation: bob 3.2s ease-in-out infinite; }
 .center .bubble.pop { animation: bob 3.2s ease-in-out infinite, pop 0.3s ease-out; }
 .modal:not([hidden]) { animation: fade-in 0.25s ease-out; }
@@ -390,6 +391,20 @@ h1, h2, label, .btn, .tag, .tag-btn, .chip, .coin .nm, .coin .amt, .card .cat, .
   SPRITES.coin3 = padTo10(["...oooo...", "....oo....", "...offo...", "..offffo..", ".offwfffo.", ".offeeffo.", ".offffffo.", "..oooooo.."]);
   SPRITES.coin4 = padTo10([".oooooooo.", "offffffffo", "offwffffwo", "oooooooooo", "offfeefffo", "offfeefffo", "offffffffo", "oooooooooo"]);
   const COIN_FILL = ["#D9843B", "#C9CDD6", "#FFD23F", "#FFD23F"];
+  // 占卜師：尖帽兜、黑臉發亮的眼睛、胸前一顆發光的水晶球（只畫左半邊，再左右對稱）
+  SPRITES.teller = (() => {
+    const head = [
+      "...........o", "..........of", ".........off", "........offf", "..e....offff", "......offwff", ".....offffff",
+      "....oooooooo", ".e..offooooo", "....offoeeoo", "e...offoeeoo", "....offoeeoo", "....offooooo", "....offfoooo", ".....ooooooo",
+    ];
+    const arms = ["..offf", ".offff", ".offff", "offfff", "offfww", "offfww", "offfff", "offfff", "offfff", "offfff"]; // 第 14–23 列的左側
+    const orb = ["...ooo", ".ooeee", "oeeeee", "oweeee", "oweeee", "oeeeee", "oeeeee", "oeeeee", "oeeeee", ".ooeee"]; // 球的左半
+    const body = arms.map((a, k) => a + orb[k].replace(/\./g, "f"));
+    // 球的第一列補回 b0 與腰身接起來
+    const rows = [...head, ...body, "oooooooooooo", "offfffffffff", "offfwfffffff", "offfffffffff", "oooooooooooo"];
+    const out = rows.map((h) => { if (h.length !== 12) throw new Error("teller row " + h); return (h + [...h].reverse().join("")).split(""); });
+    return out.map((r) => r.join(""));
+  })();
   function sprite(name, fill, eye = C.lime, cv) {
     const rows = SPRITES[name], c = cv || document.createElement("canvas");
     const W = Math.max(...rows.map((r) => r.length)), H = rows.length;
