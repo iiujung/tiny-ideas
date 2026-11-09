@@ -162,6 +162,18 @@ h1, h2, label, .btn, .tag, .tag-btn, .chip, .coin .nm, .coin .amt, .card .cat, .
 .note { position: fixed; z-index: 4; left: 0; right: 0; bottom: 8px; text-align: center; font-size: 12px; line-height: 1.5; color: var(--gray); pointer-events: none; }
 @media (max-width: 899px) { .m-br { display: inline; } .note { bottom: calc(max(16px, env(safe-area-inset-bottom, 0px)) + 86px); font-size: 13px; padding: 0 16px; z-index: 7; } }
 @media (prefers-reduced-motion: reduce) { .big { transition: none; } }
+/* ───── 右邊結果卡：圖片、地址、地圖 ───── */
+.big .face.shop { gap: 8px; }
+#big-r, #big-l { min-height: 560px; }
+@media (max-width: 640px) { #big-l { min-height: 250px; } #big-r { min-height: 610px; } }
+.big canvas.foodpic { width: 96px; }
+.big .addr { font-size: 14px; line-height: 1.5; color: #3A3834; }
+.big iframe.map { width: 100%; height: 150px; border: 3px solid var(--ink); background: #E7E2D4; }
+.big .maplink { align-self: stretch; justify-content: center; text-decoration: none; height: 48px; font-size: 16px; }
+.big .face.shop .sample { align-self: stretch; font-size: 12px; }
+.card.shop canvas { width: 36px; }
+.card.shop .cat { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+@media (max-width: 640px) { .big .addr { font-size: 15px; } .big iframe.map { height: 170px; } .big .maplink { height: 56px; font-size: 18px; } .big .face.shop .sample { font-size: 13px; } .big canvas.foodpic { width: 84px; } }
 /* ───── 微動畫：打字機、漂浮、彈出 ───── */
 .ch { visibility: hidden; }
 .ch.on { visibility: visible; }
@@ -185,7 +197,7 @@ h1, h2, label, .btn, .tag, .tag-btn, .chip, .coin .nm, .coin .amt, .card .cat, .
 .btn:active:not(:disabled) { scale: 0.97; }
 /* ───── 手機版：字放大（手機上最小字 15px，主要內容 17px 以上）───── */
 @media (max-width: 899px) {
-  :root { --cw: 176px; --ch: 158px; --arc-top: 196px; --arc-bottom: 150px; }
+  :root { --cw: 176px; --ch: 158px; --arc-top: 196px; --arc-bottom: 178px; }
   .brand .en { font-size: 14px; }
   .tag, .tag-btn { font-size: 15px; height: 36px; }
   .card .no { font-size: 14px; }
@@ -262,7 +274,7 @@ h1, h2, label, .btn, .tag, .tag-btn, .chip, .coin .nm, .coin .amt, .card .cat, .
     </div>
   </div>
   <p class="mobile-say" id="mobile-say" aria-hidden="true"></p>
-  <p class="note"><span>左邊的分享是先寫好的，<br class="m-br">不是真的有人在線上</span></p>
+  <p class="note"><span>左邊的分享是先寫好的，不是真的有人在線上。<br>右邊是中山站附近的真店，價位為估計。</span></p>
 </section>
 
 <section class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="m-title">
@@ -306,44 +318,83 @@ h1, h2, label, .btn, .tag, .tag-btn, .chip, .coin .nm, .coin .amt, .card .cat, .
   const SHARES = [
     { animal: "bear", nick: "熊熊阿德", cat: "牛肉麵", say: "今天被主管念，只想喝一大碗熱湯。", moods: ["想被安慰", "沒什麼胃口"] },
     { animal: "cat", nick: "貓咪小麥", cat: "拉麵", say: "下雨天就是要吃拉麵，加蛋加叉燒。", moods: ["想被安慰", "想犒賞自己", "想吃重口味"] },
-    { animal: "shiba", nick: "柴柴豆皮", cat: "便當", say: "趕報告中，便當配電腦最快。", moods: ["想快點吃完", "懶得出門"] },
+    { animal: "shiba", nick: "柴柴豆皮", cat: "豬排飯", say: "趕報告中，一碗豬排飯配電腦最快。", moods: ["想快點吃完", "懶得出門", "想吃重口味"] },
     { animal: "rabbit", nick: "兔兔奈奈", cat: "沙拉輕食", say: "昨天吃太多，今天清爽一下。", moods: ["想清爽一點", "沒什麼胃口"] },
-    { animal: "frog", nick: "青蛙阿呱", cat: "麻辣燙", say: "想吃辣到流汗，把壓力辣掉。", moods: ["想吃重口味", "想被安慰"] },
-    { animal: "owl", nick: "貓頭鷹夜夜", cat: "鹹酥雞", say: "加班到現在，鹹酥雞是唯一的光。", moods: ["想吃重口味", "想快點吃完", "懶得出門"] },
-    { animal: "pig", nick: "小豬肉圓", cat: "燒肉", say: "領薪水了！今天要烤好多肉。", moods: ["想犒賞自己", "想熱熱鬧鬧"] },
-    { animal: "penguin", nick: "企鵝冰冰", cat: "壽司", say: "想吃一點冰冰涼涼的生魚片。", moods: ["想清爽一點", "想犒賞自己"] },
-    { animal: "cat", nick: "貓咪芝麻", cat: "火鍋", say: "揪朋友吃火鍋，一邊吃一邊聊。", moods: ["想熱熱鬧鬧", "想被安慰"] },
-    { animal: "shiba", nick: "柴柴麻糬", cat: "滷肉飯", say: "一碗滷肉飯加滷蛋，簡單就好。", moods: ["想快點吃完", "沒什麼胃口"] },
-    { animal: "bear", nick: "熊熊胖胖", cat: "牛排", say: "今天做完一件大事，要吃牛排慶祝。", moods: ["想犒賞自己"] },
-    { animal: "rabbit", nick: "兔兔小葵", cat: "粥", say: "胃有點累，喝碗皮蛋瘦肉粥。", moods: ["沒什麼胃口", "想被安慰", "想清爽一點"] },
     { animal: "frog", nick: "青蛙呱呱", cat: "咖哩飯", say: "咖哩的香味可以治好一切。", moods: ["想被安慰", "想吃重口味"] },
-    { animal: "owl", nick: "貓頭鷹咕咕", cat: "義大利麵", say: "想坐下來好好吃一盤義大利麵。", moods: ["想犒賞自己", "想清爽一點"] },
-    { animal: "pig", nick: "小豬布丁", cat: "炒飯", say: "外送一盤炒飯，躺著吃。", moods: ["懶得出門", "想快點吃完"] },
-    { animal: "penguin", nick: "企鵝圓圓", cat: "泰式料理", say: "酸酸辣辣的打拋豬，超下飯。", moods: ["想吃重口味", "想熱熱鬧鬧"] },
+    { animal: "owl", nick: "貓頭鷹夜夜", cat: "漢堡炸雞", say: "加班到現在，炸雞是唯一的光。", moods: ["想吃重口味", "想快點吃完", "想熱熱鬧鬧"] },
+    { animal: "pig", nick: "小豬肉圓", cat: "鰻魚飯", say: "領薪水了！今天要吃一碗鰻魚飯。", moods: ["想犒賞自己"] },
+    { animal: "penguin", nick: "企鵝冰冰", cat: "甜點下午茶", say: "晚餐前先來個窯烤舒芙蕾，不行嗎。", moods: ["想犒賞自己", "想清爽一點"] },
+    { animal: "cat", nick: "貓咪芝麻", cat: "韓式中華", say: "炸醬麵加糖醋肉，一起分著吃。", moods: ["想熱熱鬧鬧", "想吃重口味"] },
+    { animal: "shiba", nick: "柴柴麻糬", cat: "小吃點心", say: "一碗米苔目或一盤蒸餃，簡單就好。", moods: ["想快點吃完", "沒什麼胃口"] },
+    { animal: "owl", nick: "貓頭鷹咕咕", cat: "義大利麵", say: "想坐下來好好吃一盤義大利麵。", moods: ["想犒賞自己", "想清爽一點", "想熱熱鬧鬧"] },
+    { animal: "penguin", nick: "企鵝圓圓", cat: "南洋料理", say: "海南雞飯或泰式料理，今天想吃異國風。", moods: ["想吃重口味", "想熱熱鬧鬧", "想清爽一點"] },
   ];
 
-  // 右邊卡組：每個類別的餐廳 ⚠️ 目前全部是範例資料，不是真的店
-  // 換成真的時，每筆照這個格式：{ name: "店名", price: 一個人大概多少錢 }
+
+  // 右邊卡組：中山站附近的真實店家（店名、推薦餐點、地址整理自網路美食文章）
+  // ⚠️ price（一個人大概多少錢）是估計值，來源文章沒寫價格，只有「咖哩王」有菜單價；
+  //    營業時間、店況請以 Google 地圖為準。換資料時每筆照這個格式：
+  //    { name, dish: "推薦餐點", addr: "地址或位置", price: 估計一人價位, src: "來源簡稱" }
   const RESTAURANTS = {
-    "牛肉麵": [{ name: "範例牛肉麵 A", price: 220 }, { name: "範例牛肉麵 B", price: 180 }, { name: "範例牛肉麵 C", price: 320 }],
-    "拉麵": [{ name: "範例拉麵 A", price: 280 }, { name: "範例拉麵 B", price: 350 }, { name: "範例拉麵 C", price: 450 }],
-    "便當": [{ name: "範例便當 A", price: 100 }, { name: "範例便當 B", price: 130 }, { name: "範例便當 C", price: 160 }],
-    "沙拉輕食": [{ name: "範例輕食 A", price: 180 }, { name: "範例輕食 B", price: 260 }, { name: "範例輕食 C", price: 380 }],
-    "麻辣燙": [{ name: "範例麻辣燙 A", price: 150 }, { name: "範例麻辣燙 B", price: 230 }, { name: "範例麻辣燙 C", price: 300 }],
-    "鹹酥雞": [{ name: "範例鹹酥雞 A", price: 120 }, { name: "範例鹹酥雞 B", price: 180 }],
-    "燒肉": [{ name: "範例燒肉 A", price: 550 }, { name: "範例燒肉 B", price: 780 }, { name: "範例燒肉 C", price: 950 }],
-    "壽司": [{ name: "範例壽司 A", price: 250 }, { name: "範例壽司 B", price: 600 }, { name: "範例壽司 C", price: 980 }],
-    "火鍋": [{ name: "範例火鍋 A", price: 320 }, { name: "範例火鍋 B", price: 520 }, { name: "範例火鍋 C", price: 880 }],
-    "滷肉飯": [{ name: "範例滷肉飯 A", price: 80 }, { name: "範例滷肉飯 B", price: 120 }],
-    "牛排": [{ name: "範例牛排 A", price: 380 }, { name: "範例牛排 B", price: 650 }, { name: "範例牛排 C", price: 990 }],
-    "粥": [{ name: "範例粥店 A", price: 90 }, { name: "範例粥店 B", price: 150 }],
-    "咖哩飯": [{ name: "範例咖哩 A", price: 160 }, { name: "範例咖哩 B", price: 260 }, { name: "範例咖哩 C", price: 420 }],
-    "義大利麵": [{ name: "範例義大利麵 A", price: 280 }, { name: "範例義大利麵 B", price: 450 }, { name: "範例義大利麵 C", price: 820 }],
-    "炒飯": [{ name: "範例炒飯 A", price: 110 }, { name: "範例炒飯 B", price: 170 }],
-    "泰式料理": [{ name: "範例泰式 A", price: 240 }, { name: "範例泰式 B", price: 420 }],
+    "拉麵": [
+      { name: "麵屋武藏 神山", dish: "味玉叉燒神山拉麵", addr: "中山區中山北路一段121巷18號", price: 330, src: "beauty321" },
+      { name: "鬼金棒", dish: "辣麻味噌拉麵", addr: "中山區中山北路一段94號", price: 300, src: "beauty321、gofunit" },
+      { name: "勝王拉麵", dish: "麻婆豆腐拉麵", addr: "中山區林森北路306號", price: 260, src: "beauty321" },
+      { name: "麵屋一燈", dish: "冠軍沾麵", addr: "中山區南京東路一段29號", price: 300, src: "beauty321、gofunit" },
+      { name: "鳥人拉麵", dish: "特製鳥人辛白湯拉麵", addr: "中山區中山北路一段105巷7號", price: 280, src: "beauty321" },
+      { name: "橫濱家系拉麵 特濃屋", dish: "味玉豚骨醬油拉麵", addr: "中山區中山北路二段77巷22號", price: 280, src: "beauty321" },
+    ],
+    "牛肉麵": [
+      { name: "大師兄銷魂麵舖", dish: "銷魂麵", addr: "中山區中山北路二段42巷36號", price: 200, src: "gofunit" },
+      { name: "四平街番茄牛肉麵", dish: "番茄牛肉麵（手工刀削麵）", addr: "中山站附近四平街", price: 220, src: "食尚玩家" },
+    ],
+    "豬排飯": [
+      { name: "KATSU 鑫", dish: "熟成豬排蓋飯（全店只賣這一品項）", addr: "中山站6號出口附近", price: 300, src: "gofunit" },
+      { name: "咖哩王", dish: "起士豬排飯（小份240、大份300）", addr: "中山站附近", price: 270, src: "搜尋結果的菜單價" },
+    ],
+    "咖哩飯": [
+      { name: "The Wrice 來時", dish: "自製香料咖哩飯", addr: "中山區南京東路一段13巷7弄2-7號", price: 260, src: "beauty321" },
+      { name: "アツアツ", dish: "咖哩飯、大阪燒、章魚燒", addr: "中山站天津街巷子", price: 220, src: "beauty321" },
+    ],
+    "義大利麵": [
+      { name: "螺絲瑪莉義麵坊", dish: "義大利麵（餐後附免費甜點）", addr: "中山區南京西路12巷13弄9號", price: 260, src: "gofunit" },
+      { name: "旺．慢食餐酒館 中山店", dish: "義大利麵、燉飯、排餐", addr: "中山區中山北路二段42巷34號", price: 480, src: "gofunit" },
+    ],
+    "南洋料理": [
+      { name: "Coco Brother 椰兄", dish: "平價泰式南洋料理（一人份）", addr: "大同區南京西路18巷6弄8-2號", price: 260, src: "gofunit" },
+      { name: "YABI KITCHEN", dish: "海南雞、仁當牛肉、韓式泡菜松阪豬", addr: "中山區南京西路14號2F", price: 420, src: "gofunit" },
+    ],
+    "鰻魚飯": [
+      { name: "肥前屋", dish: "鰻魚飯、鰻魚蛋捲", addr: "中山區中山北路一段121巷13-2號", price: 650, src: "gofunit、搜尋結果" },
+      { name: "三河中川屋", dish: "鰻魚飯（備長炭現烤）", addr: "中山站附近", price: 850, src: "beauty321、搜尋結果" },
+    ],
+    "沙拉輕食": [
+      { name: "Jumane café 佐曼咖啡館", dish: "沙拉、三明治、吐司", addr: "中山區中山北路二段16巷23之1號", price: 320, src: "gofunit" },
+      { name: "荷蘭小鬆餅 Poffertjes Cafe", dish: "鹹甜小鬆餅、沙拉、燉飯", addr: "大同區南京西路64巷9弄19號", price: 300, src: "gofunit" },
+      { name: "Miss V Bakery Cafe", dish: "烤起司三明治、肉桂捲", addr: "大同區赤峰街49巷22號1樓", price: 240, src: "gofunit" },
+    ],
+    "小吃點心": [
+      { name: "福大山東蒸餃大王", dish: "現包現蒸蒸餃", addr: "中山區中山北路一段140巷11號", price: 150, src: "gofunit" },
+      { name: "高家莊米苔目", dish: "手工米苔目、紅燒大腸", addr: "中山區林森北路279號", price: 170, src: "gofunit" },
+    ],
+    "韓式中華": [
+      { name: "韓華園", dish: "炸醬麵、炒碼麵、糖醋肉", addr: "中山區民權東路三段47號", price: 260, src: "gofunit" },
+      { name: "Broccoli Beer 韓國餐酒食堂", dish: "韓式餐酒小菜", addr: "中山區松江路40號", price: 480, src: "gofunit" },
+    ],
+    "漢堡炸雞": [
+      { name: "Buttermilk", dish: "美國阿嬤秘方炸雞", addr: "中山區中山北路二段57之1號（中山意舍酒店一樓）", price: 450, src: "beauty321" },
+      { name: "Man Cave Gourmet Burgers", dish: "貓王漢堡、黑糖培根漢堡", addr: "中山區松江路362巷85號", price: 400, src: "beauty321" },
+      { name: "Butcher jr. by Lanpengyou", dish: "milk caramel 漢堡", addr: "中山區中山北路一段140巷2-2號1樓", price: 380, src: "beauty321" },
+    ],
+    "甜點下午茶": [
+      { name: "星乃珈琲店", dish: "窯烤舒芙蕾", addr: "中山區南京西路12號4樓", price: 350, src: "gofunit" },
+      { name: "椿 tsubaki salon", dish: "北海道粉雪厚鬆餅", addr: "中山區中山北路二段39巷3號B2（晶華酒店）", price: 520, src: "beauty321" },
+    ],
   };
 
   // 占卜師的台詞
+  for (const [cat, list] of Object.entries(RESTAURANTS)) list.forEach((r) => { r.cat = cat; });
+
   const LINES = {
     ready: "左邊是大家今天想吃的。<br>滑一滑自己挑，或讓我隨機抽。",
     custom: (m) => `「${m}」啊……我懂。<br>滑一滑自己挑，或讓我隨機抽。`,
@@ -428,6 +479,15 @@ h1, h2, label, .btn, .tag, .tag-btn, .chip, .coin .nm, .coin .amt, .card .cat, .
   SPRITES.coin3 = padTo10(["...oooo...", "....oo....", "...offo...", "..offffo..", ".offwfffo.", ".offeeffo.", ".offffffo.", "..oooooo.."]);
   SPRITES.coin4 = padTo10([".oooooooo.", "offffffffo", "offwffffwo", "oooooooooo", "offfeefffo", "offfeefffo", "offffffffo", "oooooooooo"]);
   const COIN_FILL = ["#D9843B", "#C9CDD6", "#FFD23F", "#FFD23F"];
+  // 餐點小圖：一碗麵、一碗飯、一盤、蒸餃、漢堡、甜點（用來當作店家的示意圖）
+  SPRITES.food_bowl = ["...e..e.....", "..e..e..e...", "oooooooooooo", "owwwewwwewwo", "owwwwwwwwwwo", "offffffffffo", "offffffffffo", ".offffffffo.", "..offffffo..", "...oooooo...", "..oooooooo.."];
+  SPRITES.food_rice = ["............", "............", "..oooooooo..", ".owwwwwwwwo.", "offffffffffo", "offffffffffo", "oooooooooooo", "owwwwwwwwwwo", ".owwwwwwwwo.", "..oooooooo..", "............"];
+  SPRITES.food_plate = ["............", "............", "...oooooo...", ".offeffeffo.", "ofeffffeffeo", "oooooooooooo", "owwwwwwwwwwo", ".oooooooooo.", "............", "............", "............"];
+  SPRITES.food_dumpling = ["............", "............", "...oooooo...", "..owwwwwwo..", ".owwwwwwwwo.", "owfwfwfwfwwo", "owwwwwwwwwwo", ".oooooooooo.", "............", "............", "............"];
+  SPRITES.food_burger = ["............", "..e.....e...", "...oooooo...", "..offfffffo.", ".offwfwfffo.", "oeeeeeeeeeeo", "oooooooooooo", "oeeeeeeeeeeo", ".offfffffffo", "..oooooooo..", "............"];
+  SPRITES.food_cake = ["............", "............", "............", "....oooo....", "...offffo...", "..offwfffo..", ".oooooooooo.", ".owwwwwwwwo.", "..oooooooo..", "............", "............"];
+  const FOOD_OF = { "拉麵": ["bowl", "#FF5A1F"], "牛肉麵": ["bowl", "#B6FF2E"], "豬排飯": ["rice", "#FFD23F"], "咖哩飯": ["rice", "#E08A4A"], "鰻魚飯": ["rice", "#8A5A2B"], "義大利麵": ["plate", "#FF5A1F"], "南洋料理": ["plate", "#B6FF2E"], "沙拉輕食": ["plate", "#9BE36B"], "小吃點心": ["dumpling", "#F1EADB"], "韓式中華": ["bowl", "#E8452C"], "漢堡炸雞": ["burger", "#FFD23F"], "甜點下午茶": ["cake", "#FFB3D1"] };
+  const foodSprite = (cat) => { const [k, col] = FOOD_OF[cat] || ["plate", "#F1EADB"]; return sprite("food_" + k, col, C.lime); };
   // 占卜師：尖帽兜、黑臉發亮的眼睛、胸前一顆發光的水晶球（只畫左半邊，再左右對稱）
   SPRITES.teller = (() => {
     const head = [
@@ -632,7 +692,8 @@ h1, h2, label, .btn, .tag, .tag-btn, .chip, .coin .nm, .coin .amt, .card .cat, .
   function shopCard(r, i) {
     const c = document.createElement("div");
     c.className = `card shop c${i % 3}`;
-    c.innerHTML = `<div class="row"><span class="no px">SHOP ${String(i + 1).padStart(2, "0")}</span></div><div class="cat">${esc(r.name)}</div><div class="meta">一個人大概 ${r.price} 元</div>`;
+    c.innerHTML = `<div class="row"><span class="no px">SHOP ${String(i + 1).padStart(2, "0")}</span><span data-food></span></div><div class="cat">${esc(r.name)}</div><div class="meta">推薦：${esc(r.dish)}<br>約 ${r.price} 元（估）</div>`;
+    $("[data-food]", c).replaceWith(foodSprite(r.cat));
     return c;
   }
 
@@ -697,14 +758,16 @@ h1, h2, label, .btn, .tag, .tag-btn, .chip, .coin .nm, .coin .amt, .card .cat, .
     const s = S.left, r = S.right;
     $("#face-l").innerHTML = `<span class="no px">YOU WANT</span><span data-sp></span><span class="label">${esc(s.nick)} 也想吃</span><span class="title">${esc(s.cat)}</span><span class="text">「${esc(s.say)}」</span>`;
     $("[data-sp]", $("#face-l")).replaceWith(sprite(s.animal, C.white, C.ink));
-    $("#face-r").innerHTML = `<span class="no px">GO TO</span><span class="label">今晚去這家</span><span class="title">${esc(r.name)}</span><span class="text">一個人大概 ${r.price} 元</span><span class="spacer"></span><span class="sample">範例資料，不是真的店</span>`;
+    const q = encodeURIComponent(`${r.name} ${r.addr}`);
+    $("#face-r").innerHTML = `<span class="no px">GO TO</span><span class="pic" data-pic></span><span class="label">今晚去這家</span><span class="title">${esc(r.name)}</span><span class="text">推薦：${esc(r.dish)}</span><span class="addr">${esc(r.addr)}　約 ${r.price} 元（估）</span><iframe class="map" title="${esc(r.name)} 的地圖" loading="lazy" referrerpolicy="no-referrer" data-src="https://www.google.com/maps?q=${q}&output=embed"></iframe><a class="maplink btn primary sticker" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${q}">在 Google 地圖打開</a><span class="sample">店名與推薦餐點整理自網路文章，價位為估計，營業時間以 Google 地圖為準</span>`;
+    $("[data-pic]", $("#face-r")).replaceWith(Object.assign(foodSprite(r.cat), { className: "sprite foodpic" }));
     for (const id of ["back-l", "back-r"]) $("#" + id).replaceChildren(sprite("back", C.ink, C.lime));
     $("#big-l").classList.remove("open"); $("#big-r").classList.remove("open");
     for (const f of [$("#face-l"), $("#face-r")]) f.querySelectorAll(".label, .title, .text").forEach((el) => { el.dataset.t = el.textContent; el.textContent = ""; });
     $("#modal").hidden = false;
     const typeFace = (face, delay) => typeSeq([...face.querySelectorAll(".label, .title, .text")].map((el) => ({ el, text: el.dataset.t, speed: el.classList.contains("title") ? 85 : 50 })), delay);
     setTimeout(() => { $("#big-l").classList.add("open"); Sound.beep(660, 0.08); typeFace($("#face-l"), reduce() ? 0 : 450); }, reduce() ? 0 : 250);
-    setTimeout(() => { $("#big-r").classList.add("open"); Sound.beep(880, 0.08); typeFace($("#face-r"), reduce() ? 0 : 450); }, reduce() ? 0 : 750);
+    setTimeout(() => { $("#big-r").classList.add("open"); Sound.beep(880, 0.08); { const m = $("iframe.map", $("#face-r")); if (m) m.src = m.dataset.src; } typeFace($("#face-r"), reduce() ? 0 : 450); }, reduce() ? 0 : 750);
     setTimeout(() => $("#again").focus(), 50);
   }
   function closeModal() { $("#modal").hidden = true; }
