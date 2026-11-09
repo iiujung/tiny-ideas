@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8">
+<title>晚餐占卜師</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=Silkscreen&display=swap">
+<style>
+/* 晚餐占卜師：黑底＋四個貼紙色塊，粗黑框的像素小怪物。中文用粉圓保持清楚，英文和數字用點陣字 */
+:root {
+  --ink: #0B0B0C; --paper: #F1EADB; --orange: #FF5A1F; --lime: #B6FF2E; --lav: #AEB2FF; --gray: #8A867E;
+  --font-sans: "Huninn", "jf-openhuninn-2.1", "PingFang TC", "Noto Sans TC", sans-serif;
+  --font-px: "Silkscreen", ui-monospace, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { font-family: var(--font-sans); font-weight: 400; font-synthesis: none; background: var(--ink); color: var(--paper); font-size: 16px; line-height: 1.75; letter-spacing: normal; line-break: strict; overflow: hidden; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--lime); outline-offset: 3px; }
+.px { font-family: var(--font-px); font-weight: 400; letter-spacing: 0.02em; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; font-weight: 400; }
+canvas.sprite { image-rendering: pixelated; display: block; }
+
+/* 貼紙：色塊＋黑框＋往右下錯開的實心影子 */
+.sticker { border: 3px solid var(--ink); box-shadow: 6px 6px 0 var(--ink); }
+/* 短字（標題、按鈕、標籤）不在詞中間斷行；內文照一般中文斷行 */
+h1, h2, label, .btn, .tag, .tag-btn, .chip, .coin .nm, .coin .amt, .card .cat, .big .title, .big .label, .big .sample { word-break: keep-all; }
+
+/* ───── 頁首 ───── */
+.top { position: fixed; z-index: 20; top: 0; left: 0; right: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px max(20px, env(safe-area-inset-left, 0px)); pointer-events: none; }
+.top > * { pointer-events: auto; }
+.brand { display: flex; flex-direction: column; gap: 2px; }
+.brand .en { font-size: 13px; line-height: 1.4; color: var(--lime); }
+.brand h1 { margin: 0; font-size: 32px; font-weight: 400; line-height: 1.3; color: var(--paper); }
+.top-right { display: flex; align-items: center; gap: 12px; }
+.picked { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.tag { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; background: var(--paper); color: var(--ink); border: 2px solid var(--ink); font-size: 14px; line-height: 1; }
+.tag.lime { background: var(--lime); }
+.tag.lav { background: var(--lav); }
+.tag-btn { height: 32px; padding: 0 12px; border: 2px solid var(--paper); background: none; color: var(--paper); font-size: 14px; line-height: 1; }
+.icon-btn { width: 40px; height: 40px; padding: 0; display: grid; place-items: center; background: var(--paper); color: var(--ink); border: 2px solid var(--ink); }
+.icon-btn svg { width: 20px; height: 20px; shape-rendering: crispEdges; }
+
+/* ───── 第一步：兩個問題 ───── */
+.ask { position: fixed; inset: 0; z-index: 10; overflow-y: auto; display: grid; place-items: center; padding: 104px 20px 40px; }
+.ask[hidden] { display: none; }
+.ask-card { width: min(100%, 760px); display: grid; gap: 28px; }
+.hello { display: flex; align-items: flex-end; gap: 20px; }
+.hello canvas { width: 112px; flex: none; }
+.speech { position: relative; flex: 1; background: var(--paper); color: var(--ink); padding: 16px 20px; font-size: 18px; line-height: 1.6; }
+.speech::before { content: ""; position: absolute; left: -15px; bottom: 18px; border: 8px solid transparent; border-right-color: var(--ink); border-width: 8px 12px; }
+.q { background: var(--paper); color: var(--ink); padding: 20px; display: grid; gap: 14px; }
+.q-head { display: flex; align-items: baseline; gap: 12px; }
+.q-head .no { font-size: 22px; line-height: 1; color: var(--orange); }
+.q-head h2, .q-head label { margin: 0; font-size: 22px; font-weight: 400; line-height: 1.4; }
+.mood-input { height: 52px; width: 100%; padding: 0 14px; border: 3px solid var(--ink); background: #FFFFFF; color: var(--ink); font-size: 16px; }
+.mood-input::placeholder { color: var(--gray); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { height: 40px; padding: 0 14px; border: 2px solid var(--ink); background: #FFFFFF; color: var(--ink); font-size: 15px; line-height: 1; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--lime); }
+.coins { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.coin { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-height: 104px; padding: 12px; border: 3px solid var(--ink); background: var(--lav); color: var(--ink); text-align: left; }
+.coin:nth-child(2) { background: var(--lime); }
+.coin:nth-child(3) { background: var(--orange); }
+.coin:nth-child(4) { background: #FFFFFF; }
+.coin canvas { width: 28px; }
+.coin .nm { font-size: 16px; line-height: 1.4; }
+.coin .amt { font-size: 14px; line-height: 1.4; }
+.coin[aria-pressed="true"] { box-shadow: inset 0 0 0 3px var(--ink), 6px 6px 0 var(--paper); transform: translate(-3px, -3px); }
+.coin[aria-pressed="true"] .nm::after { content: " ✓"; }
+.go-row { display: flex; justify-content: flex-end; }
+.btn { height: 56px; padding: 0 28px; border: 3px solid var(--ink); background: var(--paper); color: var(--ink); font-size: 18px; line-height: 1; display: inline-flex; align-items: center; gap: 10px; }
+.btn.primary { background: var(--orange); }
+.btn.primary.dark { border-color: var(--paper); }
+.btn:disabled { background: #3A3834; color: var(--gray); border-color: #3A3834; box-shadow: none; cursor: not-allowed; }
+.btn:not(:disabled):active { transform: translate(3px, 3px); box-shadow: 3px 3px 0 var(--ink); }
+.btn .px { font-size: 14px; }
+@media (max-width: 640px) {
+  .coins { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .q-head h2, .q-head label { font-size: 20px; }
+  .hello canvas { width: 88px; }
+  .speech { font-size: 16px; }
+}
+
+/* ───── 第二步：左右兩個圓弧卡組 ───── */
+.stage { position: fixed; inset: 0; z-index: 5; }
+.stage[hidden] { display: none; }
+.arc { position: absolute; top: var(--arc-top); bottom: var(--arc-bottom); width: 50%; overflow: hidden; touch-action: none; cursor: grab; }
+.arc.l { left: 0; } .arc.r { right: 0; }
+.arc.dragging { cursor: grabbing; }
+.arc.off { pointer-events: none; }
+.arc.off .card { filter: grayscale(1) brightness(0.45); }
+.card { position: absolute; left: 0; top: 0; width: var(--cw); height: var(--ch); border: 3px solid var(--ink); padding: 12px 14px; display: flex; flex-direction: column; justify-content: space-between; color: var(--ink); will-change: transform; user-select: none; -webkit-user-select: none; }
+.card .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.card .no { font-size: 13px; line-height: 1; }
+.card .cat { font-size: 26px; line-height: 1.2; }
+.card .meta { font-size: 13px; line-height: 1.4; }
+.card canvas { width: 40px; }
+.card.c0 { background: var(--orange); } .card.c1 { background: var(--lime); } .card.c2 { background: var(--lav); } .card.c3 { background: var(--paper); }
+.card.shop { background: var(--paper); }
+.card.shop.c0 { background: #FFFFFF; } .card.shop.c2 { background: var(--lav); }
+.card.shop .cat { font-size: 22px; }
+.card .sample { display: inline-block; padding: 0 6px; background: var(--ink); color: var(--lime); font-size: 11px; line-height: 18px; }
+.card.hit { box-shadow: 0 0 0 4px var(--paper), 10px 10px 0 4px var(--ink); }
+.arc .hint { position: absolute; left: 0; right: 0; bottom: 16px; text-align: center; font-size: 14px; line-height: 1.5; color: var(--gray); pointer-events: none; }
+:root { --cw: 280px; --ch: 168px; --mid: 320px; --arc-top: 92px; --arc-bottom: 28px; }
+@media (max-width: 899px) { :root { --cw: 172px; --ch: 132px; --arc-top: 148px; --arc-bottom: 136px; } .card { padding: 8px 10px; } .card .cat { font-size: 20px; } .card.shop .cat { font-size: 17px; } .card .meta { font-size: 13px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; } .card .cat { font-size: 19px; } .card canvas { width: 26px; } }
+
+/* 中間：占卜師、指示線、按鈕 */
+.center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 6; width: var(--mid); display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; pointer-events: none; }
+.center > * { pointer-events: auto; }
+.center canvas.teller { width: 120px; }
+.center .bubble { background: var(--paper); color: var(--ink); padding: 12px 16px; font-size: 16px; line-height: 1.6; text-wrap: balance; }
+.center .step { font-size: 13px; line-height: 1.4; color: var(--lime); }
+.center .actions { display: flex; flex-direction: column; gap: 10px; align-items: stretch; width: 100%; }
+.center .actions .btn { justify-content: center; }
+.center .actions .btn.ghost { background: transparent; color: var(--paper); border-color: var(--paper); }
+.pointer { position: absolute; top: 50%; height: 0; border-top: 2px dashed var(--lime); z-index: 4; pointer-events: none; }
+@media (max-width: 899px) {
+  .center { top: auto; bottom: max(16px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: calc(100% - 32px); gap: 10px; }
+  .center canvas.teller, .center .bubble { display: none; }
+  .center .actions { flex-direction: row; }
+  .center .actions .btn { flex: 1; padding: 0 12px; font-size: 16px; }
+  .top { padding: 14px 16px; }
+  .brand h1 { font-size: 24px; }
+  .picked .tag { display: none; }
+  .mobile-say { position: fixed; z-index: 6; left: 16px; right: 16px; top: 76px; background: var(--paper); color: var(--ink); padding: 8px 12px; font-size: 14px; line-height: 1.5; }
+}
+@media (min-width: 900px) { .mobile-say { display: none; } }
+
+/* ───── 彈窗：翻開兩張卡 ───── */
+.modal { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 20px; background: rgba(11, 11, 12, 0.82); overflow-y: auto; }
+.modal[hidden] { display: none; }
+.modal-in { width: min(100%, 820px); display: grid; gap: 24px; justify-items: center; }
+.modal h2 { margin: 0; font-size: 28px; font-weight: 400; line-height: 1.4; text-align: center; }
+.modal .en { font-size: 13px; color: var(--lime); text-align: center; }
+.pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; width: 100%; perspective: 1200px; }
+.big { position: relative; min-height: 340px; transform-style: preserve-3d; transition: transform 0.7s cubic-bezier(.3, 1.4, .5, 1); transform: rotateY(180deg); }
+.big.open { transform: none; }
+.big .face, .big .back { position: absolute; inset: 0; border: 3px solid var(--ink); backface-visibility: hidden; padding: 18px; display: flex; flex-direction: column; gap: 10px; color: var(--ink); }
+.big .back { transform: rotateY(180deg); background: var(--ink); border-color: var(--paper); display: grid; place-items: center; }
+.big .back canvas { width: 72px; }
+.big .face.share { background: var(--lime); }
+.big .face.shop { background: var(--paper); }
+.big .no { font-size: 13px; line-height: 1; }
+.big canvas.sprite { width: 72px; }
+.big .label { font-size: 14px; line-height: 1.4; }
+.big .title { font-size: 34px; line-height: 1.25; }
+.big .text { font-size: 16px; line-height: 1.7; }
+.big .spacer { flex: 1; min-height: 8px; }
+.big .sample { align-self: flex-start; padding: 2px 8px; background: var(--ink); color: var(--lime); font-size: 13px; line-height: 1.4; }
+.modal .row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.modal .btn.ghost { background: transparent; color: var(--paper); border-color: var(--paper); }
+@media (max-width: 640px) { .big { min-height: 210px; } .pair { grid-template-columns: minmax(0, 1fr); gap: 14px; } .big .text { word-break: keep-all; } .big .face { padding: 12px; } .big .title { font-size: 22px; } .big .text { font-size: 14px; } .big canvas.sprite { width: 48px; } .modal h2 { font-size: 22px; } }
+
+.m-br { display: none; }
+.note span { background: var(--ink); padding: 2px 8px; }
+.note { position: fixed; z-index: 4; left: 0; right: 0; bottom: 8px; text-align: center; font-size: 12px; line-height: 1.5; color: var(--gray); pointer-events: none; }
+@media (max-width: 899px) { .m-br { display: inline; } .note { bottom: calc(max(16px, env(safe-area-inset-bottom, 0px)) + 86px); font-size: 13px; padding: 0 16px; z-index: 7; } }
+@media (prefers-reduced-motion: reduce) { .big { transition: none; } }
+</style>
+
+<header class="top">
+  <div class="brand"><span class="en px">DINNER ORACLE</span><h1>晚餐占卜師</h1></div>
+  <div class="top-right">
+    <div class="picked" id="picked"></div>
+    <button type="button" class="icon-btn" id="sound" aria-label="音效" aria-pressed="true"></button>
+  </div>
+</header>
+
+<section class="ask" id="ask" aria-label="先回答兩題">
+  <div class="ask-card">
+    <div class="hello"><canvas class="sprite" id="hello-teller" aria-hidden="true"></canvas><p class="speech sticker" id="hello-say">今晚吃什麼，交給我。先告訴我兩件事。</p></div>
+    <div class="q sticker">
+      <div class="q-head"><span class="no px">01</span><label for="mood">今天心情怎麼樣？</label></div>
+      <input class="mood-input" id="mood" list="mood-list" maxlength="16" autocomplete="off" placeholder="點一個，或用自己的話說">
+      <datalist id="mood-list"></datalist>
+      <div class="chips" id="mood-chips" role="group" aria-label="心情"></div>
+    </div>
+    <div class="q sticker">
+      <div class="q-head"><span class="no px">02</span><h2 id="coin-label">錢包今天有多少魔力？</h2></div>
+      <div class="coins" id="coins" role="group" aria-labelledby="coin-label"></div>
+    </div>
+    <div class="go-row"><button type="button" class="btn primary sticker" id="go" disabled>開始占卜 <span class="px">GO</span></button></div>
+  </div>
+</section>
+
+<section class="stage" id="stage" hidden aria-label="抽卡">
+  <div class="arc l" id="arc-l" aria-label="大家今天想吃什麼"></div>
+  <div class="arc r off" id="arc-r" aria-label="去哪一家"></div>
+  <div class="pointer" id="pointer" aria-hidden="true"></div>
+  <div class="center">
+    <canvas class="sprite teller" id="teller" aria-hidden="true"></canvas>
+    <span class="step px" id="step">STEP 1/2</span>
+    <p class="bubble sticker" id="say" role="status" aria-live="polite"></p>
+    <div class="actions">
+      <button type="button" class="btn primary sticker" id="rand">隨機抽 <span class="px">RANDOM</span></button>
+      <button type="button" class="btn ghost" id="pick">抽中間這張</button>
+    </div>
+  </div>
+  <p class="mobile-say" id="mobile-say" aria-hidden="true"></p>
+  <p class="note"><span>左邊的分享是先寫好的，<br class="m-br">不是真的有人在線上</span></p>
+</section>
+
+<section class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="m-title">
+  <div class="modal-in">
+    <div><div class="en px">YOUR DINNER</div><h2 id="m-title">今晚的晚餐籤</h2></div>
+    <div class="pair">
+      <div class="big" id="big-l"><div class="face share" id="face-l"></div><div class="back" id="back-l"></div></div>
+      <div class="big" id="big-r"><div class="face shop" id="face-r"></div><div class="back" id="back-r"></div></div>
+    </div>
+    <div class="row">
+      <button type="button" class="btn primary sticker" id="again">再抽一次</button>
+      <button type="button" class="btn ghost" id="restart">換心情重來</button>
+    </div>
+  </div>
+</section>
+
+<script>
+(() => {
+  // ═══════════ 資料：要改字、換餐廳，只改這一區 ═══════════
+
+  // 心情：可以點，也可以自己打
+  const MOODS = ["想被安慰", "想犒賞自己", "想快點吃完", "想吃重口味", "想清爽一點", "沒什麼胃口", "想熱熱鬧鬧", "懶得出門"];
+
+  // 財力：四個區間；名字有三組可以換，SHOW_PRICE 決定要不要顯示金額
+  const BUDGET_NAME_SET = "tarot";
+  const SHOW_PRICE = true;
+  const BUDGETS = [
+    { id: "b1", min: 0, max: 200 },
+    { id: "b2", min: 200, max: 400 },
+    { id: "b3", min: 400, max: 800 },
+    { id: "b4", min: 800, max: 1000 },
+  ];
+  const BUDGET_NAMES = {
+    tarot: ["隱者的銅板", "節制的銀幣", "皇帝的金幣", "太陽的寶庫"],
+    moon: ["新月錢包", "弦月錢包", "滿月錢包", "流星錢包"],
+    crystal: ["小石子", "月光石", "紫水晶", "龍之心"],
+  };
+
+  // 左邊卡組：大家分享的「今天想吃的類別」（先寫好的假分享）
+  // animal 可以用：cat、shiba、rabbit、bear、frog、owl、pig、penguin
+  const SHARES = [
+    { animal: "bear", nick: "熊熊阿德", cat: "牛肉麵", say: "今天被主管念，只想喝一大碗熱湯。", moods: ["想被安慰", "沒什麼胃口"] },
+    { animal: "cat", nick: "貓咪小麥", cat: "拉麵", say: "下雨天就是要吃拉麵，加蛋加叉燒。", moods: ["想被安慰", "想犒賞自己", "想吃重口味"] },
+    { animal: "shiba", nick: "柴柴豆皮", cat: "便當", say: "趕報告中，便當配電腦最快。", moods: ["想快點吃完", "懶得出門"] },
+    { animal: "rabbit", nick: "兔兔奈奈", cat: "沙拉輕食", say: "昨天吃太多，今天清爽一下。", moods: ["想清爽一點", "沒什麼胃口"] },
+    { animal: "frog", nick: "青蛙阿呱", cat: "麻辣燙", say: "想吃辣到流汗，把壓力辣掉。", moods: ["想吃重口味", "想被安慰"] },
+    { animal: "owl", nick: "貓頭鷹夜夜", cat: "鹹酥雞", say: "加班到現在，鹹酥雞是唯一的光。", moods: ["想吃重口味", "想快點吃完", "懶得出門"] },
+    { animal: "pig", nick: "小豬肉圓", cat: "燒肉", say: "領薪水了！今天要烤好多肉。", moods: ["想犒賞自己", "想熱熱鬧鬧"] },
+    { animal: "penguin", nick: "企鵝冰冰", cat: "壽司", say: "想吃一點冰冰涼涼的生魚片。", moods: ["想清爽一點", "想犒賞自己"] },
+    { animal: "cat", nick: "貓咪芝麻", cat: "火鍋", say: "揪朋友吃火鍋，一邊吃一邊聊。", moods: ["想熱熱鬧鬧", "想被安慰"] },
+    { animal: "shiba", nick: "柴柴麻糬", cat: "滷肉飯", say: "一碗滷肉飯加滷蛋，簡單就好。", moods: ["想快點吃完", "沒什麼胃口"] },
+    { animal: "bear", nick: "熊熊胖胖", cat: "牛排", say: "今天做完一件大事，要吃牛排慶祝。", moods: ["想犒賞自己"] },
+    { animal: "rabbit", nick: "兔兔小葵", cat: "粥", say: "胃有點累，喝碗皮蛋瘦肉粥。", moods: ["沒什麼胃口", "想被安慰", "想清爽一點"] },
+    { animal: "frog", nick: "青蛙呱呱", cat: "咖哩飯", say: "咖哩的香味可以治好一切。", moods: ["想被安慰", "想吃重口味"] },
+    { animal: "owl", nick: "貓頭鷹咕咕", cat: "義大利麵", say: "想坐下來好好吃一盤義大利麵。", moods: ["想犒賞自己", "想清爽一點"] },
+    { animal: "pig", nick: "小豬布丁", cat: "炒飯", say: "外送一盤炒飯，躺著吃。", moods: ["懶得出門", "想快點吃完"] },
+    { animal: "penguin", nick: "企鵝圓圓", cat: "泰式料理", say: "酸酸辣辣的打拋豬，超下飯。", moods: ["想吃重口味", "想熱熱鬧鬧"] },
+  ];
+
+  // 右邊卡組：每個類別的餐廳 ⚠️ 目前全部是範例資料，不是真的店
+  // 換成真的時，每筆照這個格式：{ name: "店名", price: 一個人大概多少錢 }
+  const RESTAURANTS = {
+    "牛肉麵": [{ name: "範例牛肉麵 A", price: 220 }, { name: "範例牛肉麵 B", price: 180 }, { name: "範例牛肉麵 C", price: 320 }],
+    "拉麵": [{ name: "範例拉麵 A", price: 280 }, { name: "範例拉麵 B", price: 350 }, { name: "範例拉麵 C", price: 450 }],
+    "便當": [{ name: "範例便當 A", price: 100 }, { name: "範例便當 B", price: 130 }, { name: "範例便當 C", price: 160 }],
+    "沙拉輕食": [{ name: "範例輕食 A", price: 180 }, { name: "範例輕食 B", price: 260 }, { name: "範例輕食 C", price: 380 }],
+    "麻辣燙": [{ name: "範例麻辣燙 A", price: 150 }, { name: "範例麻辣燙 B", price: 230 }, { name: "範例麻辣燙 C", price: 300 }],
+    "鹹酥雞": [{ name: "範例鹹酥雞 A", price: 120 }, { name: "範例鹹酥雞 B", price: 180 }],
+    "燒肉": [{ name: "範例燒肉 A", price: 550 }, { name: "範例燒肉 B", price: 780 }, { name: "範例燒肉 C", price: 950 }],
+    "壽司": [{ name: "範例壽司 A", price: 250 }, { name: "範例壽司 B", price: 600 }, { name: "範例壽司 C", price: 980 }],
+    "火鍋": [{ name: "範例火鍋 A", price: 320 }, { name: "範例火鍋 B", price: 520 }, { name: "範例火鍋 C", price: 880 }],
+    "滷肉飯": [{ name: "範例滷肉飯 A", price: 80 }, { name: "範例滷肉飯 B", price: 120 }],
+    "牛排": [{ name: "範例牛排 A", price: 380 }, { name: "範例牛排 B", price: 650 }, { name: "範例牛排 C", price: 990 }],
+    "粥": [{ name: "範例粥店 A", price: 90 }, { name: "範例粥店 B", price: 150 }],
+    "咖哩飯": [{ name: "範例咖哩 A", price: 160 }, { name: "範例咖哩 B", price: 260 }, { name: "範例咖哩 C", price: 420 }],
+    "義大利麵": [{ name: "範例義大利麵 A", price: 280 }, { name: "範例義大利麵 B", price: 450 }, { name: "範例義大利麵 C", price: 820 }],
+    "炒飯": [{ name: "範例炒飯 A", price: 110 }, { name: "範例炒飯 B", price: 170 }],
+    "泰式料理": [{ name: "範例泰式 A", price: 240 }, { name: "範例泰式 B", price: 420 }],
+  };
+
+  // 占卜師的台詞
+  const LINES = {
+    ready: "左邊是大家今天想吃的。<br>滑一滑自己挑，或讓我隨機抽。",
+    custom: (m) => `「${m}」啊……我懂。<br>滑一滑自己挑，或讓我隨機抽。`,
+    relaxed: "<br>這個預算能吃的不多，我先放寬一點。",
+    left: (s) => `是「${s.cat}」！右邊換你抽一家店。`,
+    done: "兩張都抽好了，翻開來看看。",
+  };
+
+  // ═══════════ 以下是程式 ═══════════
+  const $ = (s, r = document) => r.querySelector(s);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const reduce = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  const mod = (a, n) => ((a % n) + n) % n;
+  const C = { ink: "#0B0B0C", paper: "#F1EADB", orange: "#FF5A1F", lime: "#B6FF2E", lav: "#AEB2FF", white: "#FFFFFF" };
+
+  // ───── 像素小怪物：o 黑框、f 底色、e 眼睛（亮色）、w 白 ─────
+  const SPRITES = {
+    cat: ["o........o", "oo......oo", "ofo....ofo", "offoooooffo".slice(0, 10), "offfffffffo".slice(0, 9) + "o", "ofeoffoeffo".slice(0, 9) + "o", "offffffffo", "offfoofffo", ".offfffffo.".slice(0, 10), "..oooooo.."],
+    shiba: [".o......o.", "ofo....ofo", "offoooooffo".slice(0, 10), "offffffffo", "ofeoffeofo".slice(0, 10), "offwwwwffo", "ofwwoowwfo", ".owwwwwwo.", "..oooooo.."],
+    rabbit: ["..oo..oo..", ".ofo..ofo.", ".ofo..ofo.", ".ofooooofo.".slice(0, 10), "offffffffo", "ofeoffeofo", "offffffffo", "offwoowffo", ".oooooooo."],
+    bear: [".oo....oo.", "offoooooffo".slice(0, 10), "offffffffo", "ofeoffeofo", "offffffffo", "offwwwwffo", "offwoowffo", ".offffffo.", "..oooooo.."],
+    frog: [".oo....oo.", "oeeo..oeeo", "oeoooooeo".padEnd(9, "o") + "o", "offffffffo", "ofoffffofo", "offoooooffo".slice(0, 10), ".offffffo.", "..oooooo..", ".........."],
+    owl: ["oo......oo", "ofoooooofo", "ofeeffeefo", "ofeoffeofo", "ofeeffeefo", "offfoofffo", "ofofofoffo", "offofoffffo".slice(0, 10), ".oooooooo."],
+    pig: [".oo....oo.", "ofoooooofo", "offffffffo", "ofeoffeofo", "offwwwwffo", "offwoowffo", "offwwwwffo", ".offffffo.", "..oooooo.."],
+    penguin: ["..oooooo..", ".offffffo.", "offwwwwffo", "ofweoowefo".slice(0, 10), "ofwwoowwfo", "ofwwwwwwfo", "ofwwwwwwfo", ".ofwwwwfo.", "..oeooeo.."],
+    // 占卜師：尖帽子、會發光的眼睛、披風
+    teller: [
+      ".......oo.......",
+      "......offo......",
+      ".....offffo.....",
+      "....offfwffo....",
+      "...offffffffo...",
+      "..offffffffffo..",
+      ".oooooooooooooo.",
+      "..offffffffffo..",
+      "..ofeeoffoeefo..",
+      "..ofeeoffoeefo..",
+      "..offffffffffo..",
+      "..offfooooofffo.".slice(0, 16),
+      ".offffffffffffo.",
+      "offwffffffffwffo",
+      "offwwffffffwwffo",
+      "offffffffffffffo",
+      "oooooooooooooooo",
+      ".o.o..o..o..o.o.",
+    ],
+    coin: ["..oooo..", ".offffo.", "offwffwo".slice(0, 7) + "o", "ofwffwfo", "ofwffwfo", "offffffo", ".offffo.", "..oooo.."],
+    back: ["...oo...", "..oeeo..", ".oeooeo.", "oeooooeo", "oeooooeo", ".oeooeo.", "..oeeo..", "...oo..."],
+  };
+  function sprite(name, fill, eye = C.lime, cv) {
+    const rows = SPRITES[name], c = cv || document.createElement("canvas");
+    const W = Math.max(...rows.map((r) => r.length)), H = rows.length;
+    c.width = W; c.height = H; c.classList.add("sprite");
+    const x = c.getContext("2d"), map = { o: C.ink, f: fill, e: eye, w: C.white };
+    rows.forEach((row, y) => { for (let i = 0; i < row.length; i++) { const col = map[row[i]]; if (col) { x.fillStyle = col; x.fillRect(i, y, 1, 1); } } });
+    c.setAttribute("aria-hidden", "true");
+    return c;
+  }
+
+  // ───── 8-bit 音效：方波嗶一聲 ─────
+  const Sound = {
+    on: (() => { try { return localStorage.getItem("oracle-sound") !== "off"; } catch { return true; } })(),
+    ctx: null,
+    beep(freq, dur = 0.05, vol = 0.05) {
+      if (!this.on) return;
+      const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+      try { this.ctx = this.ctx || new AC(); if (this.ctx.state === "suspended") this.ctx.resume(); } catch { return; }
+      const t = this.ctx.currentTime, o = this.ctx.createOscillator(), g = this.ctx.createGain();
+      o.type = "square"; o.frequency.value = freq; g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(this.ctx.destination); o.start(t); o.stop(t + dur);
+    },
+    tune(notes) { notes.forEach((f, i) => setTimeout(() => this.beep(f, 0.12, 0.06), i * 110)); },
+  };
+  function drawSound() {
+    const b = $("#sound");
+    b.innerHTML = Sound.on
+      ? '<svg viewBox="0 0 10 10" aria-hidden="true"><path fill="currentColor" d="M1 4h2v2H1zM3 3h1v4H3zM4 2h1v6H4zM6 4h1v2H6zM7 3h1v1H7zM7 6h1v1H7zM8 2h1v1H8zM8 7h1v1H8z"/></svg>'
+      : '<svg viewBox="0 0 10 10" aria-hidden="true"><path fill="currentColor" d="M1 4h2v2H1zM3 3h1v4H3zM4 2h1v6H4zM6 3h1v1H6zM8 3h1v1H8zM7 4h1v2H7zM6 6h1v1H6zM8 6h1v1H8z"/></svg>';
+    b.setAttribute("aria-pressed", String(Sound.on));
+  }
+  $("#sound").addEventListener("click", () => { Sound.on = !Sound.on; try { localStorage.setItem("oracle-sound", Sound.on ? "on" : "off"); } catch {} drawSound(); Sound.beep(880); });
+
+  // ───── 狀態 ─────
+  const S = { mood: "", budget: null, phase: "left", left: null, right: null, relaxed: false };
+  const budgetName = (i) => BUDGET_NAMES[BUDGET_NAME_SET][i];
+  const priceText = (b) => b.min ? `${b.min}–${b.max} 元` : `${b.max} 元以下`;
+
+  // ───── 第一步：問題 ─────
+  function buildAsk() {
+    sprite("teller", C.lav, C.lime, $("#hello-teller"));
+    $("#mood-list").innerHTML = MOODS.map((m) => `<option value="${esc(m)}">`).join("");
+    $("#mood-chips").innerHTML = MOODS.map((m) => `<button type="button" class="chip" data-mood="${esc(m)}" aria-pressed="false">${esc(m)}</button>`).join("");
+    $("#coins").innerHTML = BUDGETS.map((b, i) => `<button type="button" class="coin sticker" data-b="${i}" aria-pressed="false"><span data-coin></span><span class="nm">${esc(budgetName(i))}</span>${SHOW_PRICE ? `<span class="amt">${priceText(b)}</span>` : ""}</button>`).join("");
+    document.querySelectorAll("[data-coin]").forEach((el) => el.replaceWith(sprite("coin", C.white, C.ink)));
+    const sync = () => {
+      document.querySelectorAll("[data-mood]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mood === S.mood)));
+      document.querySelectorAll("[data-b]").forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.b) === S.budget)));
+      $("#go").disabled = !(S.mood && S.budget != null);
+    };
+    $("#mood-chips").addEventListener("click", (e) => { const b = e.target.closest("[data-mood]"); if (!b) return; S.mood = b.dataset.mood; $("#mood").value = S.mood; Sound.beep(880); sync(); });
+    $("#mood").addEventListener("input", (e) => { S.mood = e.target.value.trim(); sync(); });
+    $("#coins").addEventListener("click", (e) => { const b = e.target.closest("[data-b]"); if (!b) return; S.budget = Number(b.dataset.b); Sound.beep(988); sync(); });
+    $("#go").addEventListener("click", startDraw);
+  }
+
+  // ───── 篩選 ─────
+  const inBudget = (r, b) => (b.min === 0 ? r.price <= b.max : r.price > b.min && r.price <= b.max);
+  function leftPool() {
+    const b = BUDGETS[S.budget];
+    const affordable = (s) => (RESTAURANTS[s.cat] || []).some((r) => inBudget(r, b));
+    const known = MOODS.includes(S.mood);
+    let pool = SHARES.filter((s) => affordable(s) && (!known || s.moods.includes(S.mood)));
+    S.relaxed = pool.length < 4;
+    if (S.relaxed) pool = SHARES.filter(affordable);
+    if (pool.length < 2) pool = SHARES.slice();
+    return pool.sort(() => Math.random() - 0.5);
+  }
+  function rightPool(cat) {
+    const b = BUDGETS[S.budget], all = RESTAURANTS[cat] || [];
+    const fit = all.filter((r) => inBudget(r, b));
+    if (fit.length >= 2) return fit;
+    // 符合預算的不到兩家，就補價錢最接近的
+    const mid = (b.min + b.max) / 2;
+    return [...fit, ...all.filter((r) => !fit.includes(r)).sort((p, q) => Math.abs(p.price - mid) - Math.abs(q.price - mid))].slice(0, Math.max(2, fit.length));
+  }
+
+  // ───── 圓弧卡組：卡片沿著一個大圓排，中心在畫面外，轉動時一張一張滑過中線 ─────
+  function makeArc(el, side, items, render) {
+    const arc = { el, side, items, offset: 0, cards: new Map(), vel: 0, anim: null, onPick: null };
+    const n = () => arc.items.length;
+    function geom() {
+      const W = el.clientWidth, H = el.clientHeight, cw = el.firstElementChild?.offsetWidth || parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--cw"));
+      const narrow = window.innerWidth < 900;
+      const R = narrow ? Math.max(320, H * 0.62) : Math.max(560, H * 0.78);
+      const step = (narrow ? 15 : 13) * Math.PI / 180;
+      // 最中間那張卡的右邊（左卡組）或左邊（右卡組）離中線多遠
+      const mid = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--mid"));
+      const reach = narrow ? W - 6 : W - mid / 2 - 28;
+      return { W, H, R, step, reach, cw };
+    }
+    function layout() {
+      const { W, H, R, step, reach, cw } = geom();
+      const ch = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ch"));
+      const base = Math.floor(arc.offset), keep = new Set();
+      for (let k = base - 6; k <= base + 7; k++) {
+        const d = k - arc.offset, th = d * step;
+        if (Math.abs(th) > 1.25) continue;
+        keep.add(k);
+        let c = arc.cards.get(k);
+        if (!c) { c = render(arc.items[mod(k, n())], mod(k, n())); c.dataset.k = k; el.appendChild(c); arc.cards.set(k, c); }
+        // 圓心在卡組外側：左卡組在左邊、右卡組在右邊
+        const cx = side === "l" ? reach - cw - R : W - reach + cw + R;
+        const dir = side === "l" ? 1 : -1;
+        const x = cx + dir * R * Math.cos(th) - (side === "l" ? 0 : cw);
+        const y = H / 2 + R * Math.sin(th) - ch / 2;
+        const s = 1 - Math.min(0.35, Math.abs(d) * 0.07);
+        c.style.transform = `translate(${x}px, ${y}px) rotate(${dir * th}rad) scale(${s})`;
+        c.style.transformOrigin = side === "l" ? "0% 50%" : "100% 50%";
+        c.style.zIndex = String(100 - Math.round(Math.abs(d) * 10));
+        c.style.opacity = String(Math.max(0, 1 - Math.max(0, Math.abs(d) - 3) * 0.35));
+        c.classList.toggle("hit", Math.abs(d) < 0.5 && !el.classList.contains("off"));
+      }
+      for (const [k, c] of arc.cards) if (!keep.has(k)) { c.remove(); arc.cards.delete(k); }
+    }
+    arc.layout = layout;
+    arc.setItems = (items) => { arc.items = items; arc.offset = 0; for (const c of arc.cards.values()) c.remove(); arc.cards.clear(); layout(); };
+    arc.current = () => mod(Math.round(arc.offset), n());
+    let lastTick = Math.round(arc.offset);
+    const tick = () => { const r = Math.round(arc.offset); if (r !== lastTick) { lastTick = r; Sound.beep(1100, 0.02, 0.03); } };
+    arc.animateTo = (target, ms, done) => {
+      cancelAnimationFrame(arc.anim);
+      const from = arc.offset, t0 = performance.now(), dur = reduce() ? Math.min(ms, 200) : ms;
+      const ease = (t) => 1 - Math.pow(1 - t, 4);
+      const stepF = (now) => {
+        const t = Math.min(1, (now - t0) / dur);
+        arc.offset = from + (target - from) * ease(t); tick(); layout();
+        if (t < 1) arc.anim = requestAnimationFrame(stepF); else { arc.anim = null; done?.(); }
+      };
+      arc.anim = requestAnimationFrame(stepF);
+    };
+    arc.spin = (done) => {
+      const extra = 14 + Math.floor(Math.random() * 10);
+      arc.animateTo(Math.round(arc.offset) + extra, 2400 + Math.random() * 600, done);
+    };
+    // 拖曳、滾輪：自己挑
+    let drag = null;
+    el.addEventListener("pointerdown", (e) => {
+      if (el.classList.contains("off") || S.busy) return;
+      cancelAnimationFrame(arc.anim); arc.anim = null;
+      drag = { y: e.clientY, x: e.clientX, o: arc.offset, moved: false, t: performance.now(), card: e.target.closest(".card") };
+      el.setPointerCapture(e.pointerId);
+    });
+    el.addEventListener("pointermove", (e) => {
+      if (!drag) return;
+      const dy = e.clientY - drag.y;
+      if (Math.abs(dy) > 6) { drag.moved = true; el.classList.add("dragging"); }
+      if (!drag.moved) return;
+      const { R, step } = geom();
+      arc.offset = drag.o - dy / (R * step); tick(); layout();
+    });
+    const end = () => {
+      if (!drag) return;
+      el.classList.remove("dragging");
+      const d = drag; drag = null;
+      if (!d.moved && d.card) {
+        // 點一張卡：轉到中間，再點一次就抽它
+        const k = Number(d.card.dataset.k);
+        if (k === Math.round(arc.offset) && Math.abs(arc.offset - k) < 0.05) { arc.onPick?.(); return; }
+        arc.animateTo(k, 380);
+        return;
+      }
+      arc.animateTo(Math.round(arc.offset), 260);
+    };
+    el.addEventListener("pointerup", end);
+    el.addEventListener("pointercancel", end);
+    el.addEventListener("wheel", (e) => {
+      if (el.classList.contains("off") || S.busy) return;
+      e.preventDefault();
+      cancelAnimationFrame(arc.anim); arc.anim = null;
+      arc.offset += e.deltaY / 120; tick(); layout();
+      clearTimeout(arc.snapT); arc.snapT = setTimeout(() => arc.animateTo(Math.round(arc.offset), 220), 140);
+    }, { passive: false });
+    window.addEventListener("resize", layout);
+    layout();
+    return arc;
+  }
+
+  const ANIMAL_FILL = [C.white, C.paper, C.white, C.white];
+  function shareCard(s, i) {
+    const c = document.createElement("div");
+    c.className = `card c${i % 4}`;
+    c.innerHTML = `<div class="row"><span class="no px">NO.${String(i + 1).padStart(2, "0")}</span><span data-sp></span></div><div class="cat">${esc(s.cat)}</div><div class="meta">${esc(s.nick)}：${esc(s.say)}</div>`;
+    $("[data-sp]", c).replaceWith(sprite(s.animal, i % 4 === 3 ? C.lav : C.white, C.ink));
+    return c;
+  }
+  function shopCard(r, i) {
+    const c = document.createElement("div");
+    c.className = `card shop c${i % 3}`;
+    c.innerHTML = `<div class="row"><span class="no px">SHOP ${String(i + 1).padStart(2, "0")}</span></div><div class="cat">${esc(r.name)}</div><div class="meta">一個人大概 ${r.price} 元</div>`;
+    return c;
+  }
+
+  // ───── 第二步：抽卡 ─────
+  let arcL = null, arcR = null;
+  function say(t) { const h = esc(t).replace(/&lt;br&gt;/g, "<br>"); $("#say").innerHTML = h; $("#mobile-say").innerHTML = h; }
+  function setPhase(p) {
+    S.phase = p;
+    $("#arc-l").classList.toggle("off", p !== "left");
+    $("#arc-r").classList.toggle("off", p !== "right");
+    $("#step").textContent = p === "left" ? "STEP 1/2" : "STEP 2/2";
+    $("#rand").innerHTML = `隨機抽 <span class="px">RANDOM</span>`;
+    arcL?.layout(); arcR?.layout();
+    placePointer();
+  }
+  function placePointer() {
+    const p = $("#pointer"), side = S.phase === "left" ? $("#arc-l") : $("#arc-r"), r = side.getBoundingClientRect();
+    p.style.left = r.left + "px"; p.style.width = r.width + "px";
+  }
+  function startDraw() {
+    $("#ask").hidden = true; $("#stage").hidden = false;
+    $("#picked").innerHTML = `<span class="tag lime">${esc(S.mood)}</span><span class="tag lav">${esc(budgetName(S.budget))}</span><button type="button" class="tag-btn" id="redo">改一下</button>`;
+    $("#redo").addEventListener("click", () => { if (S.busy) return; $("#stage").hidden = true; $("#ask").hidden = false; $("#picked").innerHTML = ""; });
+    sprite("teller", C.lav, C.lime, $("#teller"));
+    const pool = leftPool();
+    if (!arcL) { arcL = makeArc($("#arc-l"), "l", pool, shareCard); arcL.onPick = pickLeft; }
+    else arcL.setItems(pool);
+    if (!arcR) { arcR = makeArc($("#arc-r"), "r", rightPool(pool[0].cat), shopCard); arcR.onPick = pickRight; }
+    else arcR.setItems(rightPool(pool[0].cat));
+    setPhase("left");
+    say((MOODS.includes(S.mood) ? LINES.ready : LINES.custom(S.mood)) + (S.relaxed ? LINES.relaxed : ""));
+    Sound.tune([392, 523]);
+  }
+  function pickLeft() {
+    if (S.busy || S.phase !== "left") return;
+    S.left = arcL.items[arcL.current()];
+    arcR.setItems(rightPool(S.left.cat));
+    setPhase("right");
+    say(LINES.left(S.left));
+    Sound.tune([523, 659, 784]);
+  }
+  function pickRight() {
+    if (S.busy || S.phase !== "right") return;
+    S.right = arcR.items[arcR.current()];
+    Sound.tune([523, 659, 784, 1047]);
+    say(LINES.done);
+    openModal();
+  }
+  $("#rand").addEventListener("click", () => {
+    if (S.busy) return;
+    const arc = S.phase === "left" ? arcL : arcR;
+    S.busy = true;
+    arc.spin(() => { S.busy = false; (S.phase === "left" ? pickLeft : pickRight)(); });
+  });
+  $("#pick").addEventListener("click", () => (S.phase === "left" ? pickLeft : pickRight)());
+
+  // ───── 彈窗：兩張卡依序翻開 ─────
+  function openModal() {
+    const s = S.left, r = S.right;
+    $("#face-l").innerHTML = `<span class="no px">YOU WANT</span><span data-sp></span><span class="label">${esc(s.nick)} 也想吃</span><span class="title">${esc(s.cat)}</span><span class="text">「${esc(s.say)}」</span>`;
+    $("[data-sp]", $("#face-l")).replaceWith(sprite(s.animal, C.white, C.ink));
+    $("#face-r").innerHTML = `<span class="no px">GO TO</span><span class="label">今晚去這家</span><span class="title">${esc(r.name)}</span><span class="text">一個人大概 ${r.price} 元</span><span class="spacer"></span><span class="sample">範例資料，不是真的店</span>`;
+    for (const id of ["back-l", "back-r"]) $("#" + id).replaceChildren(sprite("back", C.ink, C.lime));
+    $("#big-l").classList.remove("open"); $("#big-r").classList.remove("open");
+    $("#modal").hidden = false;
+    setTimeout(() => { $("#big-l").classList.add("open"); Sound.beep(660, 0.08); }, reduce() ? 0 : 250);
+    setTimeout(() => { $("#big-r").classList.add("open"); Sound.beep(880, 0.08); }, reduce() ? 0 : 750);
+    setTimeout(() => $("#again").focus(), 50);
+  }
+  function closeModal() { $("#modal").hidden = true; }
+  $("#again").addEventListener("click", () => { closeModal(); arcL.setItems(leftPool()); setPhase("left"); say(LINES.ready); });
+  $("#restart").addEventListener("click", () => { closeModal(); $("#stage").hidden = true; $("#ask").hidden = false; $("#picked").innerHTML = ""; });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !$("#modal").hidden) closeModal();
+    if ($("#stage").hidden || !$("#modal").hidden) return;
+    const arc = S.phase === "left" ? arcL : arcR;
+    if (!arc || S.busy) return;
+    if (e.key === "ArrowDown") arc.animateTo(Math.round(arc.offset) + 1, 200);
+    if (e.key === "ArrowUp") arc.animateTo(Math.round(arc.offset) - 1, 200);
+    if (e.key === "Enter" && e.target === document.body) (S.phase === "left" ? pickLeft : pickRight)();
+  });
+  window.addEventListener("resize", () => { if (!$("#stage").hidden) placePointer(); });
+
+  drawSound();
+  buildAsk();
+})();
+</script>
