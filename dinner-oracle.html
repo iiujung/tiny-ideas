@@ -67,7 +67,7 @@ h1, h2, label, .btn, .tag, .tag-btn, .chip, .coin .nm, .coin .amt, .card .cat, .
 .coin:nth-child(2) { background: var(--lime); }
 .coin:nth-child(3) { background: var(--orange); }
 .coin:nth-child(4) { background: #FFFFFF; }
-.coin canvas { width: 28px; }
+.coin canvas { width: 40px; }
 .coin .nm { font-size: 16px; line-height: 1.4; }
 .coin .amt { font-size: 14px; line-height: 1.4; }
 .coin[aria-pressed="true"] { box-shadow: inset 0 0 0 3px var(--ink), 6px 6px 0 var(--paper); transform: translate(-3px, -3px); }
@@ -383,6 +383,13 @@ h1, h2, label, .btn, .tag, .tag-btn, .chip, .coin .nm, .coin .amt, .card .cat, .
     coin: ["..oooo..", ".offffo.", "offwffwo".slice(0, 7) + "o", "ofwffwfo", "ofwffwfo", "offffffo", ".offffo.", "..oooo.."],
     back: ["...oo...", "..oeeo..", ".oeooeo.", "oeooooeo", "oeooooeo", ".oeooeo.", "..oeeo..", "...oo..."],
   };
+  // 財力四個圖示：一枚銅板、一疊銀幣、金幣袋、寶箱（全部補到 10 格高，底部對齊）
+  const padTo10 = (rows) => [...Array(10 - rows.length).fill(".........."), ...rows];
+  SPRITES.coin1 = padTo10(["...oooo...", "..offffo..", ".offwfffo.", ".offwfffo.", ".offfffeo.", ".offffffo.", "..offffo..", "...oooo..."]);
+  SPRITES.coin2 = padTo10(["..oooooo..", ".offwfffo.", ".oooooooo.", ".offfwffo.", ".oooooooo.", ".offwfffo.", ".oooooooo."]);
+  SPRITES.coin3 = padTo10(["...oooo...", "....oo....", "...offo...", "..offffo..", ".offwfffo.", ".offeeffo.", ".offffffo.", "..oooooo.."]);
+  SPRITES.coin4 = padTo10([".oooooooo.", "offffffffo", "offwffffwo", "oooooooooo", "offfeefffo", "offfeefffo", "offffffffo", "oooooooooo"]);
+  const COIN_FILL = ["#D9843B", "#C9CDD6", "#FFD23F", "#FFD23F"];
   function sprite(name, fill, eye = C.lime, cv) {
     const rows = SPRITES[name], c = cv || document.createElement("canvas");
     const W = Math.max(...rows.map((r) => r.length)), H = rows.length;
@@ -428,7 +435,7 @@ h1, h2, label, .btn, .tag, .tag-btn, .chip, .coin .nm, .coin .amt, .card .cat, .
     $("#mood-list").innerHTML = MOODS.map((m) => `<option value="${esc(m)}">`).join("");
     $("#mood-chips").innerHTML = MOODS.map((m) => `<button type="button" class="chip" data-mood="${esc(m)}" aria-pressed="false">${esc(m)}</button>`).join("");
     $("#coins").innerHTML = BUDGETS.map((b, i) => `<button type="button" class="coin sticker" data-b="${i}" aria-pressed="false"><span data-coin></span><span class="nm">${esc(budgetName(i))}</span>${SHOW_PRICE ? `<span class="amt">${priceText(b)}</span>` : ""}</button>`).join("");
-    document.querySelectorAll("[data-coin]").forEach((el) => el.replaceWith(sprite("coin", C.white, C.ink)));
+    document.querySelectorAll("[data-coin]").forEach((el, i) => el.replaceWith(sprite("coin" + (i + 1), COIN_FILL[i], C.ink)));
     const sync = () => {
       document.querySelectorAll("[data-mood]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mood === S.mood)));
       document.querySelectorAll("[data-b]").forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.b) === S.budget)));
