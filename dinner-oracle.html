@@ -162,6 +162,27 @@ h1, h2, label, .btn, .tag, .tag-btn, .chip, .coin .nm, .coin .amt, .card .cat, .
 .note { position: fixed; z-index: 4; left: 0; right: 0; bottom: 8px; text-align: center; font-size: 12px; line-height: 1.5; color: var(--gray); pointer-events: none; }
 @media (max-width: 899px) { .m-br { display: inline; } .note { bottom: calc(max(16px, env(safe-area-inset-bottom, 0px)) + 86px); font-size: 13px; padding: 0 16px; z-index: 7; } }
 @media (prefers-reduced-motion: reduce) { .big { transition: none; } }
+/* ───── 微動畫：打字機、漂浮、彈出 ───── */
+.ch { visibility: hidden; }
+.ch.on { visibility: visible; }
+.ch.cur { position: relative; }
+.ch.cur::after { content: ""; position: absolute; left: 100%; top: 0.18em; width: 0.5em; height: 1em; margin-left: 2px; background: currentColor; animation: blink 0.7s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+@keyframes bob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -6px; } }
+@keyframes pop { from { scale: 0.93; } to { scale: 1; } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes rise { from { opacity: 0; translate: 0 28px; scale: 0.95; } to { opacity: 1; translate: 0 0; scale: 1; } }
+.speech { animation: bob 3.4s ease-in-out infinite; }
+.hello canvas, .center canvas.teller { animation: bob 2.6s ease-in-out infinite; }
+.center .bubble { animation: bob 3.2s ease-in-out infinite; }
+.center .bubble.pop { animation: bob 3.2s ease-in-out infinite, pop 0.3s ease-out; }
+.modal:not([hidden]) { animation: fade-in 0.25s ease-out; }
+.modal:not([hidden]) .modal-in { animation: rise 0.45s cubic-bezier(.2, 1.3, .4, 1); }
+.big.open { animation: bob 3.6s ease-in-out 1.4s infinite; }
+#big-r.open { animation-duration: 4s; animation-delay: 1.9s; }
+.big .label, .big .title, .big .text { white-space: pre-line; }
+.btn:active:not(:disabled) { scale: 0.97; }
+@media (prefers-reduced-motion: reduce) { .speech, .hello canvas, .center canvas.teller, .center .bubble, .center .bubble.pop, .big.open, .modal:not([hidden]), .modal:not([hidden]) .modal-in { animation: none !important; } .ch.cur::after { animation: none; } }
 </style>
 
 <header class="top">
@@ -298,6 +319,34 @@ h1, h2, label, .btn, .tag, .tag-btn, .chip, .coin .nm, .coin .amt, .card .cat, .
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const reduce = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   const mod = (a, n) => ((a % n) + n) % n;
+  // ───── 打字機：逐字出現（每個字先佔位，版面不會跳）─────
+  const typers = new WeakMap();
+  function typeInto(el, text, opt = {}) {
+    const prev = typers.get(el); if (prev) clearTimeout(prev);
+    const plain = String(text ?? "").replace(/<br>/g, "\n");
+    el.textContent = "";
+    el.setAttribute("aria-label", plain.replace(/\n/g, " "));
+    const chars = [];
+    plain.split("\n").forEach((line, li) => {
+      if (li) el.appendChild(document.createElement("br"));
+      for (const c of line) { const sp = document.createElement("span"); sp.className = "ch"; sp.setAttribute("aria-hidden", "true"); sp.textContent = c; el.appendChild(sp); chars.push(sp); }
+    });
+    const finish = () => { chars.forEach((c) => c.classList.add("on")); chars.forEach((c) => c.classList.remove("cur")); typers.delete(el); opt.onDone?.(); };
+    if (reduce() || !chars.length) { finish(); return; }
+    let i = 0;
+    const step = () => {
+      if (i > 0) chars[i - 1].classList.remove("cur");
+      if (i >= chars.length) { finish(); return; }
+      const c = chars[i]; c.classList.add("on", "cur"); i++;
+      const delay = /[，。！？、；：,.!?]/.test(c.textContent) ? 170 : (opt.speed || 55);
+      typers.set(el, setTimeout(step, delay));
+    };
+    typers.set(el, setTimeout(step, opt.delay || 0));
+  }
+  function typeSeq(els, delay = 0) {
+    const next = (k, d) => { if (k < els.length) typeInto(els[k].el, els[k].text, { delay: d, speed: els[k].speed, onDone: () => next(k + 1, 120) }); };
+    next(0, delay);
+  }
   const C = { ink: "#0B0B0C", paper: "#F1EADB", orange: "#FF5A1F", lime: "#B6FF2E", lav: "#AEB2FF", white: "#FFFFFF" };
 
   // ───── 像素小怪物：o 黑框、f 底色、e 眼睛（亮色）、w 白 ─────
@@ -375,6 +424,7 @@ h1, h2, label, .btn, .tag, .tag-btn, .chip, .coin .nm, .coin .amt, .card .cat, .
   // ───── 第一步：問題 ─────
   function buildAsk() {
     sprite("teller", C.lav, C.lime, $("#hello-teller"));
+    typeInto($("#hello-say"), "今晚吃什麼，交給我。先告訴我兩件事。", { delay: 400 });
     $("#mood-list").innerHTML = MOODS.map((m) => `<option value="${esc(m)}">`).join("");
     $("#mood-chips").innerHTML = MOODS.map((m) => `<button type="button" class="chip" data-mood="${esc(m)}" aria-pressed="false">${esc(m)}</button>`).join("");
     $("#coins").innerHTML = BUDGETS.map((b, i) => `<button type="button" class="coin sticker" data-b="${i}" aria-pressed="false"><span data-coin></span><span class="nm">${esc(budgetName(i))}</span>${SHOW_PRICE ? `<span class="amt">${priceText(b)}</span>` : ""}</button>`).join("");
@@ -529,7 +579,10 @@ h1, h2, label, .btn, .tag, .tag-btn, .chip, .coin .nm, .coin .amt, .card .cat, .
 
   // ───── 第二步：抽卡 ─────
   let arcL = null, arcR = null;
-  function say(t) { const h = esc(t).replace(/&lt;br&gt;/g, "<br>"); $("#say").innerHTML = h; $("#mobile-say").innerHTML = h; }
+  function say(t) {
+    const b = $("#say"); b.classList.remove("pop"); void b.offsetWidth; b.classList.add("pop");
+    typeInto(b, t); typeInto($("#mobile-say"), t);
+  }
   function setPhase(p) {
     S.phase = p;
     $("#arc-l").classList.toggle("off", p !== "left");
@@ -588,9 +641,11 @@ h1, h2, label, .btn, .tag, .tag-btn, .chip, .coin .nm, .coin .amt, .card .cat, .
     $("#face-r").innerHTML = `<span class="no px">GO TO</span><span class="label">今晚去這家</span><span class="title">${esc(r.name)}</span><span class="text">一個人大概 ${r.price} 元</span><span class="spacer"></span><span class="sample">範例資料，不是真的店</span>`;
     for (const id of ["back-l", "back-r"]) $("#" + id).replaceChildren(sprite("back", C.ink, C.lime));
     $("#big-l").classList.remove("open"); $("#big-r").classList.remove("open");
+    for (const f of [$("#face-l"), $("#face-r")]) f.querySelectorAll(".label, .title, .text").forEach((el) => { el.dataset.t = el.textContent; el.textContent = ""; });
     $("#modal").hidden = false;
-    setTimeout(() => { $("#big-l").classList.add("open"); Sound.beep(660, 0.08); }, reduce() ? 0 : 250);
-    setTimeout(() => { $("#big-r").classList.add("open"); Sound.beep(880, 0.08); }, reduce() ? 0 : 750);
+    const typeFace = (face, delay) => typeSeq([...face.querySelectorAll(".label, .title, .text")].map((el) => ({ el, text: el.dataset.t, speed: el.classList.contains("title") ? 85 : 50 })), delay);
+    setTimeout(() => { $("#big-l").classList.add("open"); Sound.beep(660, 0.08); typeFace($("#face-l"), reduce() ? 0 : 450); }, reduce() ? 0 : 250);
+    setTimeout(() => { $("#big-r").classList.add("open"); Sound.beep(880, 0.08); typeFace($("#face-r"), reduce() ? 0 : 450); }, reduce() ? 0 : 750);
     setTimeout(() => $("#again").focus(), 50);
   }
   function closeModal() { $("#modal").hidden = true; }
