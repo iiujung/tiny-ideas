@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8">
+<title>免費雲端相簿｜下載</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="雲端空間滿了，就自己做一個相簿。兩個檔案，照片都留在自己的電腦。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* DAY 11 免費雲端相簿的下載頁：一張「出餐單」，兩個品項各一個下載鈕 */
+:root {
+  --ink: #2A2433; --sub: #6E6878; --line: #E2DED4; --bg: #F1EFE9; --paper: #FFFDF8;
+  --lime: #D9E86B; --lime-l: #F1F6C8; --lime-d: #7C8A1F;
+  --font-sans: "Huninn", "jf-openhuninn-2.1", "PingFang TC", "Noto Sans TC", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: var(--font-sans); font-weight: 400; font-synthesis: none;
+  font-size: 16px; line-height: 1.75; letter-spacing: normal; line-break: strict;
+  color: var(--ink); background: var(--bg);
+  min-height: 100vh; padding: 28px 16px 56px;
+  background-image: radial-gradient(ellipse at 50% 0%, #fff 0%, rgba(255,255,255,0) 60%);
+}
+main { max-width: 520px; margin: 0 auto; }
+.wrap { filter: drop-shadow(0 14px 28px rgba(42,36,51,.12)) drop-shadow(0 2px 4px rgba(42,36,51,.08)); }
+.slip { position: relative; background: var(--paper); padding: 28px 24px 36px; border-radius: 6px 6px 0 0; }
+.slip::after {   /* 收據下緣的鋸齒 */
+  content: ""; position: absolute; left: 0; right: 0; bottom: -10px; height: 10px;
+  background: linear-gradient(135deg, var(--paper) 25%, transparent 25%) -10px 0,
+              linear-gradient(225deg, var(--paper) 25%, transparent 25%) -10px 0;
+  background-size: 20px 20px;
+}
+.top { display: flex; justify-content: space-between; align-items: center; }
+.no { font-family: var(--font-mono); font-weight: 500; font-size: 13px; letter-spacing: .02em; color: var(--sub); }
+.shop { font-size: 14px; color: var(--sub); }
+h1 { font-weight: 400; font-size: 28px; line-height: 1.35; margin: 14px 0 4px; text-wrap: balance; }
+.lead { font-size: 14px; line-height: 1.7; color: var(--sub); margin: 0; text-wrap: pretty; }
+hr { border: 0; border-top: 2px dashed var(--line); margin: 22px 0; }
+.item h2 { font-weight: 400; font-size: 20px; line-height: 1.4; margin: 0; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.ext { font-size: 13px; line-height: 1; padding: 5px 10px; border-radius: 999px; background: var(--lime-l); color: var(--lime-d); }
+.item p { margin: 6px 0 0; text-wrap: pretty; }
+.note { font-size: 14px; line-height: 1.7; color: var(--sub); }
+.size { font-family: var(--font-mono); font-weight: 500; font-size: 13px; color: var(--sub); letter-spacing: .02em; }
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 52px; margin-top: 14px; padding: 0 20px; border-radius: 16px;
+  font-family: inherit; font-size: 16px; line-height: 1; color: var(--ink); text-decoration: none;
+  background: var(--lime); border: 2px solid var(--ink); box-shadow: 0 3px 0 var(--ink);
+  transition: transform .12s, box-shadow .12s;
+}
+.btn:hover { transform: translateY(1px); box-shadow: 0 2px 0 var(--ink); }
+.btn:active { transform: translateY(3px); box-shadow: 0 0 0 var(--ink); }
+.btn.alt { background: #fff; }
+.btn:focus-visible { outline: 3px solid var(--lime-d); outline-offset: 3px; }
+.btn svg { width: 20px; height: 20px; flex: none; }
+.steps { margin: 0; padding: 0; list-style: none; counter-reset: s; display: grid; gap: 8px; }
+.steps li { counter-increment: s; display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; font-size: 16px; }
+.steps li::before { content: counter(s); width: 28px; height: 28px; border-radius: 50%; background: var(--lime); display: grid; place-items: center; font-size: 14px; line-height: 1; margin-top: 3px; }
+.tip { margin: 0; font-size: 14px; line-height: 1.7; color: var(--sub); text-wrap: pretty; }
+.foot { text-align: center; font-size: 13px; line-height: 1.6; color: var(--sub); margin-top: 38px; }
+</style>
+<main>
+  <div class="wrap">
+    <div class="slip">
+      <div class="top"><span class="no">DAY 11</span><span class="shop">404 廚房｜出餐單</span></div>
+      <h1>免費雲端相簿</h1>
+      <p class="lead">雲端空間滿了，就自己做一個。兩個檔案，照片都留在你自己的電腦，不會上傳到任何地方。</p>
+
+      <hr>
+
+      <section class="item">
+        <h2>照片瀏覽器 <span class="ext">.html</span></h2>
+        <p>用 Chrome 或 Edge 打開，選照片資料夾，拖一拖就能分類、加標籤。</p>
+        <a class="btn" href="photo-tools/%E7%85%A7%E7%89%87%E7%80%8F%E8%A6%BD%E5%99%A8.html" download="照片瀏覽器.html">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v10m0 0l-4-4m4 4l4-4M4 17h12"/></svg>
+          下載 照片瀏覽器.html
+        </a>
+        <p class="note" style="margin-top:8px"><span class="size">66 KB</span>｜Windows、Mac 都能用</p>
+      </section>
+
+      <hr>
+
+      <section class="item">
+        <h2>FileDir <span class="ext">.command</span></h2>
+        <p>點兩下開始：依拍攝日期整理照片，或找出重複的照片。</p>
+        <a class="btn" href="photo-tools/FileDir.command" download="FileDir.command">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v10m0 0l-4-4m4 4l4-4M4 17h12"/></svg>
+          下載 FileDir.command
+        </a>
+        <p class="note" style="margin-top:8px"><span class="size">22 KB</span>｜只有 Mac 能用。單獨下載的 .command 可能沒有執行權限，建議用下面的打包版</p>
+      </section>
+
+      <hr>
+
+      <section class="item">
+        <h2>想一次拿齊？</h2>
+        <p>兩個檔案打包在一起，解壓縮後 FileDir 可以直接點兩下。</p>
+        <a class="btn alt" href="photo-tools/photo-tools.zip" download="photo-tools.zip">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v10m0 0l-4-4m4 4l4-4M4 17h12"/></svg>
+          下載打包版 .zip
+        </a>
+        <p class="note" style="margin-top:8px"><span class="size">29 KB</span></p>
+      </section>
+
+      <hr>
+
+      <section>
+        <h2 style="font-weight:400;font-size:18px;line-height:1.5;margin:0 0 10px">怎麼用</h2>
+        <ol class="steps">
+          <li>兩個檔案放進要整理的照片資料夾</li>
+          <li>點兩下 <span style="white-space:nowrap">FileDir.command</span> 整理照片</li>
+          <li>用 Chrome 或 Edge 打開 <span style="white-space:nowrap">照片瀏覽器.html</span>，選照片資料夾</li>
+        </ol>
+        <p class="tip" style="margin-top:14px">第一次打開如果 Mac 跳出警告，對檔案按右鍵，選「打開」就可以。</p>
+      </section>
+    </div>
+  </div>
+  <p class="foot">每天 30 分鐘實現一個小點子<br>直到有人找我組隊</p>
+</main>
