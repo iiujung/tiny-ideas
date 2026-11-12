@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=JetBrains+Mono:wght@500&display=swap">
 <style>
-/* DAY 11 免費雲端相簿的下載頁：一張白色「出餐單」，最上面是打包下載 */
+/* DAY 11 免費雲端相簿的下載頁：一張白色「出餐單」，最上面是起因，接著是打包下載 */
 :root {
   --ink: #2A2433; --sub: #6E6878; --line: #E8E5DC; --bg: #FAF9F5; --paper: #FFFFFF;
   --lime: #D9E86B; --lime-l: #F1F6C8; --lime-d: #7C8A1F;
@@ -43,6 +43,7 @@ h2 { font-weight: 400; font-size: 20px; line-height: 1.4; margin: 0; }
 p { margin: 6px 0 0; text-wrap: pretty; }
 .note { font-size: 14px; line-height: 1.7; color: var(--sub); }
 .size { font-family: var(--font-mono); font-weight: 500; font-size: 13px; color: var(--sub); letter-spacing: .02em; }
+.callout { margin: 16px 0 0; padding: 12px 14px; border-radius: 12px; border: 2px dashed var(--line); font-size: 14px; line-height: 1.7; text-wrap: pretty; }
 .btn {
   display: flex; align-items: center; justify-content: center; gap: 8px;
   min-height: 56px; margin-top: 14px; padding: 0 20px; border-radius: 16px;
@@ -59,16 +60,29 @@ p { margin: 6px 0 0; text-wrap: pretty; }
 .fname { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; font-size: 17px; line-height: 1.4; }
 .ext { font-size: 13px; line-height: 1; padding: 4px 9px; border-radius: 999px; background: #fff; color: var(--lime-d); }
 .files p { font-size: 14px; line-height: 1.7; margin-top: 4px; }
+figure { margin: 18px 0 0; }
+figure svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 6px 14px rgba(42,36,51,.10)); }
+figcaption { margin-top: 10px; font-size: 14px; line-height: 1.7; color: var(--sub); text-align: center; text-wrap: balance; }
 .nw { white-space: nowrap; }
-.callout { margin: 0; padding: 12px 14px; border-radius: 12px; border: 2px dashed var(--line); font-size: 14px; line-height: 1.7; text-wrap: pretty; }
 .list { margin: 8px 0 0; padding-left: 22px; display: grid; gap: 6px; }
 .list li { padding-left: 2px; text-wrap: pretty; }
 .list li::marker { color: var(--lime-d); }
 .list a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--lime-d); text-underline-offset: 3px; text-decoration-thickness: 2px; }
 .list a:focus-visible { outline: 3px solid var(--lime-d); outline-offset: 2px; border-radius: 3px; }
-.steps { margin: 10px 0 0; padding: 0; list-style: none; counter-reset: s; display: grid; gap: 8px; }
-.steps li { counter-increment: s; display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; font-size: 16px; }
-.steps li::before { content: counter(s); width: 28px; height: 28px; border-radius: 50%; background: var(--lime); display: grid; place-items: center; font-size: 14px; line-height: 1; margin-top: 3px; }
+.diff { margin-top: 16px; padding: 12px 14px; border-radius: 12px; background: var(--lime-l); }
+.diff h3 { font-weight: 400; font-size: 16px; line-height: 1.5; margin: 0 0 4px; }
+.diff ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 14px; line-height: 1.7; }
+.diff li::marker { color: var(--lime-d); }
+.steps { margin: 10px 0 0; padding: 0; list-style: none; counter-reset: s; display: grid; gap: 12px; }
+.steps > li { counter-increment: s; display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; font-size: 16px; }
+.steps > li::before { content: counter(s); width: 28px; height: 28px; border-radius: 50%; background: var(--lime); display: grid; place-items: center; font-size: 14px; line-height: 1; margin-top: 3px; }
+.steps > li > div { min-width: 0; }
+.prompt { margin-top: 10px; border: 2px solid var(--line); border-radius: 12px; background: #FDFCF9; }
+.prompt .ph { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px 0 14px; }
+.prompt .pt { font-size: 14px; line-height: 1.5; color: var(--sub); }
+.copy { flex: none; min-height: 32px; padding: 0 12px; border-radius: 999px; border: 2px solid var(--ink); background: var(--lime); color: var(--ink); font-family: inherit; font-size: 14px; line-height: 1; cursor: pointer; }
+.copy:focus-visible { outline: 3px solid var(--lime-d); outline-offset: 2px; }
+.prompt .pb { margin: 0; padding: 6px 14px 12px; font-size: 14px; line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere; }
 .tip { margin: 14px 0 0; font-size: 14px; line-height: 1.7; color: var(--sub); text-wrap: pretty; }
 .foot { text-align: center; font-size: 13px; line-height: 1.6; color: var(--sub); margin-top: 38px; }
 </style>
@@ -78,6 +92,7 @@ p { margin: 6px 0 0; text-wrap: pretty; }
       <div class="top"><span class="no">DAY 11</span><span class="shop">404 廚房｜出餐單</span></div>
       <h1>免費雲端相簿</h1>
       <p class="lead">雲端空間滿了，就自己做一個。照片都留在你自己的電腦，不會上傳到任何地方。</p>
+      <p class="callout">為什麼另外做小程式，不直接請 AI？依拍攝日期歸檔、找出重複照片，答案是確定的，不需要 AI 判斷。交給小程式又快又不花 token，AI 留給需要判斷的事，例如幫照片下標籤。</p>
 
       <hr>
 
@@ -98,11 +113,34 @@ p { margin: 6px 0 0; text-wrap: pretty; }
             <p>Mac 專用的小程式，點兩下開始：依拍攝日期整理照片，或找出重複的照片。</p>
           </li>
         </ul>
+        <figure>
+<svg viewBox="0 0 320 300" role="img" aria-labelledby="fig-t fig-d" xmlns="http://www.w3.org/2000/svg" font-family="Huninn, 'PingFang TC', 'Noto Sans TC', sans-serif">
+<title id="fig-t">照片資料夾示意圖</title>
+<desc id="fig-d">一個叫「我的照片」的資料夾，上面放著 FileDir.command 和 照片瀏覽器.html 兩個檔案，下面散放著很多照片。</desc>
+<defs><linearGradient id="g0" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ECE6D6"/><stop offset="1" stop-color="#CFC6B0"/></linearGradient><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E6E4DA"/><stop offset="1" stop-color="#C9C5B6"/></linearGradient><linearGradient id="g2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E9E3DC"/><stop offset="1" stop-color="#CCC4BA"/></linearGradient><linearGradient id="g3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E3E8D2"/><stop offset="1" stop-color="#C4CCA6"/></linearGradient></defs>
+<rect x="4" y="4" width="312" height="292" rx="14" fill="#fff" stroke="#E8E5DC" stroke-width="1.5"/>
+<path d="M4 18 a14 14 0 0 1 14 -14 h284 a14 14 0 0 1 14 14 v20 h-312 z" fill="#F7F5F0"/>
+<circle cx="24" cy="21" r="5" fill="#D9D5CB"/><circle cx="42" cy="21" r="5" fill="#D9D5CB"/><circle cx="60" cy="21" r="5" fill="#D9D5CB"/>
+<text x="160.0" y="26" text-anchor="middle" font-size="14" fill="#6E6878">📁 我的照片</text>
+<rect x="14" y="48" width="292" height="106" rx="12" fill="#F1F6C8"/>
+<g>
+<path d="M70 62 h26 l12 12 v36 a3 3 0 0 1 -3 3 h-32 a3 3 0 0 1 -3 -3 v-45 a3 3 0 0 1 3 -3 z" fill="#fff" stroke="#2A2433" stroke-width="2" stroke-linejoin="round"/>
+<path d="M96 62 v12 h12" fill="#F1F6C8" stroke="#2A2433" stroke-width="2" stroke-linejoin="round"/>
+<text x="88" y="100" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="#7C8A1F" font-weight="500">$ _</text>
+<text x="88" y="136" text-anchor="middle" font-size="13" fill="#2A2433">FileDir.command</text>
+</g>
+<g>
+<path d="M214 62 h26 l12 12 v36 a3 3 0 0 1 -3 3 h-32 a3 3 0 0 1 -3 -3 v-45 a3 3 0 0 1 3 -3 z" fill="#fff" stroke="#2A2433" stroke-width="2" stroke-linejoin="round"/>
+<path d="M240 62 v12 h12" fill="#F1F6C8" stroke="#2A2433" stroke-width="2" stroke-linejoin="round"/>
+<text x="232" y="100" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="#7C8A1F" font-weight="500">&lt;/&gt;</text>
+<text x="232" y="136" text-anchor="middle" font-size="13" fill="#2A2433">照片瀏覽器.html</text>
+</g>
+<text x="160.0" y="180" text-anchor="middle" font-size="13" fill="#6E6878">還沒整理的照片，散在同一個資料夾裡</text>
+<g transform="translate(62.9 210.1) rotate(13.4)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g0)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#A8A08C" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#A8A08C" opacity=".55"/></g><g transform="translate(39.4 211.4) rotate(9.7)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g1)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#8F8A80" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#8F8A80" opacity=".55"/></g><g transform="translate(165.0 212.9) rotate(-2.9)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g2)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#B3AB98" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#B3AB98" opacity=".55"/></g><g transform="translate(139.7 213.2) rotate(15.0)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g3)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#98A06A" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#98A06A" opacity=".55"/></g><g transform="translate(256.6 213.4) rotate(-9.8)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g0)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#A8A08C" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#A8A08C" opacity=".55"/></g><g transform="translate(229.1 219.3) rotate(10.7)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g1)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#8F8A80" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#8F8A80" opacity=".55"/></g><g transform="translate(278.3 221.4) rotate(9.2)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g2)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#B3AB98" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#B3AB98" opacity=".55"/></g><g transform="translate(206.2 221.9) rotate(15.9)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g3)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#98A06A" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#98A06A" opacity=".55"/></g><g transform="translate(183.4 223.8) rotate(14.5)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g0)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#A8A08C" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#A8A08C" opacity=".55"/></g><g transform="translate(86.3 226.2) rotate(15.0)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g1)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#8F8A80" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#8F8A80" opacity=".55"/></g><g transform="translate(107.7 230.9) rotate(-12.0)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g2)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#B3AB98" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#B3AB98" opacity=".55"/></g><g transform="translate(151.0 232.1) rotate(4.0)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g3)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#98A06A" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#98A06A" opacity=".55"/></g><g transform="translate(37.5 237.0) rotate(16.0)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g0)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#A8A08C" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#A8A08C" opacity=".55"/></g><g transform="translate(59.4 237.2) rotate(-9.1)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g1)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#8F8A80" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#8F8A80" opacity=".55"/></g><g transform="translate(242.8 237.9) rotate(-6.6)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g2)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#B3AB98" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#B3AB98" opacity=".55"/></g><g transform="translate(222.3 242.6) rotate(-17.7)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g3)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#98A06A" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#98A06A" opacity=".55"/></g><g transform="translate(171.4 243.3) rotate(-17.5)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g0)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#A8A08C" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#A8A08C" opacity=".55"/></g><g transform="translate(125.2 243.6) rotate(-17.7)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g1)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#8F8A80" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#8F8A80" opacity=".55"/></g><g transform="translate(91.8 248.6) rotate(-15.4)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g2)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#B3AB98" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#B3AB98" opacity=".55"/></g><g transform="translate(275.0 252.9) rotate(15.2)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g3)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#98A06A" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#98A06A" opacity=".55"/></g><g transform="translate(192.0 253.0) rotate(10.6)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g0)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#A8A08C" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#A8A08C" opacity=".55"/></g><g transform="translate(68.8 259.0) rotate(-7.4)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g1)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#8F8A80" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#8F8A80" opacity=".55"/></g><g transform="translate(237.3 259.9) rotate(-16.7)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g2)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#B3AB98" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#B3AB98" opacity=".55"/></g><g transform="translate(105.2 265.8) rotate(1.4)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g3)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#98A06A" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#98A06A" opacity=".55"/></g><g transform="translate(209.6 266.1) rotate(14.2)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g0)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#A8A08C" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#A8A08C" opacity=".55"/></g><g transform="translate(44.8 266.6) rotate(-17.2)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g1)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#8F8A80" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#8F8A80" opacity=".55"/></g><g transform="translate(172.6 267.4) rotate(0.7)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g2)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#B3AB98" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#B3AB98" opacity=".55"/></g><g transform="translate(147.8 268.0) rotate(12.7)"><rect x="-22" y="-17" width="44" height="34" rx="3" fill="url(#g3)" stroke="#fff" stroke-width="2.5"/><rect x="-22" y="-17" width="44" height="34" rx="3" fill="none" stroke="#E8E5DC" stroke-width=".6"/><circle cx="8" cy="-6" r="3.6" fill="#98A06A" opacity=".7"/><path d="M-20 15 L-7 -3 L2 7 L8 1 L20 15 Z" fill="#98A06A" opacity=".55"/></g>
+</svg>
+          <figcaption>示意圖：照片資料夾裡有很多散放的照片，再放進這兩個檔案</figcaption>
+        </figure>
       </section>
-
-      <hr>
-
-      <p class="callout">為什麼另外做小程式，不直接請 AI？依拍攝日期歸檔、找出重複照片，答案是確定的，不需要 AI 判斷。交給小程式又快又不花 token，AI 留給需要判斷的事，例如幫照片下標籤。</p>
 
       <hr>
 
@@ -111,9 +149,16 @@ p { margin: 6px 0 0; text-wrap: pretty; }
         <p>FileDir.command 只有 Mac 能用，Windows 有兩個選擇：</p>
         <ul class="list">
           <li>用原作者 AlexHsu 做的 FileDir（Windows 版，依拍攝日期自動分資料夾），下載方式看 <a href="https://blog.andylain.com/2022/05/win-filedirexe.html" target="_blank" rel="noopener">安迪連的介紹文</a>。我的 Mac 版就是從它得到靈感</li>
-          <li>直接請 AI 幫忙分類：把照片資料夾交給它，說你想怎麼分</li>
+          <li>請 AI 幫忙整理，做法在下面「怎麼用」的第 4 點</li>
         </ul>
         <p class="note">照片瀏覽器.html 在 Windows 用 Chrome 或 Edge 就能開，照常使用。</p>
+        <div class="diff">
+          <h3>我的 Mac 版跟原版不一樣的地方</h3>
+          <ul>
+            <li>多了「找出重複照片」：原版沒有這個功能，是我這一版才加的</li>
+            <li>不分得那麼細：原版分到每個日期一個資料夾，我只分到「年／年-月」。有了照片瀏覽器之後，我覺得用標籤分類比用資料夾分類更好</li>
+          </ul>
+        </div>
       </section>
 
       <hr>
@@ -123,11 +168,39 @@ p { margin: 6px 0 0; text-wrap: pretty; }
         <ol class="steps">
           <li><div>解壓縮，把兩個檔案放進要整理的照片資料夾</div></li>
           <li><div>點兩下 <span class="nw">FileDir.command</span> 整理照片</div></li>
-          <li><div>用 Chrome 或 Edge 打開 <span class="nw">照片瀏覽器.html</span>，選照片資料夾</div></li>
+          <li><div>用 Chrome 或 Edge 打開 <span class="nw">照片瀏覽器.html</span>，選照片資料夾，拖照片到資料夾或標籤</div></li>
+          <li>
+            <div>
+              進階：請 AI 幫忙分類、下標籤。選取放照片的資料夾，把下面的 prompt 貼給 AI；不知道怎麼分，就先說「幫我舉個例子」
+              <div class="prompt">
+                <div class="ph"><span class="pt">① 沒有 FileDir 的話：請 AI 整理資料夾</span><button class="copy" type="button" data-copy="p1">複製</button></div>
+                <div class="pb" id="p1">我選取的資料夾裡有很多照片和影片，請幫我整理：
+1. 依拍攝日期（優先用照片的 Exif，沒有就用檔案日期）搬進「年／年-月」資料夾，不要分到每天一個資料夾
+2. 找出內容完全相同的重複檔案，先列清單給我確認，不要直接刪
+動手前先告訴我整理計畫，我說可以再開始，過程中不要覆蓋任何檔案。</div>
+              </div>
+              <div class="prompt">
+                <div class="ph"><span class="pt">② 請 AI 幫照片下標籤</span><button class="copy" type="button" data-copy="p2">複製</button></div>
+                <div class="pb" id="p2">請看我選取的照片資料夾，先舉幾個適合的標籤分類方式給我挑（例如旅行、家人、美食、毛小孩、截圖）。我選好之後，請依照片內容幫每張照片下標籤，存成這個資料夾裡的「照片標籤.json」，格式是：
+{"tags": ["旅行", "家人"], "photos": {"檔名|檔案大小（bytes）": ["旅行"]}}
+如果這個檔案已經存在，請保留原本的標籤，只新增。存好後告訴我標了幾張、哪幾張沒標。這樣我用照片瀏覽器打開，就看得到標籤。</div>
+              </div>
+            </div>
+          </li>
         </ol>
-        <p class="tip">第一次打開如果 Mac 跳出警告，對檔案按右鍵，選「打開」就可以。</p>
+        <p class="tip">第一次打開 FileDir.command 如果 Mac 跳出警告，對檔案按右鍵，選「打開」就可以。</p>
       </section>
     </div>
   </div>
   <p class="foot">每天 30 分鐘實現一個小點子<br>直到有人找我組隊</p>
 </main>
+<script>
+document.querySelectorAll('[data-copy]').forEach(function (b) {
+  b.addEventListener('click', async function () {
+    var el = document.getElementById(b.dataset.copy), done = '已複製';
+    try { await navigator.clipboard.writeText(el.innerText); }
+    catch (e) { var r = document.createRange(); r.selectNodeContents(el); var s = getSelection(); s.removeAllRanges(); s.addRange(r); done = '已選取，請按複製'; }
+    b.textContent = done; setTimeout(function () { b.textContent = '複製'; }, 1800);
+  });
+});
+</script>
