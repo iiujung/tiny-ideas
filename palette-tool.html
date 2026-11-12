@@ -1,0 +1,1403 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8">
+<title>配配色</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
+<style>
+/* 工具頁：霧白底＋白卡片。外框不帶顏色，畫面上的色彩只來自照片取出的那四個色 */
+/* 左右兩個面板撐滿整個畫面：左邊是色票（照片、四色、收藏），右邊是預覽舞台。手機改成上下排 */
+:root {
+  --c-lime: #D9E86B;  --c-lime-soft: #F4F8D2;  --c-lime-deep: #7C8A1F;
+  --c-rose: #F68FDB;  --c-rose-soft: #FDE3ED;  --c-rose-deep: #B8466F;
+  --c-bg: #F9FAFC;  --c-surface: #FFFFFF;  --c-line: #ECE9F1;
+  --c-text: #2A2433;  --c-text-2: #6E6878;  --c-text-3: #9C96A6;
+  --c-overlay: rgba(42, 36, 51, 0.5);
+  --radius-sm: 10px;  --radius-md: 16px;  --radius-pill: 999px;
+  --font-sans: "Huninn", "jf-openhuninn-2.1", "PingFang TC", "Noto Sans TC", sans-serif;
+  --fs-h1: 32px;  --fs-h2: 22px;  --fs-h3: 18px;  --fs-body: 16px;  --fs-sm: 14px;  --fs-tag: 13px;
+  --lh-title: 1.35;  --lh-h2: 1.4;  --lh-body: 1.75;  --lh-sm: 1.7;  --lh-ui: 1.4;
+  --gap: 24px;
+  color-scheme: light;
+}
+@media (max-width: 480px) { :root { --fs-h1: 28px; --fs-h2: 20px; --gap: 16px; } }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: var(--font-sans); font-weight: 400; font-synthesis: none;
+  background: var(--c-bg); color: var(--c-text);
+  font-size: var(--fs-body); line-height: var(--lh-body); letter-spacing: normal;
+  line-break: strict; overflow-x: clip;
+}
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 1.5px solid var(--c-text); outline-offset: 2px; }
+h1, h2, h3 { margin: 0; font-weight: 400; text-wrap: balance; word-break: keep-all; }
+p { margin: 0; text-wrap: pretty; }
+.num { font-variant-numeric: tabular-nums; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.wrap { max-width: 1160px; margin: 0 auto; padding: 32px max(16px, env(safe-area-inset-left, 0px)) 64px; display: flex; flex-direction: column; gap: var(--gap); }
+.top { display: flex; flex-direction: column; gap: 4px; }
+h1 { font-size: var(--fs-h1); line-height: var(--lh-title); }
+.hint { font-size: var(--fs-sm); line-height: var(--lh-sm); color: var(--c-text-2); }
+
+/* 版面：左右兩欄的算式 —— 1160 − 2×16 邊距 = 1128；440 + 24 + 664 = 1128 */
+.stage { display: grid; gap: var(--gap); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) {
+  .wrap { padding-inline: 16px; }
+  .stage { grid-template-columns: 440px minmax(0, 1fr); align-items: start; }
+  .coll { grid-column: 1 / -1; }
+  .prev { position: sticky; top: 24px; }
+}
+
+.card { background: var(--c-surface); border: 1px solid var(--c-line); border-radius: var(--radius-md); padding: 20px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.card-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+h2 { font-size: var(--fs-h2); line-height: var(--lh-h2); }
+
+/* 照片 */
+.photo { position: relative; margin: 0; border-radius: var(--radius-sm); overflow: hidden; background: var(--c-bg); aspect-ratio: 4 / 3; display: grid; place-items: center; }
+.photo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.pins { position: absolute; }
+.pins[hidden] { display: none; }
+.pin { position: absolute; width: 32px; height: 34px; margin: -33px 0 0 -16px; padding: 0; border: 0; background: none; cursor: grab; touch-action: none; }
+.pin svg { display: block; width: 32px; height: 34px; }
+.pin:hover svg, .pin.dragging svg { transform: scale(1.12); transform-origin: 50% 100%; }
+.pin.dragging { cursor: grabbing; }
+.pin:focus-visible { outline: 2px solid var(--c-text); outline-offset: 2px; border-radius: 50%; }
+.photo.drag::after { content: "放開就換這張"; position: absolute; inset: 0; display: grid; place-items: center; background: rgba(249, 250, 252, 0.9); border: 1.5px dashed var(--c-text); border-radius: var(--radius-sm); font-size: var(--fs-body); }
+.photo figcaption[hidden] { display: none; }
+.photo figcaption { position: absolute; left: 8px; bottom: 8px; padding: 0 8px; height: 24px; display: inline-flex; align-items: center; border-radius: var(--radius-pill); background: var(--c-surface); color: var(--c-text-2); font-size: var(--fs-sm); line-height: 1; }
+.photo-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* 比例條：寬度就是比例 */
+.bar { display: flex; height: 56px; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--c-line); }
+.bar span { min-width: 3px; height: 100%; transition: flex-grow 0.3s ease; }
+
+/* 四色一列一個 */
+.rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.row { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; grid-template-areas: "sw hex pct" "role role role"; gap: 10px 12px; align-items: center; padding: 14px 0; border-top: 1px solid var(--c-line); }
+.row:first-child { border-top: 0; padding-top: 4px; }
+.sw { grid-area: sw; position: relative; width: 44px; height: 44px; border-radius: var(--radius-sm); border: 1px solid rgba(42, 36, 51, 0.12); cursor: pointer; overflow: hidden; }
+.sw input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: 0; padding: 0; cursor: pointer; }
+.sw svg { position: absolute; right: 4px; bottom: 4px; width: 14px; height: 14px; pointer-events: none; }
+.sw:focus-within { outline: 2px solid var(--c-text); outline-offset: 2px; }
+.hex { grid-area: hex; justify-self: start; display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 10px; margin-left: -10px; border: 0; border-radius: var(--radius-sm); background: none; font-size: var(--fs-body); line-height: 1; }
+.hex:hover { background: var(--c-bg); }
+.hex svg { width: 16px; height: 16px; color: var(--c-text-2); }
+.pct { grid-area: pct; font-size: 24px; line-height: 1.2; }
+.pct small { font-size: var(--fs-sm); color: var(--c-text-2); margin-left: 2px; }
+
+/* 角色：四格切換，四個角色分給四個顏色 */
+.roles { grid-area: role; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 2px; border: 1px solid var(--c-line); border-radius: var(--radius-pill); background: var(--c-bg); }
+.role { height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 6px; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--c-text-2); font-size: var(--fs-sm); line-height: 1; white-space: nowrap; }
+.role svg { width: 16px; height: 16px; flex: none; }
+.role[aria-checked="true"] { background: var(--c-text); color: #FFFFFF; }
+.role:not([aria-checked="true"]):hover { color: var(--c-text); }
+
+/* 按鈕 */
+.btn { height: 44px; padding: 0 20px; border-radius: var(--radius-sm); border: 1px solid var(--c-text); background: var(--c-surface); color: var(--c-text); font-size: var(--fs-body); line-height: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; }
+.btn svg { width: 18px; height: 18px; }
+.btn.primary { background: var(--c-lime); border-color: var(--c-lime); }
+.btn.primary:hover { background: radial-gradient(80% 120% at 50% 50%, var(--c-lime-soft) 0%, var(--c-lime) 70%); }
+.btn:disabled { background: var(--c-surface); border-color: var(--c-line); color: var(--c-text-3); cursor: not-allowed; }
+.pill { height: 36px; padding: 0 14px; border-radius: var(--radius-pill); border: 1px solid var(--c-line); background: var(--c-surface); color: var(--c-text-2); font-size: var(--fs-sm); line-height: 1; display: inline-flex; align-items: center; gap: 6px; }
+.pill:hover { color: var(--c-text); border-color: var(--c-text-3); }
+.pill svg { width: 16px; height: 16px; }
+.pill.danger:hover { color: var(--c-rose-deep); border-color: var(--c-rose-deep); }
+
+/* 分段切換：網站／海報／商品 */
+.seg { display: inline-flex; padding: 2px; border: 1px solid var(--c-line); border-radius: var(--radius-pill); background: var(--c-bg); }
+.seg button { height: 36px; padding: 0 16px; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--c-text-2); font-size: var(--fs-sm); line-height: 1; display: inline-flex; align-items: center; gap: 6px; }
+.seg button svg { width: 16px; height: 16px; }
+.seg button[aria-selected="true"] { background: var(--c-text); color: #FFFFFF; }
+
+/* 預覽 */
+.view { border-radius: var(--radius-sm); overflow: hidden; background: var(--c-bg); display: grid; place-items: center; }
+.view svg { display: block; width: 100%; height: auto; }
+.view.poster { padding: 20px 0; }
+.view.poster svg { width: min(100%, 300px); box-shadow: 0 1px 0 var(--c-line); }
+.save-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.status { font-size: var(--fs-sm); line-height: var(--lh-ui); color: var(--c-text-2); min-height: 1.4em; }
+.status.ok { color: var(--c-lime-deep); }
+.status.err { color: var(--c-rose-deep); }
+
+/* 收藏 */
+.list { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 640px) { .list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 900px) { .list { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.saved { border: 1px solid var(--c-line); border-radius: var(--radius-md); padding: 12px; display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 12px; align-items: start; }
+.saved.on { border-color: var(--c-text); }
+.saved img { width: 72px; height: 72px; object-fit: cover; border-radius: var(--radius-sm); display: block; background: var(--c-bg); }
+.saved .mini { display: flex; height: 24px; border-radius: 6px; overflow: hidden; }
+.saved .mini span { height: 100%; }
+.saved .meta { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.saved .codes { font-size: var(--fs-sm); line-height: var(--lh-sm); color: var(--c-text-2); display: flex; flex-wrap: wrap; gap: 0 12px; }
+.saved .pair { white-space: nowrap; }
+.saved .date { font-size: var(--fs-sm); line-height: 1.4; color: var(--c-text-2); }
+.saved .acts { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; }
+.empty { padding: 24px; border: 1.5px dashed var(--c-line); border-radius: var(--radius-md); text-align: center; color: var(--c-text-2); font-size: var(--fs-sm); line-height: var(--lh-sm); }
+
+/* 彈窗 */
+.modal { position: fixed; inset: 0; z-index: 50; background: var(--c-overlay); display: grid; place-items: center; padding: 16px; }
+.modal[hidden] { display: none; }
+.modal-card { position: relative; width: min(100%, 360px); background: var(--c-surface); border-radius: var(--radius-md); padding: 24px; display: flex; flex-direction: column; gap: 12px; }
+.modal-card h2 { font-size: 20px; }
+.modal-card .actions { display: flex; gap: 8px; margin-top: 8px; }
+.modal-card .actions .btn { flex: 1; }
+.btn.warn { background: var(--c-rose-soft); border-color: var(--c-rose-deep); color: var(--c-rose-deep); }
+.close { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--c-line); background: var(--c-surface); display: grid; place-items: center; padding: 0; }
+.close svg { width: 16px; height: 16px; }
+
+.foot { font-size: var(--fs-tag); line-height: 1.7; color: var(--c-text-2); text-align: center; }
+@media (prefers-reduced-motion: reduce) { .bar span { transition: none; } }
+
+
+/* ───── 網頁、Banner 預覽 ───── */
+/* 網頁預覽的工具選單：在畫布裡、靠右，可以收合 */
+.tools { position: absolute; z-index: 4; top: 12px; right: 12px; width: 280px; max-height: calc(100% - 24px); display: flex; flex-direction: column; background: var(--c-surface); border: 1px solid var(--c-line); border-radius: var(--radius-md); box-shadow: 0 8px 24px rgba(42, 36, 51, 0.12); }
+.tools[hidden] { display: none; }
+.tools-toggle { flex: none; height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 16px; border: 0; border-radius: var(--radius-md); background: none; color: var(--c-text); font-size: var(--fs-body); line-height: 1; }
+.tools-toggle svg { width: 18px; height: 18px; transition: transform 0.2s; }
+.tools-toggle[aria-expanded="false"] svg { transform: rotate(180deg); }
+.tools:has(.tools-toggle[aria-expanded="false"]) { width: auto; }
+.tools-body { overflow: auto; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 16px; }
+.tools-body[hidden] { display: none; }
+.tl-h { margin: 0 0 8px; font-size: var(--fs-sm); line-height: 1.4; color: var(--c-text-2); }
+.tl-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.tl-opts button { position: relative; min-height: 40px; padding: 0 10px 0 30px; border: 1px solid var(--c-line); border-radius: var(--radius-sm); background: var(--c-surface); color: var(--c-text); font-size: var(--fs-sm); line-height: 1.3; text-align: left; }
+.tl-opts button::before { content: ""; position: absolute; left: 10px; top: 50%; width: 12px; height: 12px; margin-top: -6px; border: 1.5px solid var(--c-text-3); border-radius: 50%; box-sizing: border-box; }
+.tl-opts button:hover { border-color: var(--c-text-3); }
+.tl-opts button[aria-checked="true"] { background: var(--c-text); border-color: var(--c-text); color: #FFFFFF; }
+.tl-opts button[aria-checked="true"]::before { border: 0; background: var(--c-lime); }
+.tl-pal { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.tl-pal li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+.tl-pal i { width: 28px; height: 28px; border-radius: 8px; border: 1px solid rgba(42, 36, 51, 0.12); }
+.tl-pal span { font-size: var(--fs-sm); color: var(--c-text-2); }
+.tl-hex { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 8px; border: 0; border-radius: var(--radius-sm); background: none; color: var(--c-text); font-size: var(--fs-sm); }
+.tl-hex:hover { background: var(--c-bg); }
+.tl-hex svg, .tl-all svg { width: 15px; height: 15px; color: var(--c-text-2); }
+.tl-all { margin-top: 8px; width: 100%; height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--c-text); border-radius: var(--radius-sm); background: var(--c-surface); color: var(--c-text); font-size: var(--fs-sm); }
+@media (min-width: 900px) { .scene.tools-open .view.web, .scene.tools-open .view.art { padding-right: 308px; } }
+/* 海報、Banner：一張畫布，照真實尺寸排，再縮放放進來；版面用 cq 單位跟著尺寸變 */
+.scene .view.art { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 16px; overflow: auto; }
+.art-wrap { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.art-box { position: relative; overflow: hidden; box-shadow: 0 1px 2px rgba(42, 36, 51, 0.08), 0 12px 32px rgba(42, 36, 51, 0.12); }
+.art-canvas { position: absolute; left: 0; top: 0; transform-origin: 0 0; container: art / size; font-size: 16px; line-height: 1.5; }
+.art-wrap figcaption { font-size: 14px; line-height: 1.4; color: var(--c-text-2); }
+.ab { position: absolute; inset: 0; overflow: hidden; }
+.ab .mk-ph { width: 100%; height: 100%; background-size: cover; }
+.ab .cta { display: inline-flex; align-items: center; justify-content: center; gap: 2cqmin; white-space: nowrap; border-radius: 999px; }
+
+/* 日式選物：小 logo、大照片、寬字距標題、底部色帶 */
+.ab-shop { display: grid; grid-template: "hd" auto "ph" minmax(0, 1fr) "tx" auto "bd" auto / minmax(0, 1fr); gap: 4cqmin; padding: 6cqmin 7cqmin 0; }
+.ab-shop .hd { grid-area: hd; display: flex; align-items: center; gap: 2cqmin; font-size: 3.4cqmin; letter-spacing: 0.25em; }
+.mk.ab-shop .hd svg { width: 9cqmin; height: 9cqmin; }
+.ab-shop .ph { grid-area: ph; min-height: 0; }
+.ab-shop .tx { grid-area: tx; display: flex; justify-content: space-between; align-items: flex-end; gap: 4cqmin; }
+.ab-shop .t { font-size: 8.6cqmin; line-height: 1.2; letter-spacing: 0.12em; white-space: nowrap; margin-bottom: 2cqmin !important; }
+.ab-shop .d { font-size: 3.2cqmin; line-height: 1.9; letter-spacing: 0.1em; }
+.ab-shop .cta { padding: 1.6cqmin 4.5cqmin; border: 0.4cqmin solid currentColor; font-size: 3.4cqmin; letter-spacing: 0.15em; }
+.ab-shop .bd { grid-area: bd; margin: 2cqmin -7cqmin 0 !important; padding: 3cqmin 7cqmin; font-size: 3.4cqmin; letter-spacing: 0.2em; }
+@container art (min-aspect-ratio: 5/4) {
+  .ab-shop { grid-template: "ph hd" auto "ph tx" minmax(0, 1fr) "bd bd" auto / 54% minmax(0, 1fr); column-gap: 6cqmin; }
+  .ab-shop .ph { margin-bottom: 0; }
+  .ab-shop .tx { flex-direction: column; align-items: flex-start; justify-content: flex-end; padding-bottom: 2cqmin; }
+}
+@container art (min-aspect-ratio: 5/2) {
+  .ab-shop { grid-template: "hd ph tx" minmax(0, 1fr) / auto 20% minmax(0, 1fr); align-items: center; gap: 5cqmin; padding: 8cqmin 6cqmin; }
+  .ab-shop .hd span, .ab-shop .bd, .ab-shop .d { display: none; }
+  .mk.ab-shop .hd svg { width: 30cqmin; height: 30cqmin; }
+  .ab-shop .ph { height: 100%; }
+  .ab-shop .tx { flex-direction: row; align-items: center; justify-content: space-between; padding: 0; }
+  .ab-shop .t { font-size: 24cqmin; letter-spacing: 0.08em; margin: 0 !important; }
+  .ab-shop .tx { gap: 3cqmin; }
+  .ab-shop .cta { font-size: 9cqmin; padding: 3cqmin 7cqmin; border-width: 1cqmin; letter-spacing: 0.05em; }
+}
+
+/* 大字報：超大英文字、手寫曲線、歪斜照片、貼紙按鈕 */
+.ab-bold .en { position: absolute; left: 6cqmin; top: 5cqmin; z-index: 1; font-size: 23cqmin; line-height: 0.86; letter-spacing: -0.03em; }
+.mk.ab-bold .swash { position: absolute; z-index: 2; left: 34%; top: 20%; width: 60%; }
+.ab-bold .eyes { position: absolute; z-index: 2; left: 8cqmin; top: 2cqmin; display: flex; gap: 0.4cqmin; transform: rotate(-12deg); }
+.ab-bold .eyes i { position: relative; width: 7cqmin; height: 8.4cqmin; border-radius: 50%; border: 1.2cqmin solid; }
+.ab-bold .eyes b { position: absolute; right: 1cqmin; top: 1.6cqmin; width: 2.4cqmin; height: 2.4cqmin; border-radius: 50%; }
+.ab-bold .ph { position: absolute; z-index: 3; right: 7%; top: 44%; width: 56%; height: 30%; border: 1.6cqmin solid; transform: rotate(5deg); }
+.ab-bold .tx { position: absolute; z-index: 4; left: 6cqmin; right: 6cqmin; bottom: 6cqmin; }
+.ab-bold .t { font-size: 11cqmin; line-height: 1.15; }
+.ab-bold .d { font-size: 3.6cqmin; margin: 1.5cqmin 0 4cqmin !important; }
+.ab-bold .cta { padding: 2.4cqmin 6cqmin; border-radius: 0; font-size: 4cqmin; transform: rotate(-4deg); }
+@container art (min-aspect-ratio: 5/4) {
+  .ab-bold .en { font-size: 22cqmin; }
+  .ab-bold .ph { right: 5%; top: 14%; width: 34%; height: 62%; }
+  .mk.ab-bold .swash { left: 18%; top: 34%; width: 42%; }
+  .ab-bold .tx { right: 50%; }
+}
+@container art (min-aspect-ratio: 5/2) {
+  .ab-bold .en { top: 50%; transform: translateY(-50%); font-size: 40cqmin; }
+  .ab-bold .eyes, .mk.ab-bold .swash, .ab-bold .d { display: none; }
+  .ab-bold .ph { right: 4%; top: 12%; width: 22%; height: 76%; border-width: 3cqmin; }
+  .ab-bold .tx { left: 44%; right: 30%; top: 50%; bottom: auto; transform: translateY(-50%); display: flex; align-items: center; justify-content: space-between; gap: 6cqmin; }
+  .ab-bold .t { font-size: 22cqmin; }
+  .ab-bold .cta { font-size: 10cqmin; padding: 5cqmin 10cqmin; }
+}
+
+/* 安靜留白：方塊 logo 疊在照片上、直排日期、置中的字 */
+.ab-calm { display: grid; grid-template: "bg" auto "ph" minmax(0, 1fr) "tx" auto / minmax(0, 1fr); padding: 7cqmin 11cqmin 8cqmin; text-align: center; }
+.ab-calm .bg { grid-area: bg; justify-self: center; position: relative; z-index: 2; width: 20cqmin; height: 16cqmin; margin-bottom: -8cqmin; font-size: 3.6cqmin; border-radius: 0 0 4cqmin 0; }
+.ab-calm .ph { grid-area: ph; min-height: 0; border-radius: 0 0 9cqmin 0; overflow: hidden; }
+.ab-calm .vert { position: absolute; right: 4cqmin; top: 26%; writing-mode: vertical-rl; font-size: 3cqmin; letter-spacing: 0.35em; }
+.ab-calm .tx { grid-area: tx; padding-top: 5cqmin; }
+.ab-calm .t { font-size: 8.5cqmin; letter-spacing: 0.25em; line-height: 1.3; }
+.ab-calm .d { font-size: 3cqmin; letter-spacing: 0.12em; margin: 2cqmin 0 4cqmin !important; }
+.ab-calm .cta { justify-content: space-between; width: 40cqmin; padding: 2.4cqmin 4.5cqmin; font-size: 3.2cqmin; letter-spacing: 0.15em; }
+@container art (min-aspect-ratio: 5/4) {
+  .ab-calm { grid-template: "ph bg" auto "ph tx" minmax(0, 1fr) / 56% minmax(0, 1fr); column-gap: 7cqmin; padding: 8cqmin 9cqmin; }
+  .ab-calm .bg { margin: 0; }
+  .ab-calm .tx { align-self: center; }
+  .ab-calm .vert { display: none; }
+}
+@container art (min-aspect-ratio: 5/2) {
+  .ab-calm { grid-template: "bg ph tx" minmax(0, 1fr) / auto 26% minmax(0, 1fr); align-items: center; padding: 8cqmin 6cqmin; }
+  .ab-calm .bg { width: 46cqmin; height: 38cqmin; font-size: 9cqmin; border-radius: 0 0 9cqmin 0; }
+  .ab-calm .ph { height: 100%; border-radius: 0 0 16cqmin 0; }
+  .ab-calm .d { display: none; }
+  .ab-calm .tx { display: flex; align-items: center; justify-content: space-around; padding: 0; }
+  .ab-calm .t { font-size: 22cqmin; }
+  .ab-calm .cta { width: auto; gap: 6cqmin; font-size: 9cqmin; padding: 5cqmin 9cqmin; }
+}
+
+@container art (max-aspect-ratio: 3/5) { .ab-calm .vert { display: none; } }
+/* 童趣插畫：一排彩色格子、彩色大標、角色和對話泡泡 */
+.ab-play { display: flex; flex-direction: column; }
+.ab-play .tiles { flex: none; display: grid; grid-template-columns: repeat(5, 1fr); }
+.ab-play .tiles span { aspect-ratio: 1; display: grid; place-items: center; overflow: hidden; }
+.mk.ab-play .tiles svg { width: 64%; }
+.ab-play .tx { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2cqmin; padding: 5cqmin; text-align: center; }
+.ab-play .k { font-size: 3.6cqmin; }
+.ab-play .t { font-size: 15cqmin; line-height: 1.2; }
+.ab-play .d { font-size: 3.8cqmin; }
+.ab-play .cta { gap: 4cqmin; height: 11cqmin; padding: 0 1.2cqmin 0 6cqmin; margin-top: 2cqmin; font-size: 4.2cqmin; }
+.mk.ab-play .cta svg { width: 8.4cqmin; height: 8.4cqmin; }
+.ab-play .ms { position: absolute; right: 4cqmin; bottom: 3cqmin; display: flex; flex-direction: column; align-items: flex-end; }
+.mk.ab-play .ms .mk-mascot { width: 24cqmin; order: 2; }
+.ab-play .bubble { padding: 1.2cqmin 3cqmin; border-radius: 999px; font-size: 3.2cqmin; margin-right: 8cqmin; }
+@container art (min-aspect-ratio: 1/1) and (max-aspect-ratio: 5/4) { .ab-play .bubble { display: none; } }
+@container art (min-aspect-ratio: 5/4) {
+  .ab-play { flex-direction: row; }
+  .ab-play .tiles { grid-template-columns: 1fr; grid-template-rows: repeat(5, 1fr); height: 100%; aspect-ratio: 1 / 5; }
+  .ab-play .tiles span { aspect-ratio: auto; }
+  .ab-play .tx { align-items: flex-start; text-align: left; padding: 6cqmin 8cqmin; }
+  .mk.ab-play .ms .mk-mascot { width: 26cqmin; }
+}
+@container art (min-aspect-ratio: 5/2) {
+  .ab-play .tiles, .ab-play .k, .ab-play .bubble { display: none; }
+  .ab-play .tx { flex-direction: row; align-items: center; justify-content: space-between; padding: 0 30cqmin 0 7cqmin; }
+  .ab-play .t { font-size: 26cqmin; }
+  .ab-play .d { font-size: 9cqmin; }
+  .ab-play .cta { height: 26cqmin; font-size: 10cqmin; gap: 6cqmin; padding: 0 3cqmin 0 10cqmin; margin: 0; }
+  .mk.ab-play .cta svg { width: 20cqmin; height: 20cqmin; }
+  .ab-play .ms { top: 6cqmin; bottom: 6cqmin; }
+  .mk.ab-play .ms .mk-mascot { width: auto; height: 88cqmin; }
+}
+
+.scene .view.web, .scene .view.banner { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 12px; overflow: auto; overscroll-behavior: contain; }
+.mk-used { margin: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; font-size: 14px; line-height: 1.5; color: var(--c-text-2); text-align: center; }
+.mk-used span { width: 20px; height: 20px; border-radius: 6px; border: 1px solid rgba(42, 36, 51, 0.15); }
+.mk-device { flex: none; background: #FFFFFF; border: 1px solid var(--c-line); border-radius: 12px; overflow: hidden; }
+.mk-device.mobile { border: 10px solid #1E1B24; border-radius: 36px; }
+.mk-chrome { height: 34px; display: flex; align-items: center; gap: 6px; padding: 0 14px; background: #F3F2F6; font-size: 13px; color: var(--c-text-2); }
+.mk-chrome i { width: 10px; height: 10px; border-radius: 50%; background: #D9D5E0; }
+.mk-chrome span { margin-left: 12px; padding: 2px 14px; background: #FFFFFF; border-radius: var(--radius-pill); }
+.mk-notch { width: 110px; height: 20px; margin: 0 auto -20px; position: relative; z-index: 2; background: #1E1B24; border-radius: 0 0 14px 14px; }
+.mk-screen { position: relative; overflow: hidden; }
+.mk-canvas { position: absolute; left: 0; top: 0; transform-origin: 0 0; container: mk / inline-size; font-size: 16px; line-height: 1.6; }
+.mk p { margin: 0; }
+.mk ul { margin: 0; padding: 0; list-style: none; }
+.mk .mk-ph { background-image: var(--ph); background-repeat: no-repeat; background-color: rgba(0, 0, 0, 0.06); }
+.mk svg { width: auto; height: auto; }
+.mk-badge { display: grid; place-items: center; text-align: center; border-radius: 0 0 28px 0; letter-spacing: 0.18em; line-height: 1.5; }
+
+/* 日式選物：淺色帶狀頁首、分類側欄、照片商品格 */
+.mk-shop-head { display: flex; justify-content: space-between; align-items: flex-start; padding: 36px 64px 44px; }
+.mk-shop-logo { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.mk .mk-shop-logo svg { width: 92px; height: 92px; }
+.mk-shop-sub { font-size: 13px; letter-spacing: 0.4em; }
+.mk-shop-name { font-size: 28px; letter-spacing: 0.25em; line-height: 1.3; }
+.mk-shop-right { display: flex; flex-direction: column; align-items: flex-end; gap: 30px; }
+.mk-shop-contact { border: 1.5px solid currentColor; border-radius: 999px; padding: 8px 26px; font-size: 14px; letter-spacing: 0.12em; }
+.mk-shop-nav { display: flex; align-items: center; gap: 44px; font-size: 16px; letter-spacing: 0.2em; }
+.mk-shop-nav .on { padding-bottom: 6px; border-bottom: 2px solid currentColor; }
+.mk-shop-menu { display: flex; flex-direction: column; align-items: center; gap: 5px; padding-left: 30px; border-left: 1px solid currentColor; font-size: 13px; letter-spacing: 0.1em; }
+.mk-shop-menu i { display: block; width: 28px; height: 2px; background: currentColor; }
+.mk-shop-body { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 72px; padding: 80px 64px 110px; }
+.mk-shop-title { font-size: 40px; letter-spacing: 0.2em; margin-bottom: 44px !important; }
+.mk-shop-h { font-size: 18px; letter-spacing: 0.2em; padding-bottom: 12px; border-bottom: 1.5px solid currentColor; margin-bottom: 18px !important; }
+.mk-shop-cat { display: grid; gap: 14px; margin-bottom: 52px !important; font-size: 15px; letter-spacing: 0.15em; }
+.mk-shop-cat li { display: flex; align-items: center; gap: 14px; }
+.mk-shop-cat li::before { content: ""; flex: none; width: 12px; height: 1.5px; background: var(--a); }
+.mk-shop-chk li::before { width: 14px; height: 14px; background: none; border: 1.5px solid currentColor; }
+.mk-shop-bar { display: flex; align-items: baseline; gap: 28px; margin-bottom: 26px; font-size: 14px; letter-spacing: 0.1em; }
+.mk-shop-bar .t { font-size: 30px; letter-spacing: 0.2em; margin-right: auto; }
+.mk-shop-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 56px 28px; }
+.mk-shop-pic { position: relative; }
+.mk-shop-pic .mk-ph { aspect-ratio: 4 / 3; }
+.mk-shop-badge { position: absolute; left: 0; bottom: 0; padding: 4px 14px; font-size: 13px; letter-spacing: 0.1em; }
+.mk-shop-item .n { margin-top: 16px; font-size: 16px; letter-spacing: 0.15em; }
+.mk-shop-item .p { margin-top: 10px; font-size: 18px; letter-spacing: 0.05em; }
+.mk-shop-item small { font-size: 13px; }
+.mk-shop-foot { display: flex; justify-content: space-between; align-items: flex-end; padding: 64px; font-size: 15px; letter-spacing: 0.1em; }
+.mk-shop-foot .big { font-size: 72px; letter-spacing: 0.3em; line-height: 1.1; }
+
+/* 大字報：超大字、手寫曲線、歪斜照片拼貼，接一段深色 */
+.mk-bold { position: relative; overflow: hidden; }
+.mk-bold-top { position: relative; z-index: 5; display: flex; justify-content: space-between; align-items: center; padding: 30px 48px; }
+.mk-bold-logo { display: flex; align-items: center; gap: 10px; font-size: 22px; letter-spacing: 0.1em; }
+.mk-bold-mark { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-size: 16px; letter-spacing: 0; }
+.mk-bold-r { display: flex; align-items: center; gap: 12px; }
+.mk-bold-ig { width: 44px; height: 44px; border-radius: 14px; border: 2.5px solid; }
+.mk-bold-menu { position: relative; display: inline-flex; align-items: center; height: 46px; padding: 0 74px 0 26px; border-radius: 999px; font-size: 17px; letter-spacing: 0.1em; }
+.mk-blob { position: absolute; right: 2px; top: -9px; width: 62px; height: 62px; border-radius: 42% 58% 52% 48%; }
+.mk-bold-side { position: absolute; z-index: 5; top: 380px; writing-mode: vertical-rl; font-size: 14px; letter-spacing: 0.3em; }
+.mk-bold-side.l { left: 22px; }
+.mk-bold-side.r { right: 22px; }
+.mk-bold-hero { position: relative; text-align: center; }
+.mk-bold-type { position: relative; z-index: 1; font-size: 200px; line-height: 0.84; letter-spacing: -0.03em; }
+.mk .mk-bold-swash { position: absolute; z-index: 2; left: 52%; top: 210px; width: 40%; }
+.mk-bold-eyes { position: absolute; z-index: 2; left: 31%; top: -30px; display: flex; gap: 2px; transform: rotate(-12deg); }
+.mk-bold-eyes i { position: relative; width: 50px; height: 58px; border-radius: 50%; border: 7px solid; }
+.mk-bold-eyes b { position: absolute; right: 8px; top: 12px; width: 16px; height: 16px; border-radius: 50%; }
+.mk-bold-collage { position: relative; z-index: 3; display: flex; justify-content: center; margin-top: 30px; padding: 0 24px 40px; }
+.mk-bold-collage .mk-ph { flex: none; width: 40%; height: 420px; margin: 0 -2.5%; border: 10px solid; transform: rotate(var(--r)); }
+.mk-bold-dark { padding: 130px 64px 150px; text-align: center; }
+.mk-bold-state { font-size: 20px; line-height: 2.1; letter-spacing: 0.08em; }
+.mk-bold-stk { display: flex; justify-content: center; margin: 56px 0 110px; }
+.mk-bold-stk span { padding: 16px 32px; font-size: 18px; letter-spacing: 0.1em; transform: rotate(var(--r)); }
+.mk-bold-big { font-size: 150px; line-height: 1; letter-spacing: 0.02em; }
+.mk-bold-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 70px; perspective: 900px; }
+.mk-bold-strip .mk-ph { height: 360px; border-radius: 28px; transform: rotateY(var(--y)); }
+.mk-bold-tag { display: inline-block; margin-top: 36px; padding: 8px 20px; border-radius: 999px; font-size: 15px; letter-spacing: 0.1em; }
+
+/* 安靜留白：方塊 logo、大張照片、虛線碎片、直排日期的消息卡 */
+.mk-calm { position: relative; padding-bottom: 130px; }
+.mk-calm-top { display: flex; justify-content: space-between; align-items: flex-start; padding: 24px 28px 0; }
+.mk-calm-ico { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 14px; letter-spacing: 0.1em; }
+.mk .mk-calm-ico svg { width: 28px; height: 28px; }
+.mk-calm-logo { position: absolute; z-index: 3; left: 50%; top: 52px; transform: translateX(-50%); width: 170px; height: 138px; font-size: 22px; }
+.mk-calm-hero { position: relative; margin: 76px 170px 0; }
+.mk-calm-hero > .mk-ph { height: 640px; background-size: cover; }
+.mk-calm-vert { position: absolute; right: -76px; top: 180px; writing-mode: vertical-rl; font-size: 15px; letter-spacing: 0.35em; }
+.mk-calm-cap { display: flex; gap: 40px; margin-top: 22px !important; font-size: 15px; letter-spacing: 0.12em; }
+.mk-calm-note { position: absolute; right: -130px; bottom: -70px; display: flex; align-items: center; gap: 18px; padding: 20px 72px 20px 20px; border-radius: 26px 0 26px 0; font-size: 15px; line-height: 1.8; letter-spacing: 0.08em; }
+.mk-badge.sm { width: 74px; height: 58px; font-size: 13px; border-radius: 0 0 14px 0; }
+.mk-x { position: absolute; right: -14px; top: -14px; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-size: 15px; }
+.mk-calm-intro { position: relative; width: 900px; margin: 200px auto 0; padding: 70px 0 90px; text-align: center; }
+.mk .mk-calm-dash { position: absolute; inset: 0; width: 100%; height: 100%; }
+.mk-calm-intro > .mk-badge { position: relative; width: 190px; height: 150px; margin: 0 auto 44px; font-size: 20px; }
+.mk-calm-txt { position: relative; font-size: 17px; line-height: 2.5; letter-spacing: 0.14em; }
+.mk-calm-more, .mk-calm-all { display: inline-flex; justify-content: space-between; width: 240px; padding: 16px 26px; border-radius: 999px; font-size: 15px; letter-spacing: 0.12em; }
+.mk-calm-more { position: relative; margin-top: 44px; }
+.mk-calm-intro .mk-ph { position: absolute; }
+.mk-calm-round { left: -150px; top: -60px; width: 180px; height: 180px; border-radius: 50%; }
+.mk-calm-p1 { right: -170px; top: 110px; width: 260px; height: 180px; }
+.mk-calm-p2 { left: -190px; top: 430px; width: 260px; height: 180px; }
+.mk-calm-news { padding: 120px 72px 0; }
+.mk-calm-nh { position: relative; text-align: center; margin-bottom: 64px; }
+.mk-calm-nt { font-size: 46px; letter-spacing: 0.2em; line-height: 1.3; }
+.mk .mk-calm-line { display: block; width: 150px; height: 28px; margin: 0 auto; }
+.mk-calm-ns { font-size: 14px; letter-spacing: 0.2em; }
+.mk-calm-all { position: absolute; right: 0; top: 14px; }
+.mk-calm-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 30px; }
+.mk-calm-card { position: relative; padding: 64px 40px 40px 64px; }
+.mk-calm-date { position: absolute; left: 20px; top: 44px; writing-mode: vertical-rl; font-size: 14px; letter-spacing: 0.15em; }
+.mk-tag { position: absolute; right: 22px; top: 0; padding: 8px 26px; font-size: 14px; letter-spacing: 0.12em; border-radius: 0 0 16px 0; }
+.mk-calm-body { height: 280px; display: grid; place-items: center; }
+.mk-calm-body > .mk-ph { width: 100%; height: 100%; }
+.mk-calm-body > .mk-badge { width: 72%; height: 200px; font-size: 28px; }
+.mk-calm-card p { margin-top: 30px !important; font-size: 16px; letter-spacing: 0.1em; }
+
+/* 童趣插畫：三欄，中間是一條手機寬的主欄，左邊大標和角色，右邊測驗和彩色連結 */
+.mk-play { display: grid; grid-template-columns: minmax(0, 1fr) 440px minmax(0, 1fr); align-items: start; }
+.pl-left { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 60px 36px; text-align: center; }
+.pl-pre { font-size: 16px; }
+.pl-title { font-size: 58px; line-height: 1.2; letter-spacing: 0.02em; }
+.pl-by { font-size: 14px; }
+.pl-pill { display: inline-flex; align-items: center; justify-content: space-between; gap: 18px; height: 38px; padding: 0 4px 0 18px; border: 2px solid; border-radius: 999px; font-size: 15px; white-space: nowrap; }
+.mk .pl-pill svg { width: 28px; height: 28px; }
+.mk .pl-left > .mk-mascot { width: 200px; margin-top: 10px; }
+.pl-name { font-size: 40px; letter-spacing: 0.3em; }
+.pl-promo { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 16px; align-items: center; width: 100%; max-width: 340px; margin-top: 24px; padding: 14px; border-radius: 16px; text-align: left; transform: rotate(-3deg); }
+.pl-promo .mk-ph { height: 130px; border-radius: 10px; }
+.pl-promo-s { font-size: 14px; }
+.pl-promo-t { font-size: 22px; line-height: 1.35; margin: 4px 0 10px !important; }
+.pl-mid { border-left: 2px solid; border-right: 2px solid; padding-bottom: 40px; }
+.pl-tiles { display: grid; grid-template-columns: repeat(5, 1fr); }
+.pl-tiles > span { aspect-ratio: 1; display: grid; place-items: center; overflow: hidden; }
+.pl-tiles .mk-ph { width: 100%; height: 100%; }
+.mk .pl-tiles svg { width: 62%; }
+.pl-head { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 34px 24px 26px; text-align: center; }
+.pl-head .pl-title { font-size: 44px; }
+.pl-tabs { display: flex; justify-content: center; gap: 14px; padding: 0 24px 26px; }
+.pl-tabs .pl-pill { min-width: 150px; }
+.pl-quiz { position: relative; display: grid; grid-template-columns: 150px minmax(0, 1fr); grid-template-areas: "m b" "m s" "m t" "m c"; align-items: center; column-gap: 12px; padding: 28px 24px; border-radius: 22px; }
+.pl-quiz.mid { margin: 0 24px 28px; }
+.mk .pl-quiz .mk-mascot { grid-area: m; width: 150px; }
+.pl-bubble { grid-area: b; justify-self: start; padding: 6px 16px; border-radius: 999px; font-size: 16px; }
+.pl-quiz-sub { grid-area: s; font-size: 16px; margin-top: 10px !important; }
+.pl-quiz-t { grid-area: t; font-size: 34px; line-height: 1.2; white-space: nowrap; }
+.pl-cta { grid-area: c; justify-self: start; display: inline-flex; align-items: center; gap: 20px; height: 50px; margin-top: 14px; padding: 0 6px 0 22px; border-radius: 999px; font-size: 17px; white-space: nowrap; }
+.mk .pl-cta svg { width: 38px; height: 38px; }
+.pl-topic { margin: 0 24px 22px; border-radius: 18px; overflow: hidden; text-align: center; padding-bottom: 22px; }
+.pl-topic-h { display: flex; align-items: center; gap: 14px; padding: 16px 20px; text-align: left; font-size: 22px; line-height: 1.35; }
+.mk .pl-topic-h svg { width: 44px; height: 44px; flex: none; }
+.pl-topic-d { margin: 18px 20px 16px !important; font-size: 15px; line-height: 1.8; }
+.pl-talk { display: flex; align-items: flex-end; justify-content: center; gap: 4px; padding: 30px 24px 10px; }
+.mk .pl-talk .mk-mascot { width: 130px; }
+.pl-talk-b { padding: 26px 30px; border: 2.5px solid; border-radius: 50% 50% 50% 12% / 55% 55% 45% 12%; font-size: 21px; line-height: 1.6; }
+.pl-links { display: grid; gap: 14px; padding: 18px 24px 0; }
+.pl-link { display: grid; grid-template-columns: 76px minmax(0, 1fr) 30px; align-items: center; gap: 14px; padding: 12px 16px 12px 12px; border-radius: 14px; font-size: 17px; line-height: 1.45; }
+.pl-link .mk-ph { width: 76px; height: 76px; border-radius: 50%; }
+.pl-link span { font-size: 13px; }
+.mk .pl-link svg { width: 30px; height: 30px; }
+.pl-right { display: flex; flex-direction: column; gap: 14px; padding: 60px 36px; }
+.pl-quiz.side { margin-bottom: 18px; grid-template-columns: 120px minmax(0, 1fr); }
+.mk .pl-quiz.side .mk-mascot { width: 120px; }
+.pl-quiz.side .pl-quiz-t { font-size: 32px; }
+.pl-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) 30px; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 14px; font-size: 17px; line-height: 1.4; }
+.mk .pl-row svg { width: 36px; height: 36px; }
+@container mk (max-width: 600px) {
+  .mk-play { grid-template-columns: minmax(0, 1fr); }
+  .pl-left, .pl-right { display: none; }
+  .pl-mid { border: 0; padding-top: 24px; }
+  .pl-quiz { grid-template-columns: 120px minmax(0, 1fr); padding: 22px 18px; }
+  .mk .pl-quiz .mk-mascot { width: 120px; }
+  .pl-quiz-t { font-size: 32px; }
+  .pl-quiz.mid, .pl-topic { margin-left: 16px; margin-right: 16px; }
+  .pl-links { padding-left: 16px; padding-right: 16px; }
+}
+
+/* 手機：畫布寬 390，各版型自己的排法 */
+@container mk (max-width: 600px) {
+  .mk-shop-head { padding: 34px 18px 16px; align-items: center; }
+  .mk-shop-logo { flex-direction: row; gap: 10px; }
+  .mk .mk-shop-logo svg { width: 46px; height: 46px; }
+  .mk-shop-sub, .mk-shop-contact, .mk-shop-nav > span:not(.mk-shop-menu) { display: none; }
+  .mk-shop-name { font-size: 18px; }
+  .mk-shop-menu { border: 0; padding: 0; }
+  .mk-shop-body { grid-template-columns: minmax(0, 1fr); gap: 20px; padding: 36px 18px 64px; }
+  .mk-shop-title { font-size: 32px; margin-bottom: 22px !important; }
+  .mk-shop-cat { display: flex; flex-wrap: wrap; gap: 10px 20px; margin-bottom: 8px !important; }
+  .mk-shop-chk, .mk-shop-h.f { display: none; }
+  .mk-shop-bar .t { font-size: 22px; }
+  .mk-shop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 14px; }
+  .mk-shop-item .n { font-size: 15px; letter-spacing: 0.08em; }
+  .mk-shop-foot { flex-direction: column; align-items: flex-start; gap: 12px; padding: 36px 18px; }
+  .mk-shop-foot .big { font-size: 32px; }
+
+  .mk-bold-top { padding: 34px 16px 14px; }
+  .mk-bold-logo { font-size: 17px; }
+  .mk-bold-ig, .mk-bold-side { display: none; }
+  .mk-bold-menu { height: 40px; padding: 0 56px 0 18px; font-size: 15px; }
+  .mk-blob { width: 46px; height: 46px; top: -4px; }
+  .mk-bold-type { font-size: 104px; margin-top: 20px; }
+  .mk .mk-bold-swash { top: 112px; left: 50%; width: 46%; }
+  .mk-bold-eyes { left: 12%; top: -14px; }
+  .mk-bold-eyes i { width: 28px; height: 32px; border-width: 4px; }
+  .mk-bold-eyes b { width: 9px; height: 9px; right: 4px; top: 7px; }
+  .mk-bold-collage { flex-direction: column; align-items: center; margin-top: 0; padding-bottom: 20px; }
+  .mk-bold-collage .mk-ph { width: 86%; height: 230px; margin: -16px 0; border-width: 7px; }
+  .mk-bold-dark { padding: 80px 18px 90px; }
+  .mk-bold-state { font-size: 16px; line-height: 2; }
+  .mk-bold-state br { display: none; }
+  .mk-bold-stk { flex-direction: column; align-items: center; gap: 14px; margin: 36px 0 60px; }
+  .mk-bold-big { font-size: 64px; }
+  .mk-bold-strip { grid-template-columns: minmax(0, 1fr); gap: 18px; margin-top: 36px; }
+  .mk-bold-strip .mk-ph { height: 220px; transform: none; }
+
+  .mk-calm { padding-bottom: 70px; }
+  .mk-calm-top { padding: 30px 14px 0; }
+  .mk-calm-logo { top: 30px; width: 96px; height: 78px; font-size: 14px; border-radius: 0 0 16px 0; }
+  .mk-calm-hero { margin: 64px 16px 0; }
+  .mk-calm-hero > .mk-ph { height: 320px; }
+  .mk-calm-vert { display: none; }
+  .mk-calm-cap { gap: 20px; font-size: 14px; }
+  .mk-calm-note { position: relative; right: auto; bottom: auto; margin-top: 24px; }
+  .mk-calm-intro { width: auto; margin: 90px 16px 0; padding: 40px 0 50px; }
+  .mk-calm-intro > .mk-badge { width: 150px; height: 120px; font-size: 16px; }
+  .mk-calm-txt { font-size: 15px; line-height: 2.3; letter-spacing: 0.08em; }
+  .mk-calm-intro .mk-ph { position: relative; left: auto; right: auto; top: auto; display: inline-block; vertical-align: top; width: 46%; height: 130px; margin: 0 2% 20px; border-radius: 0; }
+  .mk-calm-intro .mk-calm-p2 { display: none; }
+  .mk-calm-news { padding: 90px 16px 0; }
+  .mk-calm-nh { margin-bottom: 30px; }
+  .mk-calm-nt { font-size: 36px; }
+  .mk-calm-all { position: static; margin-top: 18px; }
+  .mk-calm-cards { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .mk-calm-card { padding: 56px 24px 28px 54px; }
+  .mk-calm-body { height: 220px; }
+
+}
+
+/* ───── 兩個面板 ───── */
+.app { display: grid; grid-template-columns: minmax(0, 1fr); min-height: 100dvh; }
+.left { background: var(--c-surface); padding: 24px max(16px, env(safe-area-inset-left, 0px)) 32px; display: flex; flex-direction: column; gap: 32px; min-width: 0; }
+.left .top { gap: 4px; }
+.sec { display: flex; flex-direction: column; gap: 16px; }
+.sec + .sec { padding-top: 32px; border-top: 1px solid var(--c-line); }
+.left .list { grid-template-columns: minmax(0, 1fr); }
+.right { display: flex; flex-direction: column; min-width: 0; background: var(--c-bg); border-top: 1px solid var(--c-line); }
+.r-top, .r-bottom { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 16px max(16px, env(safe-area-inset-left, 0px)); }
+.r-bottom { justify-content: flex-start; background: var(--c-surface); border-top: 1px solid var(--c-line); }
+.scene { position: relative; height: 72vh; min-height: 420px; overflow: hidden; }
+.scene .view { position: absolute; inset: 0; border-radius: 0; padding: 16px; background: var(--c-bg); }
+.scene .view[hidden] { display: none; }
+.scene-note { position: absolute; left: 16px; bottom: 12px; margin: 0; padding: 4px 10px; border-radius: var(--radius-pill); background: rgba(255, 255, 255, 0.9); color: var(--c-text-2); font-size: var(--fs-sm); line-height: var(--lh-ui); pointer-events: none; }
+.scene-note:empty { display: none; }
+.left .foot { text-align: left; margin-top: auto; }
+@media (min-width: 900px) {
+  .app { grid-template-columns: 420px minmax(0, 1fr); height: 100dvh; }
+  .left { overflow-y: auto; border-right: 1px solid var(--c-line); padding: 28px; }
+  .right { border-top: 0; min-height: 0; }
+  .scene { height: auto; min-height: 0; flex: 1 1 auto; }
+  .r-top, .r-bottom { padding: 16px 28px; }
+  .scene .view { padding: 32px; }
+}
+</style>
+
+<div class="app">
+  <aside class="left" aria-label="色票">
+    <header class="top">
+      <h1>配配色</h1>
+      <p class="hint">照片只在這台裝置裡處理，不會上傳。</p>
+    </header>
+    <section class="sec src" aria-labelledby="h-src">
+      <h2 id="h-src">這張圖有哪些顏色？</h2>
+      <figure class="photo" id="photo"><img id="photo-img" alt=""><div class="pins" id="pins" hidden></div><figcaption id="photo-cap">範例圖片</figcaption></figure>
+      <div class="photo-row">
+        <button type="button" class="btn" id="pick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="M21 16l-5-5-9 8"/></svg>換一張照片</button>
+        <button type="button" class="btn" id="reset" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/></svg>復原顏色</button>
+        <input type="file" id="file" accept="image/*" hidden>
+      </div>
+      <div class="bar" id="bar" role="img" aria-label="四個顏色的比例"></div>
+      <ul class="rows" id="rows"></ul>
+    </section>
+    <section class="sec coll" aria-labelledby="h-coll">
+      <div class="card-head"><h2 id="h-coll">我的配色收藏</h2><span class="hint" id="coll-count"></span></div>
+      <div id="list"></div>
+    </section>
+    <p class="foot">收藏只存在這台瀏覽器，清除瀏覽資料就會不見；想留著就存成圖片。</p>
+  </aside>
+
+  <main class="right" aria-labelledby="h-prev">
+    <div class="r-top">
+      <h2 id="h-prev">放進設計看看？</h2>
+        <div class="seg" role="tablist" aria-label="預覽">
+          <button type="button" role="tab" data-view="web" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>網站</button>
+          <button type="button" role="tab" data-view="poster" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M8 15h8M8 18h5"/></svg>海報</button>
+          <button type="button" role="tab" data-view="banner" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="2" y="7" width="20" height="10" rx="1.5"/><path d="M6 12h6"/></svg>Banner</button>
+        </div>
+      </div>
+    <div class="scene tools-open" id="scene">
+      <div class="view" id="view" role="tabpanel"></div>
+      <aside class="tools" id="tools" aria-label="預覽設定">
+        <button type="button" class="tools-toggle" id="tools-toggle" aria-expanded="true" aria-controls="web-ctl">配色和版型<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
+        <div class="tools-body" id="web-ctl"></div>
+      </aside>
+      <p class="scene-note" id="scene-note" aria-live="polite"></p>
+    </div>
+    <div class="r-bottom save-row">
+        <button type="button" class="btn primary" id="save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>存進收藏</button>
+        <button type="button" class="btn" id="export-now"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>存成圖片</button>
+        <span class="status" id="status" role="status" aria-live="polite"></span>
+    </div>
+  </main>
+</div>
+
+<div class="modal" id="confirm" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="c-title">
+    <button type="button" class="close" id="c-close" aria-label="關閉"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <h2 id="c-title">刪掉這組配色？</h2>
+    <p class="hint">刪掉就無法復原。</p>
+    <div class="actions"><button type="button" class="btn" id="c-cancel">取消</button><button type="button" class="btn warn" id="c-ok">刪掉</button></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const INK = "#2A2433", WHITE = "#FFFFFF";
+  const STORE = "palette-tool:collection";
+
+  // ───── 角色：四個角色、四個不同的圖示 ─────
+  const ROLES = [
+    { id: "main", name: "主色", icon: '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="currentColor"/></svg>' },
+    { id: "sub", name: "輔色", icon: '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 2.5a5.5 5.5 0 0 1 0 11z" fill="currentColor"/></svg>' },
+    { id: "base", name: "底色", icon: '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 9.5h11v2a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2z" fill="currentColor"/></svg>' },
+    { id: "accent", name: "強調", icon: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5l1.6 4.9 4.9 1.6-4.9 1.6L8 14.5l-1.6-4.9L1.5 8l4.9-1.6z" fill="currentColor"/></svg>' },
+  ];
+  const roleName = (id) => ROLES.find((r) => r.id === id).name;
+
+  // ───── 顏色換算 ─────
+  const toHex = (rgb) => "#" + rgb.map((v) => Math.round(v).toString(16).padStart(2, "0")).join("").toUpperCase();
+  const fromHex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const lin = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  function lab([r, g, b]) {
+    const R = lin(r), G = lin(g), B = lin(b);
+    let x = (R * 0.4124 + G * 0.3576 + B * 0.1805) / 0.95047, y = R * 0.2126 + G * 0.7152 + B * 0.0722, z = (R * 0.0193 + G * 0.1192 + B * 0.9505) / 1.08883;
+    const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+    x = f(x); y = f(y); z = f(z);
+    return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+  }
+  const dE = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+  const luminance = (hex) => { const [r, g, b] = fromHex(hex).map(lin); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+  const contrast = (a, b) => { const [x, y] = [luminance(a), luminance(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+  // 放在某個底色上的字：墨色或白色，挑對比高的
+  const textOn = (bg) => (contrast(bg, INK) >= contrast(bg, WHITE) ? INK : WHITE);
+  // 想用某色當字，對比不夠就退回墨色或白色
+  const readable = (fg, bg, min = 3) => (contrast(fg, bg) >= min ? fg : textOn(bg));
+
+  // ───── 取色：Lab 空間 k-means 分 8 群，再挑四個彼此差夠多的顏色 ─────
+  function extract(img) {
+    const W = 160, H = Math.max(1, Math.round((img.naturalHeight || img.height) * W / (img.naturalWidth || img.width)));
+    const c = document.createElement("canvas"); c.width = W; c.height = H;
+    const x = c.getContext("2d", { willReadFrequently: true });
+    x.drawImage(img, 0, 0, W, H);
+    const d = x.getImageData(0, 0, W, H).data, px = [], pl = [];
+    for (let i = 0; i < d.length; i += 4) { if (d[i + 3] < 128) continue; px.push([d[i], d[i + 1], d[i + 2]]); pl.push(lab([d[i], d[i + 1], d[i + 2]])); }
+    if (px.length < 16) throw new Error("圖片太小或全透明");
+    // k-means++ 起點，用固定種子：同一張圖每次結果一樣
+    let seed = 404; const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+    const K = 8, cen = [pl[Math.floor(rnd() * pl.length)]];
+    while (cen.length < K) {
+      const dist = pl.map((p) => Math.min(...cen.map((q) => dE(p, q))) ** 2), sum = dist.reduce((a, b) => a + b, 0);
+      let t = rnd() * sum, i = 0; while (t > dist[i] && i < dist.length - 1) { t -= dist[i]; i++; }
+      cen.push(pl[i]);
+    }
+    const asg = new Int16Array(pl.length);
+    for (let it = 0; it < 12; it++) {
+      for (let i = 0; i < pl.length; i++) { let best = 0, bd = Infinity; for (let k = 0; k < K; k++) { const v = dE(pl[i], cen[k]); if (v < bd) { bd = v; best = k; } } asg[i] = best; }
+      const acc = cen.map(() => [0, 0, 0, 0]);
+      for (let i = 0; i < pl.length; i++) { const a = acc[asg[i]]; a[0] += pl[i][0]; a[1] += pl[i][1]; a[2] += pl[i][2]; a[3]++; }
+      acc.forEach((a, k) => { if (a[3]) cen[k] = [a[0] / a[3], a[1] / a[3], a[2] / a[3]]; });
+    }
+    // 每群的代表色用群內像素的 RGB 平均，比從 Lab 換回去準
+    const groups = cen.map(() => ({ n: 0, r: 0, g: 0, b: 0 }));
+    for (let i = 0; i < px.length; i++) { const gp = groups[asg[i]]; gp.n++; gp.r += px[i][0]; gp.g += px[i][1]; gp.b += px[i][2]; }
+    const clusters = groups.map((gp, k) => gp.n ? { rgb: [gp.r / gp.n, gp.g / gp.n, gp.b / gp.n], lab: cen[k], n: gp.n } : null).filter(Boolean).sort((a, b) => b.n - a.n);
+    // 相近色合併：從大群往小群挑，跟已挑的色差夠大才收
+    let picked = [];
+    for (const th of [22, 14, 8, 0]) {
+      picked = [];
+      for (const cl of clusters) if (picked.every((p) => dE(p.lab, cl.lab) >= th)) picked.push(cl);
+      if (picked.length >= 4) break;
+    }
+    picked = picked.slice(0, 4);
+    // 每個像素歸到最近的那四色，算比例；用最大餘數法讓四個加起來剛好 100
+    const cnt = picked.map(() => 0);
+    for (const p of pl) { let best = 0, bd = Infinity; picked.forEach((q, k) => { const v = dE(p, q.lab); if (v < bd) { bd = v; best = k; } }); cnt[best]++; }
+    const raw = cnt.map((n) => (n * 100) / pl.length), pct = raw.map(Math.floor);
+    raw.map((v, i) => [v - Math.floor(v), i]).sort((a, b) => b[0] - a[0]).slice(0, 100 - pct.reduce((a, b) => a + b, 0)).forEach(([, i]) => pct[i]++);
+    const colors = picked.map((p, i) => ({ hex: toHex(p.rgb), pct: pct[i] })).sort((a, b) => b.pct - a.pct);
+    console.assert(colors.reduce((a, c) => a + c.pct, 0) === 100, "四色比例加起來不是 100");
+    return colors;
+  }
+
+  // 預設角色不看比例：最亮又低彩度的當底色、最鮮豔的當強調、剩下較有份量的當主色
+  function defaultRoles(colors) {
+    const info = colors.map((c, i) => { const [L, a, b] = lab(fromHex(c.hex)); return { i, L, C: Math.hypot(a, b), pct: c.pct }; });
+    const left = new Set(info.map((x) => x.i)), roles = [];
+    const take = (score) => { const best = [...left].map((i) => info[i]).sort((p, q) => score(q) - score(p))[0]; left.delete(best.i); return best.i; };
+    roles[take((x) => x.L - x.C * 0.8)] = "base";
+    roles[take((x) => x.C)] = "accent";
+    roles[take((x) => x.pct + x.C * 0.1)] = "main";
+    roles[[...left][0]] = "sub";
+    return roles;
+  }
+
+  // ───── 狀態 ─────
+  const S = { colors: [], roles: [], view: "web", src: "", sample: true, active: null };
+  const byRole = (id) => S.colors[S.roles.indexOf(id)].hex;
+  function setStatus(t, kind = "") { const el = $("#status"); el.textContent = t; el.className = "status " + kind; }
+
+  // ───── 範例圖：程式畫的一盤水果，打開就有顏色可以玩 ─────
+  function sampleImage() {
+    const c = document.createElement("canvas"); c.width = 640; c.height = 480;
+    const x = c.getContext("2d");
+    x.fillStyle = "#F1E9DA"; x.fillRect(0, 0, 640, 480);
+    x.fillStyle = "#E6DCC9"; x.fillRect(0, 330, 640, 150);
+    x.fillStyle = "#2F3B5C"; x.beginPath(); x.ellipse(330, 330, 230, 70, 0, 0, 7); x.fill();
+    x.fillStyle = "#3B4870"; x.beginPath(); x.ellipse(330, 322, 190, 52, 0, 0, 7); x.fill();
+    const fruit = (cx, cy, r, col, hi) => { x.fillStyle = col; x.beginPath(); x.arc(cx, cy, r, 0, 7); x.fill(); x.fillStyle = hi; x.beginPath(); x.arc(cx - r * 0.35, cy - r * 0.35, r * 0.25, 0, 7); x.fill(); };
+    fruit(250, 250, 78, "#D8442E", "#E8735D"); fruit(380, 262, 64, "#D8442E", "#E8735D");
+    fruit(470, 290, 46, "#F2C14E", "#F7D888");
+    x.fillStyle = "#5E8C4A"; x.beginPath(); x.ellipse(300, 168, 46, 18, -0.5, 0, 7); x.fill();
+    x.beginPath(); x.ellipse(420, 196, 34, 13, 0.6, 0, 7); x.fill();
+    // 一點顆粒，像照片
+    const d = x.getImageData(0, 0, 640, 480);
+    let s = 7; for (let i = 0; i < d.data.length; i += 4) { s = (s * 16807) % 2147483647; const n = ((s / 2147483647) - 0.5) * 14; d.data[i] += n; d.data[i + 1] += n; d.data[i + 2] += n; }
+    x.putImageData(d, 0, 0);
+    return c.toDataURL("image/jpeg", 0.85);
+  }
+
+  // ───── 讀圖、取色 ─────
+  function loadSrc(src, sample) {
+    return new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          S.colors = extract(img); S.roles = defaultRoles(S.colors); S.src = src; S.sample = sample; S.active = null;
+          readPix(img); locate(); S.orig = clone(S.colors);
+          $("#photo-img").src = src; $("#photo-img").alt = sample ? "範例圖片：一盤番茄、檸檬和葉子" : "你選的照片";
+          $("#photo-cap").hidden = !sample;
+          renderAll(); res();
+        } catch (e) { rej(e); }
+      };
+      img.onerror = () => rej(new Error("讀不了"));
+      img.src = src;
+    });
+  }
+  async function useFile(f) {
+    if (!f || !/^image\//.test(f.type || "image/")) { setStatus("這個檔案讀不了，換一張 JPG 或 PNG", "err"); return; }
+    setStatus("取色中⋯");
+    const url = URL.createObjectURL(f);
+    try { await loadSrc(url, false); setStatus("取好了，四個顏色都可以換角色", "ok"); }
+    catch { setStatus("這張圖讀不了，換一張 JPG 或 PNG", "err"); }
+  }
+  $("#pick").addEventListener("click", () => { $("#file").value = ""; $("#file").click(); });
+  $("#file").addEventListener("change", (e) => useFile(e.target.files?.[0]));
+  const ph = $("#photo");
+  ["dragenter", "dragover"].forEach((t) => ph.addEventListener(t, (e) => { e.preventDefault(); ph.classList.add("drag"); }));
+  ["dragleave", "drop"].forEach((t) => ph.addEventListener(t, (e) => { e.preventDefault(); ph.classList.remove("drag"); }));
+  ph.addEventListener("drop", (e) => useFile(e.dataTransfer?.files?.[0]));
+
+  // ───── 比例條和四色 ─────
+  function renderPalette() { renderRows(); renderPins(); }
+  function renderRows() {
+    updateReset();
+    $("#bar").innerHTML = S.colors.map((c) => `<span style="background:${c.hex};flex-grow:${c.pct}" title="${c.hex} ${c.pct}%"></span>`).join("");
+    $("#bar").setAttribute("aria-label", "四個顏色的比例：" + S.colors.map((c, i) => `${c.hex} ${c.pct}%（${roleName(S.roles[i])}）`).join("、"));
+    $("#rows").innerHTML = S.colors.map((c, i) => `
+      <li class="row">
+        <label class="sw" style="background:${c.hex}" title="點一下換顏色"><input type="color" value="${c.hex.toLowerCase()}" data-pick="${i}" aria-label="換掉 ${c.hex}，自己挑一個顏色"><svg viewBox="0 0 24 24" fill="none" stroke="${textOn(c.hex)}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></label>
+        <button type="button" class="hex num" data-copy="${c.hex}" aria-label="複製 ${c.hex}">${c.hex}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg></button>
+        <span class="pct num">${c.pct}<small>%</small></span>
+        <div class="roles" role="radiogroup" aria-label="${c.hex} 的角色">
+          ${ROLES.map((r) => `<button type="button" class="role" role="radio" data-i="${i}" data-role="${r.id}" aria-checked="${S.roles[i] === r.id}">${r.icon}${r.name}</button>`).join("")}
+        </div>
+      </li>`).join("");
+  }
+  let pickRaf = 0;
+  $("#rows").addEventListener("input", (e) => {
+    const t = e.target.closest("[data-pick]"); if (!t) return;
+    const i = Number(t.dataset.pick); S.colors[i].hex = t.value.toUpperCase(); S.active = null;
+    t.closest(".sw").style.background = S.colors[i].hex;
+    const pin = $(`#pins [data-pin="${i}"] circle`); if (pin) pin.setAttribute("fill", S.colors[i].hex);
+    cancelAnimationFrame(pickRaf); pickRaf = requestAnimationFrame(() => { renderView(); updateReset(); });
+  });
+  $("#rows").addEventListener("change", (e) => {
+    const t = e.target.closest("[data-pick]"); if (!t) return;
+    recount(); renderPalette(); renderView(); renderList();
+    setStatus(`換成 ${S.colors[Number(t.dataset.pick)].hex}，按「復原顏色」可以換回來`, "ok");
+  });
+  $("#rows").addEventListener("click", async (e) => {
+    const r = e.target.closest("[data-role]");
+    if (r) {
+      // 四個角色分給四個顏色：點到別色在用的角色，兩色互換
+      const i = Number(r.dataset.i), want = r.dataset.role, j = S.roles.indexOf(want);
+      if (j === i) return;
+      [S.roles[i], S.roles[j]] = [want, S.roles[i]];
+      S.active = null; renderRows(); renderPins(); renderView(); renderList();
+      document.querySelector(`[data-i="${i}"][data-role="${want}"]`)?.focus();
+      return;
+    }
+    const cp = e.target.closest("[data-copy]");
+    if (cp) {
+      try { await navigator.clipboard.writeText(cp.dataset.copy); setStatus(`已複製 ${cp.dataset.copy}`, "ok"); }
+      catch { setStatus(`複製不了，請手動記下 ${cp.dataset.copy}`, "err"); }
+    }
+  });
+
+  // ───── 三種預覽：同一組角色，換分頁、換角色都即時重畫 ─────
+  const roleColors = () => ({ P: byRole("main"), S: byRole("sub"), B: byRole("base"), A: byRole("accent") });
+  const note = (t) => { $("#scene-note").textContent = t; };
+  function renderView() {
+    const v = $("#view"); v.hidden = false; note("");
+    if (S.view === "web") renderWeb(v); else renderArt(v, S.view);
+  }
+
+  document.querySelectorAll("[data-view]").forEach((b) => b.addEventListener("click", () => {
+    S.view = b.dataset.view;
+    document.querySelectorAll("[data-view]").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+    renderView();
+  }));
+
+  // ───── 配色類型：只用照片取出的四色，最多把它們調深、調淺，不另外找顏色 ─────
+  const hsl = (hex) => {
+    let [r, g, b] = fromHex(hex).map((v) => v / 255);
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2;
+    let h = 0, s = 0;
+    if (mx !== mn) {
+      const d = mx - mn; s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+      h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h *= 60;
+    }
+    return [h, s, l];
+  };
+  const mix = (a, b, t) => { const x = fromHex(a), y = fromHex(b); return toHex(x.map((v, i) => v + (y[i] - v) * t)); };
+  const tint = (c, t) => mix(c, "#FFFFFF", t), shade = (c, t) => mix(c, "#000000", t);
+  const lum = (c) => hsl(c)[2];
+  const chroma = (c) => { const [, s, l] = hsl(c); return s * (1 - Math.abs(2 * l - 1)); };
+  const hueGap = (a, b) => { const d = Math.abs(hsl(a)[0] - hsl(b)[0]) % 360; return Math.min(d, 360 - d); };
+  // 同一個顏色往深或往淺調，直到跟底色的對比夠
+  const fit = (c, bg, need) => { let x = c; const light = lum(bg) > 0.5; for (let i = 0; i < 24 && contrast(x, bg) < need; i++) x = light ? shade(x, 0.12) : tint(x, 0.12); return x; };
+  const SCHEMES = [
+    { id: "vivid", name: "繽紛多色" },
+    { id: "analog", name: "相近色" },
+    { id: "contrast", name: "強烈對比" },
+    { id: "soft", name: "柔和" },
+  ];
+  function scheme(type, c) {
+    const all = [c.P, c.S, c.B, c.A];
+    const darkest = all.reduce((a, b) => (lum(b) < lum(a) ? b : a));
+    const lightest = all.reduce((a, b) => (lum(b) > lum(a) ? b : a));
+    const byChroma = [...all].sort((a, b) => chroma(b) - chroma(a));
+    let o;
+    if (type === "vivid") {
+      // 四個顏色原色照用，每個都是一大塊
+      const bg = lum(lightest) > 0.86 ? lightest : tint(lightest, 0.7);
+      o = { bg, surface: tint(lightest, 0.9), c1: c.P, c2: c.A, c3: c.S, c4: contrast(c.B, bg) < 1.25 ? shade(c.B, 0.18) : c.B, used: all };
+    } else if (type === "analog") {
+      // 主色加上照片裡色相最接近它的那一色，只用這兩色的深淺
+      const others = all.filter((x) => x !== c.P);
+      const pool = others.filter((x) => chroma(x) > 0.06);
+      const near = (pool.length ? pool : others).reduce((a, b) => (hueGap(b, c.P) < hueGap(a, c.P) ? b : a));
+      o = { bg: tint(c.P, 0.9), surface: tint(c.P, 0.96), c1: c.P, c2: near, c3: shade(c.P, 0.3), c4: tint(near, 0.45), used: [c.P, near] };
+    } else if (type === "contrast") {
+      // 最深的當底、最淺的當字，最鮮豔的兩色跳出來
+      let bg = darkest; for (let i = 0; i < 12 && lum(bg) > 0.13; i++) bg = shade(bg, 0.15);
+      const pop = byChroma.filter((x) => x !== darkest);
+      o = { bg, surface: mix(bg, lightest, 0.1), c1: fit(pop[0], bg, 4.5), c2: fit(pop[1] || lightest, bg, 3), c3: fit(lightest, bg, 7), c4: fit(tint(pop[0], 0.4), bg, 4.5), ink: fit(lightest, bg, 10), used: [darkest, lightest, ...pop.slice(0, 2)] };
+    } else {
+      // 四色都混白，像褪色的照片
+      const bg = tint(lightest, lum(lightest) > 0.9 ? 0.3 : 0.82);
+      o = { bg, surface: tint(lightest, 0.94), c1: tint(c.P, 0.45), c2: tint(c.S, 0.5), c3: tint(c.A, 0.5), c4: tint(c.B, 0.35), used: all };
+    }
+    o.used = [...new Set(o.used)];
+    o.ink = o.ink || fit(darkest, o.bg, 8);
+    const alt = lum(o.bg) > 0.5 ? fit(lightest, "#000000", 12) : fit(darkest, "#FFFFFF", 12);
+    o.on = (bg) => (contrast(bg, o.ink) >= contrast(bg, alt) ? o.ink : alt);
+    o.muted = mix(o.ink, o.bg, 0.3);
+    o.deep = (col) => fit(col, o.bg, 3.2);
+    return o;
+  }
+
+  // ───── 小插圖和照片：插圖自己畫，照片用使用者這張照片的不同角落 ─────
+  const pic = (pos, size = "cover", cls = "", style = "") => `<div class="mk-ph ${cls}" style="background-position:${pos};background-size:${size};${style}"></div>`;
+  const mascot = (body, ink, book, cheek) => `<svg viewBox="0 0 120 150" class="mk-mascot" aria-hidden="true">
+      <rect x="22" y="14" width="76" height="78" rx="22" fill="${body}" stroke="${ink}" stroke-width="3"/>
+      <circle cx="47" cy="48" r="7" fill="${body}" stroke="${ink}" stroke-width="2.5"/><circle cx="48" cy="49" r="3" fill="${ink}"/>
+      <circle cx="73" cy="48" r="7" fill="${body}" stroke="${ink}" stroke-width="2.5"/><circle cx="74" cy="49" r="3" fill="${ink}"/>
+      <path d="M52 66q8 8 16 0" fill="none" stroke="${ink}" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="36" cy="62" r="5" fill="${cheek}"/><circle cx="84" cy="62" r="5" fill="${cheek}"/>
+      <rect x="30" y="88" width="60" height="40" rx="6" fill="${book}" stroke="${ink}" stroke-width="3"/>
+      <path d="M60 88v40" stroke="${ink}" stroke-width="3"/>
+      <path d="M40 128v14M80 128v14" stroke="${ink}" stroke-width="5" stroke-linecap="round"/>
+    </svg>`;
+  const arrow = (fill, stroke) => `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="${fill}"/><path d="M10 7l5 5-5 5" fill="none" stroke="${stroke}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const petals = (fill, dot) => `<svg viewBox="0 0 60 60" aria-hidden="true">${[0, 72, 144, 216, 288].map((a) => {
+    const x = 30 + Math.sin((a * Math.PI) / 180) * 18, y = 30 - Math.cos((a * Math.PI) / 180) * 18;
+    return `<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="8.5" ry="6.5" transform="rotate(${a} ${x.toFixed(1)} ${y.toFixed(1)})" fill="${fill}"/>`;
+  }).join("")}<circle cx="30" cy="30" r="3.2" fill="${dot}"/></svg>`;
+
+  // ───── 四種網頁版型：只借參考網站的版面和氣氛，店名、文字、插圖都是自己的 ─────
+  const LAYOUTS = [
+    { id: "shop", name: "日式選物" },
+    { id: "bold", name: "大字報" },
+    { id: "calm", name: "安靜留白" },
+    { id: "play", name: "童趣插畫" },
+  ];
+  function layoutShop(s) {
+    const items = [["20% 30%", "手作陶杯", "680", 0], ["75% 35%", "亞麻小提袋", "920", 1], ["45% 80%", "色票筆記本", "260", 0],
+      ["85% 80%", "木頭托盤", "1,280", 0], ["10% 85%", "季節香氛蠟燭", "750", 1], ["55% 12%", "棉麻餐墊", "390", 0]];
+    return `<div class="mk mk-shop" style="background:${s.surface};color:${s.ink};--a:${s.deep(s.c1)}">
+      <header class="mk-shop-head" style="background:${s.bg}">
+        <div class="mk-shop-logo">${petals(s.c1, s.c2)}<span class="mk-shop-sub" style="color:${s.deep(s.c1)}">生活雜貨</span><span class="mk-shop-name" style="color:${s.deep(s.c1)}">小日子選物</span></div>
+        <div class="mk-shop-right"><span class="mk-shop-contact" style="color:${s.deep(s.c1)}">聯絡我們・採訪合作</span>
+          <nav class="mk-shop-nav"><span>關於小日子</span><span>選物故事</span><span>我們的約定</span><span class="on" style="color:${s.deep(s.c1)}">買東西 ＋</span><span>消息</span>
+            <span class="mk-shop-menu"><i></i><i></i><i></i>選單</span></nav></div>
+      </header>
+      <div class="mk-shop-body">
+        <aside><p class="mk-shop-title" style="color:${s.deep(s.c1)}">買東西</p>
+          <p class="mk-shop-h">分類</p><ul class="mk-shop-cat"><li>全部</li><li>杯碗器皿</li><li>布包</li><li>文具</li><li>香氛</li></ul>
+          <p class="mk-shop-h f">篩選</p><ul class="mk-shop-cat mk-shop-chk"><li>現貨（4）</li><li>預購（2）</li><li>送禮推薦（3）</li></ul></aside>
+        <section><div class="mk-shop-bar"><span class="t">全部</span><span style="color:${s.muted}">排序　推薦 ⌄</span><span>6 件</span></div>
+          <div class="mk-shop-grid">${items.map(([pos, n, p, out]) => `<div class="mk-shop-item"><div class="mk-shop-pic">${pic(pos, "300%")}${out ? `<span class="mk-shop-badge" style="background:${s.c1};color:${s.on(s.c1)}">售完</span>` : ""}</div>
+            <p class="n">${n}</p><p class="p">NT$ ${p} <small style="color:${s.muted}">（含稅）</small></p></div>`).join("")}</div></section>
+      </div>
+      <footer class="mk-shop-foot" style="background:${s.c1};color:${s.on(s.c1)}"><span class="big">小日子選物</span><span>每週三到週日　12:00–19:00</span></footer>
+    </div>`;
+  }
+  function layoutBold(s) {
+    return `<div class="mk mk-bold" style="background:${s.bg};color:${s.ink}">
+      <div class="mk-bold-top"><span class="mk-bold-logo"><span class="mk-bold-mark" style="background:${s.ink};color:${s.bg}">日</span>日日設計</span>
+        <span class="mk-bold-r"><span class="mk-bold-ig" style="border-color:${s.ink}"></span><span class="mk-bold-menu" style="background:${s.ink};color:${s.bg}">選單<span class="mk-blob" style="background:${s.c2}"></span></span></span></div>
+      <span class="mk-bold-side l">空間・店鋪・城市</span><span class="mk-bold-side r">日日設計工作室</span>
+      <div class="mk-bold-hero">
+        <p class="mk-bold-type">daily<br>color<br>life</p>
+        <svg viewBox="0 0 600 220" class="mk-bold-swash" aria-hidden="true"><path d="M20 170c50-120 110-150 140-90s-50 110-10 50 80-140 120-80-30 100 20 60 70-120 110-110 40 70 0 120 60-30 150-120" fill="none" stroke="${s.c2}" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="mk-bold-eyes" aria-hidden="true"><i style="border-color:${s.ink};background:${s.bg}"><b style="background:${s.ink}"></b></i><i style="border-color:${s.ink};background:${s.bg}"><b style="background:${s.ink}"></b></i></span>
+      </div>
+      <div class="mk-bold-collage">${pic("10% 30%", "200%", "", `--r:-5deg;border-color:${s.bg}`)}${pic("55% 65%", "160%", "", `--r:-2deg;border-color:${s.bg}`)}${pic("95% 85%", "220%", "", `--r:6deg;border-color:${s.bg}`)}</div>
+      <section class="mk-bold-dark" style="background:${s.ink};color:${s.bg}">
+        <p class="mk-bold-state">日日設計做空間、店鋪和街區的設計，也自己開店。<br>我們把舊房子改成大家想待的地方，<br>讓一條街慢慢熱鬧起來。</p>
+        <div class="mk-bold-stk"><span style="--r:-6deg;background:${s.c1};color:${s.on(s.c1)}">看我們做什麼</span><span style="--r:4deg;background:${s.bg};color:${s.ink}">店鋪設計作品</span></div>
+        <p class="mk-bold-big">老屋改造</p>
+        <div class="mk-bold-strip">${pic("25% 55%", "220%", "", "--y:14deg")}${pic("75% 45%", "220%", "", "--y:-14deg")}</div>
+        <span class="mk-bold-tag" style="background:${s.bg};color:${s.ink}">空間・店鋪</span>
+      </section>
+    </div>`;
+  }
+  function layoutCalm(s) {
+    const a = s.deep(s.c1);
+    const cards = [["2026.11.12", "消息", `<div class="mk-badge" style="background:${s.c1};color:${s.on(s.c1)}">小日子<br>選物</div>`, "11 月 15 日 早上十點開門"],
+      ["2026.11.10", "場地出租", pic("50% 50%", "cover"), "二樓空間的使用方式"],
+      ["2026.11.08", "咖啡", pic("80% 70%", "260%"), "冬天的新菜單"]];
+    return `<div class="mk mk-calm" style="background:${s.bg};color:${a}">
+      <div class="mk-calm-top"><span class="mk-calm-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="9.5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>交通</span>
+        <span class="mk-calm-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9h14M5 15h14" stroke="currentColor" stroke-width="1.5"/></svg>選單</span></div>
+      <div class="mk-badge mk-calm-logo" style="background:${s.c1};color:${s.on(s.c1)}">小日子<br>選物</div>
+      <div class="mk-calm-hero">${pic("50% 50%")}
+        <span class="mk-calm-vert">巷子裡、對大家敞開的一間老房子</span>
+        <p class="mk-calm-cap"><span>咖啡 ● 甜點</span><span>小日子</span></p>
+        <div class="mk-calm-note" style="background:${s.surface}"><span class="mk-badge sm" style="background:${s.c1};color:${s.on(s.c1)}">小日子</span><span>消息 ● 公告<br><u>你好，我們是小日子。</u></span><span class="mk-x" style="background:${s.c1};color:${s.on(s.c1)}">✕</span></div>
+      </div>
+      <section class="mk-calm-intro">
+        <svg class="mk-calm-dash" viewBox="0 0 900 640" aria-hidden="true" fill="none" stroke="${s.c1}" stroke-width="1.5" stroke-dasharray="4 5"><path d="M120 120l170-70 60 150-170 70z"/><path d="M560 60l150 30-30 140-150-30z"/><circle cx="280" cy="330" r="34"/><path d="M640 300l120 60-60 120-120-60z"/><path d="M90 380l150 20-30 190-150-20z"/><path d="M420 470l200-20 10 130-200 20z"/></svg>
+        ${pic("30% 40%", "300%", "mk-calm-round")}${pic("70% 30%", "260%", "mk-calm-p1")}${pic("40% 80%", "260%", "mk-calm-p2")}
+        <div class="mk-badge" style="background:${s.c1};color:${s.on(s.c1)}">初次見面<br>這裡是小日子</div>
+        <p class="mk-calm-txt">這是一間老房子改成的小小複合空間，<br>有咖啡、生活用品，也可以租場地。<br>希望在這裡遇見的人，<br>都能多一個想回來的地方。</p>
+        <span class="mk-calm-more" style="background:${s.surface}">看更多<span>→</span></span>
+      </section>
+      <section class="mk-calm-news">
+        <div class="mk-calm-nh"><p class="mk-calm-nt">news</p><svg viewBox="0 0 150 28" class="mk-calm-line" aria-hidden="true"><path d="M2 14h96a24 24 0 0 0 24-12" fill="none" stroke="${s.c1}" stroke-width="1.5"/></svg><p class="mk-calm-ns">最新消息</p>
+          <span class="mk-calm-all" style="background:${s.surface}">看全部<span>→</span></span></div>
+        <div class="mk-calm-cards">${cards.map(([d, tag, body, t]) => `<div class="mk-calm-card" style="background:${s.surface}"><span class="mk-calm-date">${d}</span><span class="mk-tag" style="background:${s.c1};color:${s.on(s.c1)}">${tag}</span><div class="mk-calm-body">${body}</div><p>${t}</p></div>`).join("")}</div>
+      </section>
+    </div>`;
+  }
+  function layoutPlay(s) {
+    const ink = s.on(s.surface);
+    const t = "顏色的小事".split("").map((ch, i) => `<span style="color:${s.deep([s.c1, s.c2, s.c3, s.c4, s.c2][i])}">${ch}</span>`).join("");
+    const ico = {
+      palette: `<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 5a15 15 0 1 0 0 30c3 0 3-3 1.5-5s0-4 3-4H29a6 6 0 0 0 6-6C35 11 28 5 20 5z" fill="${s.surface}" stroke="${ink}" stroke-width="2.5"/><circle cx="13" cy="17" r="2.6" fill="${s.c2}"/><circle cx="20" cy="12" r="2.6" fill="${s.c3}"/><circle cx="27" cy="16" r="2.6" fill="${s.c1}"/></svg>`,
+      clock: `<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="14" fill="${s.surface}" stroke="${ink}" stroke-width="2.5"/><path d="M20 11v9l6 4" fill="none" stroke="${ink}" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+      sun: `<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="8" fill="${s.surface}" stroke="${ink}" stroke-width="2.5"/><path d="M20 4v5M20 31v5M4 20h5M31 20h5M8.7 8.7l3.5 3.5M27.8 27.8l3.5 3.5M8.7 31.3l3.5-3.5M27.8 12.2l3.5-3.5" stroke="${ink}" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+      eyes: `<svg viewBox="0 0 40 40" aria-hidden="true"><ellipse cx="12" cy="20" rx="8" ry="6" fill="${s.surface}" stroke="${ink}" stroke-width="2.5"/><ellipse cx="28" cy="20" rx="8" ry="6" fill="${s.surface}" stroke="${ink}" stroke-width="2.5"/><circle cx="13" cy="20" r="2.6" fill="${ink}"/><circle cx="29" cy="20" r="2.6" fill="${ink}"/></svg>`,
+    };
+    const topics = [[s.c2, "palette", "怎麼挑出主色？", "照片裡最有份量的那個顏色，<br>三個步驟找出來"],
+      [s.c3, "clock", "底色要多亮？", "底色太暗，字就讀不清楚，<br>一張表看懂"],
+      [s.c4, "sun", "對比夠不夠？", "站遠一點看，字還認得出來嗎？<br>眼睛的小測驗"],
+      [s.c1, "eyes", "配色存起來", "喜歡的組合，<br>存成一頁自己的色票本"]];
+    const quiz = (cls) => `<div class="pl-quiz ${cls}" style="background:${s.c1};color:${s.on(s.c1)}">
+        <span class="pl-bubble" style="background:${s.surface};color:${ink}">一起來玩！</span>
+        ${mascot(s.surface, ink, s.c3, s.c2)}
+        <p class="pl-quiz-sub">顏色的小事</p><p class="pl-quiz-t">配色小測驗</p>
+        <span class="pl-cta" style="background:${s.surface};color:${ink}">玩玩看${arrow(s.c1, s.on(s.c1))}</span></div>`;
+    const pill = (label, col) => `<span class="pl-pill" style="background:${s.surface};color:${ink};border-color:${ink}">${label}${arrow(col, s.on(col))}</span>`;
+    return `<div class="mk mk-play" style="background:${s.surface};color:${s.ink}">
+      <aside class="pl-left">
+        <p class="pl-pre">大人也想知道的</p>
+        <p class="pl-title">${t}</p>
+        <p class="pl-by" style="color:${s.muted}">小日子選物 出品</p>
+        ${pill("給色色的訊息", s.c3)}
+        ${mascot(s.surface, s.ink, s.c3, s.c2)}
+        <p class="pl-name">色色</p>
+        <div class="pl-promo" style="background:${s.bg};color:${s.ink}">${pic("40% 50%", "180%")}<div><p class="pl-promo-s" style="color:${s.deep(s.c2)}">到店裡拿一張</p><p class="pl-promo-t">色票小卡<br>免費送</p>${pill("詳細看看", s.c3)}</div></div>
+      </aside>
+      <main class="pl-mid" style="background:${s.bg};color:${s.ink};border-color:${s.ink}">
+        <div class="pl-tiles">${[[s.c3, pic("20% 40%", "260%")], [s.c4, ico.eyes], [s.c2, mascot(s.surface, ink, s.c3, s.c1)], [s.c1, ico.palette], [s.c3, pic("80% 70%", "260%")]].map(([c, x]) => `<span style="background:${c}">${x}</span>`).join("")}</div>
+        <div class="pl-head"><p class="pl-pre">大人也想知道的</p><p class="pl-title">${t}</p>${pill("給色色的訊息", s.c3)}<p class="pl-by" style="color:${s.muted}">小日子選物 出品</p></div>
+        <div class="pl-tabs">${pill("測驗", s.c2)}${pill("學習", s.c3)}</div>
+        ${quiz("mid")}
+        ${topics.map(([c, k, h, d]) => `<section class="pl-topic" style="background:${s.surface};color:${ink}"><div class="pl-topic-h" style="background:${c};color:${s.on(c)}">${ico[k]}<p>${h}</p></div><p class="pl-topic-d">${d}</p>${pill("看更多", c)}</section>`).join("")}
+        <div class="pl-talk">${mascot(s.surface, ink, s.c3, s.c2)}<p class="pl-talk-b" style="border-color:${ink}">學完配色，<br>拿自己的照片<br>試試看。</p></div>
+        <div class="pl-links">${[[s.c4, "30% 30%", "店長推薦", "適合新手的<br>三組配色"], [s.c3, "70% 60%", "第一次也安心", "從一張照片<br>做出店卡"], [s.c2, "50% 80%", "", "顏色和照片的事，<br>一次看懂"]].map(([c, pos, a, b]) => `<div class="pl-link" style="background:${c};color:${s.on(c)}">${pic(pos, "300%")}<p>${a ? `<span>${a}</span><br>` : ""}${b}</p>${arrow(s.surface, ink)}</div>`).join("")}</div>
+      </main>
+      <aside class="pl-right">
+        ${quiz("side")}
+        ${topics.map(([c, k, h]) => `<div class="pl-row" style="background:${c};color:${s.on(c)}">${ico[k]}<p>${h}</p>${arrow(s.surface, ink)}</div>`).join("")}
+      </aside>
+    </div>`;
+  }
+
+  // ───── 網頁預覽：照真的寬度排（桌機 1280、手機 390），再整頁縮小放進來，往下捲看全部 ─────
+  const P2 = { scheme: "vivid", layout: "shop", device: "desktop", poster: "a4", banner: "social" };
+  const usedLine = (sc) => `<p class="mk-used">這組只用了照片裡的 ${sc.used.length} 個顏色${sc.used.map((x) => `<span style="background:${x}" title="${x}"></span>`).join("")}，其他都是它們調深、調淺</p>`;
+  function renderWeb(v) {
+    const sc = scheme(P2.scheme, roleColors());
+    const html = { play: layoutPlay, calm: layoutCalm, bold: layoutBold, shop: layoutShop }[P2.layout](sc);
+    const W = P2.device === "mobile" ? 390 : 1280;
+    v.className = "view web";
+    buildControls(sc);
+    v.innerHTML = `${usedLine(sc)}
+      <div class="mk-device ${P2.device}" role="img" aria-label="${LAYOUTS.find((l) => l.id === P2.layout).name}版型、${SCHEMES.find((x) => x.id === P2.scheme).name}配色的${P2.device === "mobile" ? "手機" : "桌機"}網頁示意，往下捲可以看整頁">
+        ${P2.device === "desktop" ? `<div class="mk-chrome"><i></i><i></i><i></i><span>xiaorizi.example</span></div>` : `<div class="mk-notch"></div>`}
+        <div class="mk-screen"><div class="mk-canvas" inert style="width:${W}px;--ph:url('${S.src}')">${html}</div></div></div>`;
+    fitWeb();
+  }
+  function fitWeb() {
+    const v = $("#view"), cv = v.querySelector(".mk-canvas"); if (!cv) return;
+    const scr = cv.parentElement, cs = getComputedStyle(v);
+    const W = parseFloat(cv.style.width), mob = P2.device === "mobile", frame = mob ? 22 : 2;
+    const avail = v.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - frame;
+    const k = Math.min(mob ? 0.72 : 1, avail / W);
+    cv.style.transform = `scale(${k})`;
+    scr.style.width = `${Math.floor(W * k)}px`;
+    scr.style.height = `${Math.ceil(cv.offsetHeight * k)}px`;
+  }
+  const refit = () => (S.view === "web" ? fitWeb() : fitArt());
+  new ResizeObserver(refit).observe($("#view"));
+  // ───── 海報和 Banner：一次看一張，尺寸、配色類型、版型都在工具選單裡切 ─────
+  const SIZES = {
+    poster: [
+      { id: "a4", name: "A4 直式", w: 840, h: 1188, label: "A4 直式 210 × 297 mm" },
+      { id: "sq", name: "IG 正方形", w: 1080, h: 1080, label: "IG 貼文 1080 × 1080" },
+      { id: "story", name: "限時動態", w: 1080, h: 1920, label: "限時動態 1080 × 1920" },
+      { id: "wide", name: "橫式", w: 1920, h: 1080, label: "橫式 1920 × 1080" },
+    ],
+    banner: [
+      { id: "social", name: "社群貼文", w: 1200, h: 628, label: "社群貼文 1200 × 628" },
+      { id: "leader", name: "網頁橫幅", w: 970, h: 250, label: "網頁橫幅 970 × 250" },
+      { id: "rect", name: "方形", w: 300, h: 250, label: "方形 300 × 250" },
+      { id: "mobile", name: "手機橫幅", w: 320, h: 100, label: "手機橫幅 320 × 100" },
+      { id: "half", name: "直式側欄", w: 300, h: 600, label: "直式側欄 300 × 600" },
+    ],
+  };
+  const ART = {
+    shop(s) {
+      return `<div class="mk ab ab-shop" style="background:${s.surface};color:${s.ink}">
+        <div class="hd" style="color:${s.deep(s.c1)}">${petals(s.c1, s.c2)}<span>小日子選物</span></div>
+        <div class="ph">${pic("50% 50%")}</div>
+        <div class="tx"><div><p class="t" style="color:${s.deep(s.c1)}">週末小市集</p><p class="d">— 11 月 15 日（六）10:00–16:00<br>— 河堤草地</p></div><span class="cta" style="color:${s.deep(s.c1)}">立刻報名</span></div>
+        <p class="bd" style="background:${s.c1};color:${s.on(s.c1)}">40 攤手作・免費入場</p>
+      </div>`;
+    },
+    bold(s) {
+      return `<div class="mk ab ab-bold" style="background:${s.bg};color:${s.ink}">
+        <p class="en">weekend<br>market</p>
+        <svg viewBox="0 0 600 220" class="swash" aria-hidden="true"><path d="M20 170c50-120 110-150 140-90s-50 110-10 50 80-140 120-80-30 100 20 60 70-120 110-110 40 70 0 120 60-30 150-120" fill="none" stroke="${s.c2}" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="eyes" aria-hidden="true"><i style="border-color:${s.ink};background:${s.bg}"><b style="background:${s.ink}"></b></i><i style="border-color:${s.ink};background:${s.bg}"><b style="background:${s.ink}"></b></i></span>
+        <div class="ph" style="border-color:${s.surface}">${pic("50% 50%")}</div>
+        <div class="tx"><p class="t">週末小市集</p><p class="d">11 月 15 日（六）・河堤草地</p><span class="cta" style="background:${s.c1};color:${s.on(s.c1)}">立刻報名</span></div>
+      </div>`;
+    },
+    calm(s) {
+      const a = s.deep(s.c1);
+      return `<div class="mk ab ab-calm" style="background:${s.bg};color:${a}">
+        <div class="mk-badge bg" style="background:${s.c1};color:${s.on(s.c1)}">小日子<br>選物</div>
+        <div class="ph">${pic("50% 50%")}</div>
+        <span class="vert">十一月十五日・河堤草地</span>
+        <div class="tx"><p class="t">週末小市集</p><p class="d">11 月 15 日（六）10:00–16:00 ● 河堤草地</p><span class="cta" style="background:${s.surface}">立刻報名<span>→</span></span></div>
+      </div>`;
+    },
+    play(s) {
+      const ink = s.on(s.surface);
+      const t = "週末小市集".split("").map((ch, i) => `<span style="color:${s.deep([s.c1, s.c2, s.c3, s.c4, s.c2][i])}">${ch}</span>`).join("");
+      return `<div class="mk ab ab-play" style="background:${s.surface};color:${ink}">
+        <div class="tiles">${[[s.c3, pic("20% 40%", "260%")], [s.c4, ""], [s.c2, mascot(s.surface, ink, s.c3, s.c1)], [s.c1, ""], [s.c3, pic("80% 70%", "260%")]].map(([c, x]) => `<span style="background:${c}">${x}</span>`).join("")}</div>
+        <div class="tx"><p class="k">大人小孩都來</p><p class="t">${t}</p><p class="d">11 月 15 日（六）・河堤草地</p><span class="cta" style="background:${s.c1};color:${s.on(s.c1)}">立刻報名${arrow(s.on(s.c1), s.c1)}</span></div>
+        <div class="ms">${mascot(s.surface, ink, s.c2, s.c3)}<span class="bubble" style="background:${s.c4};color:${s.on(s.c4)}">一起來逛！</span></div>
+      </div>`;
+    },
+  };
+  function renderArt(v, kind) {
+    const sc = scheme(P2.scheme, roleColors());
+    const size = SIZES[kind].find((x) => x.id === P2[kind]);
+    buildControls(sc);
+    v.className = "view art";
+    v.innerHTML = `${usedLine(sc)}
+      <figure class="art-wrap"><div class="art-box" role="img" aria-label="${kind === "poster" ? "海報" : "Banner"}示意：${size.label}、${LAYOUTS.find((l) => l.id === P2.layout).name}版型、${SCHEMES.find((x) => x.id === P2.scheme).name}配色">
+        <div class="art-canvas" inert style="width:${size.w}px;height:${size.h}px;--ph:url('${S.src}')">${ART[P2.layout](sc)}</div></div>
+        <figcaption>${size.label}</figcaption></figure>`;
+    fitArt();
+  }
+  function fitArt() {
+    const v = $("#view"), cv = v.querySelector(".art-canvas"); if (!cv) return;
+    const cs = getComputedStyle(v), box = cv.parentElement;
+    const W = parseFloat(cv.style.width), H = parseFloat(cv.style.height);
+    const aw = v.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const ah = v.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - 80;
+    const k = Math.max(0.05, Math.min(aw / W, Math.max(ah, 200) / H, 2.4));
+    cv.style.transform = `scale(${k})`;
+    box.style.width = `${Math.round(W * k)}px`; box.style.height = `${Math.round(H * k)}px`;
+  }
+
+
+  const ROLE_NAME = { bg: "底色", surface: "卡片", ink: "文字", c1: "色塊 1", c2: "色塊 2", c3: "色塊 3", c4: "色塊 4" };
+  const copyIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>`;
+  function buildControls(sc) {
+    const group = (key, list, label) => `<div><p class="tl-h" id="tl-${key}">${label}</p><div class="tl-opts" role="radiogroup" aria-labelledby="tl-${key}">${list.map((x) => `<button type="button" role="radio" data-${key}="${x.id}" aria-checked="${P2[key] === x.id}">${x.name}</button>`).join("")}</div></div>`;
+    const seen = new Set(), pal = Object.keys(ROLE_NAME).filter((k) => !seen.has(sc[k]) && seen.add(sc[k]));
+    $("#web-ctl").innerHTML = `${S.view === "web" ? "" : group(S.view, SIZES[S.view], "尺寸")}${group("scheme", SCHEMES, "配色類型")}${group("layout", LAYOUTS, "版型")}${S.view === "web" ? group("device", [{ id: "desktop", name: "桌機" }, { id: "mobile", name: "手機" }], "裝置") : ""}
+      <div><p class="tl-h">這組建議色票（點色碼複製）</p><ul class="tl-pal">${pal.map((k) => `<li><i style="background:${sc[k]}"></i><span>${ROLE_NAME[k]}</span><button type="button" class="tl-hex num" data-copy="${sc[k]}" aria-label="複製${ROLE_NAME[k]} ${sc[k]}">${sc[k]}${copyIcon}</button></li>`).join("")}</ul>
+        <button type="button" class="tl-all" data-copy="${pal.map((k) => `${ROLE_NAME[k]} ${sc[k]}`).join("\n")}">${copyIcon}複製整組色碼</button></div>`;
+  }
+  $("#web-ctl").addEventListener("click", async (e) => {
+    const cp = e.target.closest("[data-copy]");
+    if (cp) {
+      try { await navigator.clipboard.writeText(cp.dataset.copy); setStatus(cp.classList.contains("tl-all") ? "已複製整組色碼" : `已複製 ${cp.dataset.copy}`, "ok"); }
+      catch { setStatus("複製不了，請手動記下色碼", "err"); }
+      return;
+    }
+    const b = e.target.closest("[role=radio]"); if (!b) return;
+    let key = "";
+    for (const k of ["scheme", "layout", "device", "poster", "banner"]) if (b.dataset[k]) { P2[k] = b.dataset[k]; key = k; }
+    renderView();
+    $(`#web-ctl [data-${key}="${P2[key]}"]`)?.focus();
+  });
+  $("#tools-toggle").addEventListener("click", (e) => {
+    const open = e.currentTarget.getAttribute("aria-expanded") !== "true";
+    e.currentTarget.setAttribute("aria-expanded", String(open));
+    $("#web-ctl").hidden = !open;
+    $("#scene").classList.toggle("tools-open", open);
+    refit();
+  });
+  if (matchMedia("(max-width: 899px)").matches) $("#tools-toggle").click();
+
+  // ───── 取色圖釘：照片上四個點，系統先放，放錯了可以自己拖到想要的顏色上 ─────
+  let PIX = null;
+  function readPix(img) {
+    const W = 160, H = Math.max(1, Math.round((img.naturalHeight || img.height) * W / (img.naturalWidth || img.width)));
+    const c = document.createElement("canvas"); c.width = W; c.height = H;
+    const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(img, 0, 0, W, H);
+    const d = x.getImageData(0, 0, W, H).data, n = W * H, L = new Float32Array(n * 3), ok = new Uint8Array(n);
+    for (let p = 0; p < n; p++) {
+      if (d[p * 4 + 3] < 128) continue;
+      ok[p] = 1; const v = lab([d[p * 4], d[p * 4 + 1], d[p * 4 + 2]]); L[p * 3] = v[0]; L[p * 3 + 1] = v[1]; L[p * 3 + 2] = v[2];
+    }
+    PIX = { W, H, d, L, ok, ratio: (img.naturalWidth || img.width) / (img.naturalHeight || img.height) };
+  }
+  const pixDE = (p, t) => Math.hypot(PIX.L[p * 3] - t[0], PIX.L[p * 3 + 1] - t[1], PIX.L[p * 3 + 2] - t[2]);
+  function nearestAll() {
+    const T = S.colors.map((c) => lab(fromHex(c.hex))), n = PIX.W * PIX.H, asg = new Int8Array(n).fill(-1);
+    for (let p = 0; p < n; p++) { if (!PIX.ok[p]) continue; let b = 0, bd = Infinity; T.forEach((t, k) => { const v = pixDE(p, t); if (v < bd) { bd = v; b = k; } }); asg[p] = b; }
+    return { T, asg };
+  }
+  // 系統放圖釘：在屬於這個顏色的像素裡，挑顏色最像、又靠近這群中心的一點
+  function locate() {
+    if (!PIX) return;
+    const { T, asg } = nearestAll(), { W, H } = PIX, n = W * H, D = new Float32Array(n);
+    S.colors.forEach((c, k) => {
+      // 兩趟 chamfer 距離轉換：每個屬於 k 的點，離最近的「不是 k」的點有多遠
+      for (let p = 0; p < n; p++) D[p] = asg[p] === k ? 1e9 : 0;
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const p = y * W + x; if (!D[p]) continue;
+        let v = D[p];
+        if (x > 0) v = Math.min(v, D[p - 1] + 1); else v = Math.min(v, 1);
+        if (y > 0) v = Math.min(v, D[p - W] + 1); else v = Math.min(v, 1);
+        D[p] = v;
+      }
+      for (let y = H - 1; y >= 0; y--) for (let x = W - 1; x >= 0; x--) {
+        const p = y * W + x; if (!D[p]) continue;
+        let v = D[p];
+        if (x < W - 1) v = Math.min(v, D[p + 1] + 1); else v = Math.min(v, 1);
+        if (y < H - 1) v = Math.min(v, D[p + W] + 1); else v = Math.min(v, 1);
+        D[p] = v;
+      }
+      let best = -1, bs = -Infinity;
+      for (let p = 0; p < n; p++) { if (!D[p]) continue; const sc = D[p] - pixDE(p, T[k]) * 0.15; if (sc > bs) { bs = sc; best = p; } }
+      if (best < 0) for (let p = 0, bd = Infinity; p < n; p++) { if (!PIX.ok[p]) continue; const v = pixDE(p, T[k]); if (v < bd) { bd = v; best = p; } }
+      if (best >= 0) { c.x = (best % W + 0.5) / W; c.y = (Math.floor(best / W) + 0.5) / H; }
+    });
+  }
+  // 顏色換了以後，重新算每個顏色在照片裡佔幾成（四個加起來 100）
+  function recount() {
+    if (!PIX) return;
+    const { asg } = nearestAll(), cnt = S.colors.map(() => 0); let tot = 0;
+    asg.forEach((k) => { if (k >= 0) { cnt[k]++; tot++; } });
+    if (!tot) return;
+    const raw = cnt.map((n) => (n * 100) / tot), pct = raw.map(Math.floor);
+    raw.map((v, i) => [v - Math.floor(v), i]).sort((a, b) => b[0] - a[0]).slice(0, 100 - pct.reduce((a, b) => a + b, 0)).forEach(([, i]) => pct[i]++);
+    S.colors.forEach((c, i) => { c.pct = pct[i]; });
+  }
+  function sampleAt(fx, fy) {
+    const { W, H, d, ok } = PIX, cx = Math.min(W - 1, Math.floor(fx * W)), cy = Math.min(H - 1, Math.floor(fy * H)), s = [0, 0, 0, 0];
+    for (let y = cy - 1; y <= cy + 1; y++) for (let x = cx - 1; x <= cx + 1; x++) {
+      if (x < 0 || y < 0 || x >= W || y >= H) continue; const p = y * W + x; if (!ok[p]) continue;
+      s[0] += d[p * 4]; s[1] += d[p * 4 + 1]; s[2] += d[p * 4 + 2]; s[3]++;
+    }
+    return s[3] ? toHex([s[0] / s[3], s[1] / s[3], s[2] / s[3]]) : null;
+  }
+  // 圖片用 contain 放進框裡，圖釘層要對齊圖片實際的位置
+  function placePinLayer() {
+    const fig = $("#photo"), lay = $("#pins"); if (!PIX) { lay.hidden = true; return; }
+    const fw = fig.clientWidth, fh = fig.clientHeight, r = PIX.ratio;
+    const w = fw / fh > r ? fh * r : fw, h = fw / fh > r ? fh : fw / r;
+    Object.assign(lay.style, { left: `${(fw - w) / 2}px`, top: `${(fh - h) / 2}px`, width: `${w}px`, height: `${h}px` });
+    lay.hidden = false;
+  }
+  const pinSVG = (hex) => `<svg viewBox="0 0 32 34" aria-hidden="true"><path d="M16 33S4 22.5 4 13.5a12 12 0 0 1 24 0C28 22.5 16 33 16 33z" fill="#FFFFFF" stroke="rgba(42,36,51,.35)"/><circle cx="16" cy="13.5" r="8.5" fill="${hex}"/></svg>`;
+  function renderPins() {
+    const lay = $("#pins");
+    if (!PIX || S.colors.some((c) => c.x == null)) { lay.innerHTML = ""; lay.hidden = true; return; }
+    lay.innerHTML = S.colors.map((c, i) => `<button type="button" class="pin" data-pin="${i}" style="left:${c.x * 100}%;top:${c.y * 100}%" aria-label="${roleName(S.roles[i])} ${c.hex} 的取色點，拖動或用方向鍵移動">${pinSVG(c.hex)}</button>`).join("");
+    placePinLayer();
+  }
+  new ResizeObserver(() => placePinLayer()).observe($("#photo"));
+  const edited = () => S.orig && S.colors.some((c, i) => c.hex !== S.orig[i]?.hex);
+  const clone = (cs) => cs.map((c) => ({ ...c }));
+  let pinRaf = 0;
+  function pinMoved(i, fx, fy, done) {
+    const c = S.colors[i]; c.x = Math.min(1, Math.max(0, fx)); c.y = Math.min(1, Math.max(0, fy));
+    const hex = sampleAt(c.x, c.y); if (hex) c.hex = hex;
+    const el = $(`#pins [data-pin="${i}"]`);
+    if (el) { el.style.left = `${c.x * 100}%`; el.style.top = `${c.y * 100}%`; el.querySelector("circle").setAttribute("fill", c.hex); el.setAttribute("aria-label", `${roleName(S.roles[i])} ${c.hex} 的取色點，拖動或用方向鍵移動`); }
+    cancelAnimationFrame(pinRaf);
+    pinRaf = requestAnimationFrame(() => { if (done) recount(); S.active = null; renderRows(); renderView(); if (done) renderList(); });
+  }
+  let drag = null;
+  $("#pins").addEventListener("pointerdown", (e) => {
+    const b = e.target.closest(".pin"); if (!b) return;
+    e.preventDefault(); b.setPointerCapture(e.pointerId); b.classList.add("dragging"); b.focus();
+    drag = { i: Number(b.dataset.pin), r: $("#pins").getBoundingClientRect() };
+  });
+  $("#pins").addEventListener("pointermove", (e) => { if (drag) pinMoved(drag.i, (e.clientX - drag.r.left) / drag.r.width, (e.clientY - drag.r.top) / drag.r.height, false); });
+  const endDrag = (e) => {
+    if (!drag) return; const { i, r } = drag; drag = null;
+    e.target.closest(".pin")?.classList.remove("dragging");
+    pinMoved(i, (e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height, true);
+    setStatus(`取了照片上的 ${S.colors[i].hex}`, "ok");
+  };
+  $("#pins").addEventListener("pointerup", endDrag);
+  $("#pins").addEventListener("pointercancel", endDrag);
+  $("#pins").addEventListener("keydown", (e) => {
+    const b = e.target.closest(".pin"), m = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+    if (!b || !m) return; e.preventDefault();
+    const i = Number(b.dataset.pin), st = e.shiftKey ? 0.05 : 0.01, c = S.colors[i];
+    pinMoved(i, c.x + m[0] * st, c.y + m[1] * st, true);
+  });
+  $("#reset").addEventListener("click", () => {
+    if (!S.orig) return;
+    S.colors = clone(S.orig); S.active = null;
+    renderPalette(); renderView(); renderList();
+    setStatus("已復原成系統取的四個顏色", "ok");
+  });
+  function loadPix(src) {
+    const img = new Image();
+    img.onload = () => { readPix(img); locate(); S.orig = clone(S.colors); renderPins(); updateReset(); };
+    img.src = src;
+  }
+  function updateReset() { $("#reset").disabled = !edited(); }
+
+  // ───── 收藏：只存在這台瀏覽器 ─────
+  const readStore = () => { try { const v = JSON.parse(localStorage.getItem(STORE) || "[]"); return Array.isArray(v) ? v : []; } catch { return []; } };
+  const writeStore = (list) => { try { localStorage.setItem(STORE, JSON.stringify(list)); return true; } catch { return false; } };
+  const today = () => { const d = new Date(), p = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())}`; };
+  function thumb() {
+    return new Promise((res) => {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement("canvas"), s = 120, k = Math.max(s / img.naturalWidth, s / img.naturalHeight);
+        c.width = s; c.height = s;
+        c.getContext("2d").drawImage(img, (s - img.naturalWidth * k) / 2, (s - img.naturalHeight * k) / 2, img.naturalWidth * k, img.naturalHeight * k);
+        res(c.toDataURL("image/jpeg", 0.7));
+      };
+      img.onerror = () => res("");
+      img.src = S.src;
+    });
+  }
+  $("#save").addEventListener("click", async () => {
+    const list = readStore();
+    const item = { id: Date.now().toString(36), date: today(), colors: S.colors.map((c, i) => ({ hex: c.hex, pct: c.pct, role: S.roles[i] })), thumb: await thumb() };
+    list.unshift(item);
+    if (!writeStore(list)) { setStatus("存不進去，這個瀏覽器可能關掉了本機儲存", "err"); return; }
+    S.active = item.id;
+    setStatus("✓ 存進收藏了", "ok");
+    renderList();
+  });
+
+  const roleOrder = (cs) => ROLES.map((r) => cs.find((c) => c.role === r.id)).filter(Boolean);
+  function renderList() {
+    const list = readStore(), box = $("#list");
+    $("#coll-count").textContent = list.length ? `共 ${list.length} 組` : "";
+    if (!list.length) { box.className = ""; box.innerHTML = `<p class="empty">還沒有收藏。喜歡上面這組顏色，就按「存進收藏」。</p>`; return; }
+    box.className = "list";
+    box.innerHTML = list.map((it) => `
+      <article class="saved ${it.id === S.active ? "on" : ""}" aria-label="${it.date} 的配色">
+        ${it.thumb ? `<img src="${esc(it.thumb)}" alt="">` : `<img alt="">`}
+        <div class="meta">
+          <div class="mini" aria-hidden="true">${it.colors.map((c) => `<span style="background:${esc(c.hex)};flex-grow:${Number(c.pct) || 1}"></span>`).join("")}</div>
+          <div class="codes num">${roleOrder(it.colors).map((c) => `<span class="pair">${roleName(c.role)} ${esc(c.hex)}</span>`).join(" ")}</div>
+          <div class="date num">${esc(it.date)} 存</div>
+        </div>
+        <div class="acts">
+          <button type="button" class="pill" data-apply="${esc(it.id)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/></svg>套用</button>
+          <button type="button" class="pill" data-export="${esc(it.id)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>存成圖片</button>
+          <button type="button" class="pill danger" data-del="${esc(it.id)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>刪除</button>
+        </div>
+      </article>`).join("");
+  }
+  $("#list").addEventListener("click", (e) => {
+    const list = readStore(), b = e.target.closest("button"); if (!b) return;
+    const it = list.find((x) => x.id === (b.dataset.apply || b.dataset.export || b.dataset.del)); if (!it) return;
+    if (b.dataset.apply) {
+      S.colors = it.colors.map((c) => ({ hex: c.hex, pct: c.pct })); S.roles = it.colors.map((c) => c.role); S.active = it.id;
+      if (it.thumb) { S.src = it.thumb; S.sample = false; $("#photo-img").src = it.thumb; $("#photo-img").alt = `${it.date} 存的照片縮圖`; $("#photo-cap").hidden = true; }
+      PIX = null; S.orig = clone(S.colors); if (it.thumb) loadPix(it.thumb);
+      renderAll(); setStatus(`已套用 ${it.date} 的配色`, "ok");
+      $("#h-src").scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+    }
+    if (b.dataset.export) exportPNG(it.colors, it.date);
+    if (b.dataset.del) askDelete(it.id, b);
+  });
+
+  // 刪除前確認
+  let pendingDel = null, lastFocus = null;
+  function askDelete(id, from) { pendingDel = id; lastFocus = from; $("#confirm").hidden = false; $("#c-cancel").focus(); }
+  const closeConfirm = () => { $("#confirm").hidden = true; pendingDel = null; lastFocus?.focus?.(); };
+  $("#c-cancel").addEventListener("click", closeConfirm);
+  $("#c-close").addEventListener("click", closeConfirm);
+  $("#confirm").addEventListener("click", (e) => { if (e.target.id === "confirm") closeConfirm(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#confirm").hidden) closeConfirm(); });
+  $("#c-ok").addEventListener("click", () => {
+    writeStore(readStore().filter((x) => x.id !== pendingDel));
+    if (S.active === pendingDel) S.active = null;
+    $("#confirm").hidden = true; pendingDel = null;
+    setStatus("刪掉了"); renderList(); $("#h-coll").focus?.();
+  });
+
+  // ───── 存成圖片：一張色卡 PNG ─────
+  async function exportPNG(cols, date) {
+    try {
+      await Promise.race([document.fonts.load('400 40px "Huninn"', "配色我的主色輔色底色強調比例存0123456789#ABCDEF%."), new Promise((r) => setTimeout(r, 1200))]);
+      const W = 1080, H = 1350, P = 80, c = document.createElement("canvas"); c.width = W; c.height = H;
+      const x = c.getContext("2d"), f = (s) => `400 ${s}px Huninn, "PingFang TC", sans-serif`;
+      x.fillStyle = "#FFFFFF"; x.fillRect(0, 0, W, H);
+      x.fillStyle = INK; x.font = f(56); x.fillText("我的配色", P, P + 56);
+      x.fillStyle = "#6E6878"; x.font = f(30); x.fillText(date, P, P + 112);
+      let bx = P; const bw = W - P * 2, by = P + 160, bh = 260;
+      cols.forEach((col) => { const w = Math.round((bw * col.pct) / 100); x.fillStyle = col.hex; x.fillRect(bx, by, w, bh); bx += w; });
+      roleOrder(cols).forEach((col, k) => {
+        const y = by + bh + 80 + k * 170;
+        x.fillStyle = col.hex; x.beginPath(); x.roundRect(P, y, 120, 120, 20); x.fill();
+        x.strokeStyle = "rgba(42,36,51,.12)"; x.lineWidth = 2; x.stroke();
+        x.fillStyle = INK; x.font = f(44); x.fillText(roleName(col.role), P + 160, y + 52);
+        x.fillStyle = "#6E6878"; x.font = f(34); x.fillText(col.hex, P + 160, y + 104);
+        x.fillStyle = INK; x.font = f(56); x.textAlign = "right"; x.fillText(`${col.pct}%`, W - P, y + 82); x.textAlign = "left";
+      });
+      x.fillStyle = "#6E6878"; x.font = f(26); x.fillText("404 廚房 · 配配色", P, H - P + 10);
+      const blob = await new Promise((r) => c.toBlob(r, "image/png"));
+      const url = URL.createObjectURL(blob), a = document.createElement("a");
+      a.href = url; a.download = `配配色-${date.replace(/\./g, "")}.png`;
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000);
+      setStatus("✓ 存成圖片了", "ok");
+    } catch { setStatus("存不了圖片，等一下再試", "err"); }
+  }
+  $("#export-now").addEventListener("click", () => exportPNG(S.colors.map((c, i) => ({ ...c, role: S.roles[i] })), today()));
+
+  function renderAll() { renderPalette(); renderView(); renderList(); }
+  let rz = 0; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => S.colors.length && renderView(), 150); });
+  loadSrc(sampleImage(), true).catch(() => setStatus("範例圖讀不了，請換一張照片", "err"));
+})();
+</script>
