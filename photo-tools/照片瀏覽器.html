@@ -1,0 +1,1292 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>照片瀏覽器</title>
+<!--
+  照片瀏覽器（單一檔案，不需安裝）
+  - 用 Chrome 或 Edge 打開這個檔案，選擇照片資料夾即可
+  - 拖照片到左側資料夾 = 真的搬移檔案（可在左側新增資料夾）；拖到標籤 = 加標籤
+  - 標籤存在照片資料夾裡的「照片標籤.json」
+-->
+<style>
+  :root {
+    --bg: #fafaf9; --panel: #ffffff; --text: #111111; --muted: #78716c; --line: #e7e5e4;
+    --hover: #f0efed; --sel: #111111; --on-sel: #ffffff; --size: 160px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0c0a09; --panel: #1c1917; --text: #fafaf9; --muted: #a8a29e; --line: #292524;
+            --hover: #292524; --sel: #fafaf9; --on-sel: #111111; }
+  }
+  * { box-sizing: border-box; }
+  /* 下面有些元素自己設了 display（grid 等），會蓋掉 hidden 屬性，所以這裡強制 hidden 一定隱藏 */
+  [hidden] { display: none !important; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--text); overflow: hidden;
+         font: 13px/1.45 -apple-system, BlinkMacSystemFont, "PingFang TC", sans-serif; }
+  button { font: inherit; color: inherit; background: var(--panel); border: 1px solid var(--line);
+           border-radius: 7px; padding: 5px 11px; cursor: pointer; }
+  button:hover { background: var(--hover); }
+  button.primary { background: var(--sel); color: var(--on-sel); border-color: var(--sel); font-weight: 600; }
+
+  /* ---- 開始畫面 ---- */
+  #start { position: fixed; inset: 0; display: grid; place-items: center; z-index: 40; background: var(--bg); }
+  #start .box { max-width: 460px; padding: 32px; text-align: center; }
+  #start h1 { font-size: 24px; margin: 0 0 8px; }
+  #start p { color: var(--muted); margin: 0 0 20px; }
+  #start .btns { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+  #start .btns button { padding: 10px 20px; font-size: 14px; min-width: 260px; }
+  #start .warn { color: #dc2626; }
+
+  /* ---- 版面 ---- */
+  #app { display: grid; grid-template-columns: 250px 1fr; height: 100vh; }
+  aside { background: var(--panel); border-right: 1px solid var(--line); overflow-y: auto;
+          padding: 12px 8px 20px; user-select: none; }
+  .sbtitle { display: flex; align-items: center; justify-content: space-between; padding: 10px 8px 6px;
+             font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .05em; }
+  .sbtitle button { padding: 0 8px; font-size: 15px; line-height: 20px; border: none; background: none; }
+  .row { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 7px; cursor: pointer;
+         white-space: nowrap; border: 2px solid transparent; }
+  .row:hover { background: var(--hover); }
+  .row.active { background: var(--sel); color: var(--on-sel); }
+  .row.active .cnt, .row.active .key { color: var(--on-sel); opacity: .75; }
+  .row.over { border-color: var(--sel); background: var(--hover); color: var(--text); }
+  .row .name { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+  .row .cnt { color: var(--muted); font-size: 11px; }
+  .row .tw { width: 14px; text-align: center; color: var(--muted); flex: none; font-size: 10px; }
+  .row .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .row .key { font-size: 10px; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+  .row.add { color: var(--muted); }
+  .help { margin: 18px 8px 0; color: var(--muted); font-size: 11px; line-height: 1.8; }
+  .help kbd { border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; font: inherit; }
+
+  #main { overflow-y: auto; position: relative; }
+  header { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line);
+           display: flex; align-items: center; gap: 10px; padding: 10px 16px; flex-wrap: wrap; }
+  header h2 { font-size: 16px; margin: 0; }
+  header .info { color: var(--muted); }
+  header .spacer { flex: 1; }
+  header input[type=range] { width: 110px; accent-color: var(--sel); }
+
+  #grid { padding: 4px 16px 60px; }
+  .day { margin-top: 14px; }
+  .dayhead { display: inline-flex; gap: 8px; align-items: baseline; padding: 4px 6px; margin: 0 0 6px -6px;
+             border-radius: 6px; cursor: pointer; user-select: none; }
+  .dayhead:hover { background: var(--hover); }
+  .dayhead .dlabel { font-weight: 700; font-size: 14px; }
+  .dayhead .dcount { color: var(--muted); font-size: 12px; }
+  .cells { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--size), 1fr)); gap: 6px; }
+  .cell { aspect-ratio: 1; position: relative; border-radius: 6px; overflow: hidden; background: var(--hover);
+          user-select: none; }
+  .cell img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+  .cell img:not([src]) { visibility: hidden; }
+  .cell.sel { outline: 3px solid var(--sel); outline-offset: 2px; }
+  .cell.sel::after { content: "✓"; position: absolute; top: 6px; right: 6px; width: 22px; height: 22px;
+                     border-radius: 50%; background: var(--sel); color: var(--on-sel); display: grid;
+                     place-items: center; font-size: 13px; font-weight: 700; }
+  .cell.cur:not(.sel) { outline: 2px dashed var(--muted); outline-offset: 2px; }
+  .cell .vid { position: absolute; bottom: 6px; right: 6px; background: #000a; color: #fff; font-size: 10px;
+               padding: 1px 6px; border-radius: 4px; }
+  .cell .dots { position: absolute; left: 6px; bottom: 6px; display: flex; gap: 3px; }
+  .cell .dots i { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid #fff; }
+  .cell.fail::before { content: "無法預覽"; position: absolute; inset: 0; display: grid; place-items: center;
+                       color: var(--muted); font-size: 11px; }
+  .empty { padding: 80px 0; text-align: center; color: var(--muted); }
+
+  /* ---- 大圖檢視 ---- */
+  #viewer { position: fixed; inset: 0; background: #000; z-index: 30; display: none; }
+  #viewer.show { display: block; }
+  #vstage { position: absolute; inset: 0; display: grid; place-items: center; }
+  #vstage img, #vstage video { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .vbar { position: absolute; left: 0; right: 0; padding: 12px 18px; color: #fff; display: flex; gap: 10px;
+          align-items: center; flex-wrap: wrap; transition: opacity .25s; }
+  #vtop { top: 0; background: linear-gradient(#000c, #0000); }
+  #vbottom { bottom: 0; background: linear-gradient(#0000, #000c); justify-content: center; }
+  #viewer.idle .vbar, #viewer.idle .vnav { opacity: 0; }
+  #vinfo { flex: 1; font-size: 13px; }
+  #viewer button { background: #fff2; color: #fff; border-color: #fff3; }
+  #viewer button:hover { background: #fff4; }
+  .vnav { position: absolute; top: 50%; transform: translateY(-50%); font-size: 26px !important;
+          padding: 14px 10px !important; transition: opacity .25s; }
+  #vprev { left: 12px; } #vnext { right: 12px; }
+  .chip { display: inline-flex; gap: 6px; align-items: center; border-radius: 99px !important; padding: 4px 12px !important; }
+  .chip .dot { width: 9px; height: 9px; border-radius: 50%; }
+  .chip.on { background: #fff !important; color: #111 !important; font-weight: 600; }
+  .chip small { opacity: .6; }
+
+  #busy, #toast { position: fixed; left: 50%; transform: translateX(-50%); z-index: 60; border-radius: 10px;
+                  padding: 10px 18px; background: var(--sel); color: var(--on-sel); }
+  #busy { top: 40%; display: none; }
+  #toast { bottom: 24px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 80vw; }
+  #toast.show { opacity: 1; }
+  #dragghost { position: fixed; top: -100px; left: 0; padding: 6px 12px; border-radius: 8px;
+               background: var(--sel); color: var(--on-sel); font-weight: 600; }
+
+  #app { min-width: 0; }
+  #main { min-width: 0; }
+  #viewer { background: #151515f5; }
+  #vstage { inset: 72px 64px 80px; overflow: hidden; touch-action: none; }
+  #vstage img, #vstage video { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
+  #vstage img { transform: translate(var(--pan-x, 0px), var(--pan-y, 0px)) scale(var(--zoom, 1)); cursor: grab; }
+  #vtop, #vbottom { background: #151515; }
+  #viewer.idle .vbar, #viewer.idle .vnav { opacity: 1; }
+  .pickmark { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; padding: 0; border-radius: 50%; background: #0006; color: white; z-index: 2; }
+  .cell.sel::after { display: none; }
+  .cell.sel .pickmark { background: var(--sel); color: var(--on-sel); }
+  .cell:not(.sel):not(:hover) .pickmark { opacity: .4; }
+  #grid.selecting { touch-action: none; }
+  #marquee { position: fixed; border: 1px solid #4285f4; background: #4285f426; pointer-events: none; z-index: 10; }
+  body.mobile #app, body.mobile #viewer { width: min(100%, 430px); margin: auto; }
+  body.mobile #app { grid-template-columns: 1fr; height: 100dvh; }
+  body.mobile aside { display: none; }
+  body.mobile.menu-open aside { display: block; position: fixed; inset: 0 auto 0 auto; width: min(85vw, 340px); z-index: 20; }
+  body.mobile header { gap: 8px; padding: 10px; }
+  body.mobile header h2 { width: calc(100% - 70px); }
+  body.mobile header button { min-height: 40px; }
+  body.mobile header input { width: 75px; }
+  body.mobile #grid { padding: 0 8px 60px; }
+  body.mobile .cells { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+  body.mobile .dayhead .dlabel { font-size: 12px; }
+  body.mobile .pickmark { opacity: 1 !important; }
+  body.mobile #vstage { inset: 130px 8px 100px; }
+  body.mobile #vtop { padding: 10px; gap: 6px; }
+  body.mobile #vinfo { flex-basis: 100%; font-size: 11px; }
+  body.mobile .vnav { padding: 8px !important; }
+  body.mobile #vprev { left: 4px; } body.mobile #vnext { right: 4px; }
+  #btnMenu { display: none; } body.mobile #btnMenu { display: block; }
+  .verror { color: white; text-align: center; padding: 20px; }
+
+  #app { grid-template-columns: 250px minmax(0, 1fr) 120px; }
+  header { display: block; padding: 0; }
+  .title-row, .view-row, .selection-row { display: flex; align-items: center; gap: 10px; padding: 12px 16px; }
+  .title-row { justify-content: space-between; }
+  .title-copy { flex: 1; min-width: 0; }
+  .title-copy h2 { margin-bottom: 3px; overflow-wrap: anywhere; }
+  .title-copy .info { font-size: 12px; margin-right: 5px; }
+  .view-row { border-top: 1px solid var(--line); padding-block: 8px; flex-wrap: wrap; }
+  .selection-row { background: var(--hover); flex-wrap: wrap; font-size: 12px; }
+  .selection-row span { flex: 1; }
+  .tool-label { color: var(--muted); font-size: 11px; }
+  .size-label { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+  .pickmark { display: none; }
+  body.selection-active .pickmark { display: grid; place-items: center; opacity: 1 !important; }
+  body.selection-active .cell:not(.sel) .pickmark { font-size: 0; border: 2px solid #fff; background: #0003; }
+  .side-heading { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px 12px; }
+  #btnCloseSide { display: none; }
+  .side-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px; border-bottom: 1px solid var(--line); }
+  .side-tools button { font-size: 12px; }
+  #timeline { display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--line); padding: 16px 10px; background: var(--panel); overflow: hidden; overscroll-behavior: contain; }
+  .timeline-title { font-size: 11px; font-weight: 700; color: var(--muted); }
+
+  #timelineNodes { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+
+
+  #timelineNodes button { display: block; width: 100%; border: none; border-left: 2px solid var(--line); border-radius: 0 6px 6px 0; background: none; text-align: left; margin-left: 3px; padding: 6px 8px; font-size: 12px; color: var(--muted); }
+  #timelineNodes button[aria-current="date"] { border-left-color: var(--sel); background: var(--hover); color: var(--text); font-weight: 700; }
+  #sideBackdrop { position: fixed; inset: 0; background: #0006; border: 0; border-radius: 0; z-index: 19; }
+  body.mobile #app { grid-template-columns: minmax(0, 1fr) 60px; }
+  body.mobile.menu-open aside { left: max(0px, calc((100vw - 430px) / 2)); top: 0; bottom: 0; right: auto; height: 100dvh; }
+  body.mobile #btnCloseSide { display: block; min-width: 40px; min-height: 40px; }
+  body.mobile header { padding: 0; }
+  body.mobile .title-copy h2 { width: auto; font-size: 14px; }
+  body.mobile .title-row, body.mobile .view-row, body.mobile .selection-row { padding: 8px; gap: 6px; }
+  body.mobile header button { font-size: 11px; padding: 5px 7px; }
+  body.mobile .view-row .tool-label { display: none; }
+  body.mobile header input { width: 65px; }
+  body.mobile .cells { grid-template-columns: repeat(var(--mobile-cols, 3), minmax(0, 1fr)); }
+  body.mobile #timeline { padding: 12px 4px; }
+
+  body.mobile #timelineNodes button { padding: 8px 3px; font-size: 10px; }
+
+  /* Explicit grid tracks prevent a large image's intrinsic dimensions from cropping the fit view. */
+  #viewer.show { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; background: #151515; }
+  #vtop { position: static; grid-row: 1; }
+  #vbottom { position: static; grid-row: 3; max-height: 25dvh; overflow-y: auto; }
+  #vstage, body.mobile #vstage { position: relative; grid-row: 2; inset: auto; min-width: 0; min-height: 0; display: block; margin: 16px 64px; }
+  body.mobile #vstage { margin: 10px 8px; }
+  #vstage img, #vstage video { position: absolute; inset: 0; width: 100%; height: 100%; max-width: 100%; max-height: 100%; object-fit: contain; }
+  .title-row { flex-wrap: wrap; }
+  .view-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .view-controls > .tool-label { display: none; }
+  .side-heading { position: relative; gap: 8px; }
+  #settings { margin-left: 0; }
+  .side-heading > strong { margin-right: auto; white-space: nowrap; }
+  #btnMode { padding: 7px 8px; font-size: 11px; white-space: nowrap; min-height: 36px; }
+  body.mobile .side-heading { flex-wrap: wrap; }
+  #settings summary { cursor: pointer; list-style: none; padding: 5px 10px; font-size: 18px; border: 1px solid var(--line); border-radius: 7px; }
+  #settings summary::-webkit-details-marker { display: none; }
+  .settings-panel { position: absolute; top: 48px; left: 8px; right: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px; z-index: 21; display: grid; gap: 4px; }
+  .settings-panel button { text-align: left; padding: 9px 10px; border: 0; }
+  #timelineNodes section { margin: 6px 0 14px; }
+  #timelineNodes h3 { margin: 0; padding: 8px 0; font-size: 12px; font-weight: 700; }
+  body.mobile .view-controls { margin-left: auto; }
+  body.mobile .size-label { font-size: 10px; gap: 4px; }
+  body.mobile .view-controls input { width: 45px; }
+  body.mobile #timelineNodes h3 { font-size: 11px; }
+  body.mobile { background: var(--hover); }
+  body.mobile #app, body.mobile #viewer { border-inline: 1px solid var(--line); }
+</style>
+</head>
+<body>
+
+<div id="start">
+  <div class="box">
+    <h1>照片瀏覽器</h1>
+    <p>選擇一個照片資料夾開始。拖照片到左側資料夾就會搬移檔案，拖到標籤就能整理成相簿。</p>
+    <div class="btns">
+      <button id="resume" class="primary" hidden></button>
+      <button id="pick">選擇照片資料夾…</button>
+    </div>
+    <p id="unsupported" class="warn" hidden><br>這個瀏覽器不支援讀寫資料夾，請改用 <b>Chrome</b> 或 <b>Edge</b> 打開這個檔案。</p>
+  </div>
+</div>
+
+<div id="app" hidden>
+  <button id="sideBackdrop" hidden aria-label="關閉側邊欄"></button>
+  <aside id="side">
+    <div class="side-heading"><strong>照片圖庫</strong>
+      <button id="btnMode" title="切換手機或桌機版面">切換手機</button>
+      <details id="settings"><summary aria-label="設定" title="設定">⚙</summary>
+        <div class="settings-panel">
+          <button id="btnChange">換資料夾</button><button id="btnNewFolder">新增資料夾</button>
+          <button id="btnRescan">重新整理</button><button id="btnRetry">重試預覽</button>
+        </div>
+      </details>
+      <button id="btnCloseSide" aria-label="關閉側邊欄">✕</button>
+    </div>
+    <div class="sbtitle">資料夾</div>
+    <div id="folders"></div>
+    <div class="sbtitle">標籤（相簿） <button id="btnNewTag" title="新增標籤">＋</button></div>
+    <div id="tags"></div>
+    <div class="help">
+      <b>操作方式</b><br>
+      點照片＝預覽；長按＝選取<br><kbd>⌘</kbd> 加選／<kbd>Shift</kbd> 連選<br>
+      勾選圓圈／多選按鈕＝加選<br>空白處拖曳＝框選；多選時滑過照片＝連選<br>手機：長按後滑動連選；雙指縮放大圖<br>點日期標題＝選整天<br>
+      拖到資料夾＝搬移檔案<br>
+      拖到標籤＝加標籤<br>
+      <kbd>1</kbd>–<kbd>9</kbd> 加／取消標籤<br>
+      <kbd>空白鍵</kbd> 或雙擊＝看大圖<br>
+      <kbd>← →</kbd> 上一張／下一張<br>
+      <kbd>⌘</kbd><kbd>Z</kbd> 復原搬移
+    </div>
+  </aside>
+  <div id="main">
+    <header>
+      <div class="title-row">
+        <button id="btnMenu" aria-label="資料夾與標籤" aria-expanded="false" aria-controls="side">☰</button>
+        <div class="title-copy"><h2 id="title"></h2><span class="info" id="count"></span><span class="info" id="selinfo" aria-live="polite"></span></div>
+      <div class="view-controls" aria-label="檢視與排序">
+        <span class="tool-label">檢視</span><label class="size-label">縮圖 <input type="range" id="size" min="90" max="360" value="160" title="縮圖大小"></label>
+        <button id="btnSort"></button>
+      </div>
+        <button id="btnMulti" aria-pressed="false">選取／分類</button>
+      </div>
+      <div id="selectionTools" class="selection-row" hidden>
+        <span>選取照片後，可拖到左側資料夾或標籤分類</span>
+        <button id="btnTrash">移到垃圾桶</button><button id="btnClear">清除選取</button>
+        <button id="btnUndo" title="復原上一次搬移 (⌘Z)">↶ 復原搬移</button>
+      </div>
+    </header>
+    <div id="grid"></div>
+  </div>
+  <nav id="timeline" aria-label="照片時間軸">
+    <div class="timeline-title">時間軸</div>
+    <div id="timelineNodes"></div>
+  </nav>
+</div>
+
+<div id="viewer">
+  <div id="vstage"></div>
+  <button class="vnav" id="vprev">‹</button>
+  <button class="vnav" id="vnext">›</button>
+  <div class="vbar" id="vtop"><span id="vinfo"></span><button id="vminus" aria-label="縮小">−</button><button id="vfit">適合視窗</button><button id="vplus" aria-label="放大">＋</button><button id="vtrash">移到垃圾桶</button><button id="vclose">關閉 (Esc)</button></div>
+  <div class="vbar" id="vbottom"></div>
+</div>
+
+<div id="busy"></div>
+<div id="toast"></div>
+<div id="dragghost"></div><div id="marquee" hidden></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const TAGFILE = '照片標籤.json';
+const TRASH = '垃圾桶';
+const inTrash = p => p.dir === TRASH || p.dir.startsWith(TRASH + '/');
+const THUMB_W = 512;
+const PALETTE = ['#e11d48', '#ea580c', '#ca8a04', '#16a34a', '#0891b2', '#2563eb', '#7c3aed', '#db2777', '#57534e'];
+const KINDS = { img: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'avif'], heic: ['heic', 'heif'], video: ['mov', 'mp4', 'm4v', 'webm'] };
+const WEEK = ['日', '一', '二', '三', '四', '五', '六'];
+
+let multi = false;
+let mobile = localStorage.getItem('photo-layout') === 'mobile' || (!localStorage.getItem('photo-layout') && innerWidth < 600);
+let root = null;
+const dirs = new Map();          // 路徑 → { handle, path, name, children[] }
+let photos = [];                 // 全部照片
+let list = [];                   // 目前畫面上的照片（篩選＋排序後）
+let filter = { type: 'folder', value: '' };
+let sortAsc = true;
+let sel = new Set(), anchor = -1, cursor = -1;
+let anchorEnd = -1;              // 點日期標題選整天時，那一天最後一張的位置（給 Shift 連選用）
+const cells = new Map();
+const collapsed = new Set();
+let tagData = { tags: [], colors: {}, photos: {} };
+const undoStack = [];
+let nextId = 1;
+
+// ---------- 小工具 ----------
+const pad = n => String(n).padStart(2, '0');
+const dayKey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const dayLabel = d => `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日（週${WEEK[d.getDay()]}）`;
+const fmtDate = d => `${dayKey(d)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const byName = (a, b) => a.localeCompare(b, 'zh-Hant', { numeric: true });
+function kindOf(name) {
+  const i = name.lastIndexOf('.');
+  if (i < 0) return null;
+  const e = name.slice(i + 1).toLowerCase();
+  for (const k in KINDS) if (KINDS[k].includes(e)) return k;
+  return null;
+}
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2600);
+}
+function busy(msg) { const b = $('#busy'); b.textContent = msg || ''; b.style.display = msg ? 'block' : 'none'; }
+async function pool(items, n, fn) {
+  let i = 0;
+  await Promise.all(Array.from({ length: n }, async () => {
+    while (i < items.length) { const it = items[i++]; try { await fn(it); } catch (e) { console.warn(e); } }
+  }));
+}
+
+// ---------- 瀏覽器內的快取（縮圖、日期、上次的資料夾） ----------
+let dbp;
+function db() {
+  return dbp ||= new Promise((res, rej) => {
+    const r = indexedDB.open('photo-browser', 1);
+    r.onupgradeneeded = () => { for (const s of ['kv', 'thumbs', 'meta']) r.result.createObjectStore(s); };
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+}
+async function idb(store, mode, fn) {
+  try {
+    const d = await db();
+    return await new Promise((res, rej) => {
+      const tx = d.transaction(store, mode); const req = fn(tx.objectStore(store));
+      tx.oncomplete = () => res(req.result); tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error);
+    });
+  } catch (e) { return undefined; }
+}
+const idbGet = (s, k) => idb(s, 'readonly', st => st.get(k));
+const idbSet = (s, k, v) => idb(s, 'readwrite', st => st.put(v, k));
+
+// ---------- 讀取拍攝日期（照片 Exif／影片 metadata），讀不到用檔案修改日期 ----------
+function findBytes(b, pat, from = 0) {
+  outer: for (let i = from; i <= b.length - pat.length; i++) {
+    for (let j = 0; j < pat.length; j++) if (b[i + j] !== pat[j]) continue outer;
+    return i;
+  }
+  return -1;
+}
+function mkDate(m) {
+  const y = +m[1]; if (y < 1980 || y > 2100) return null;
+  return new Date(y, m[2] - 1, +m[3], +m[4], +m[5], +m[6]);
+}
+function parseTiff(b, t) {
+  if (t + 8 > b.length) return null;
+  const le = b[t] === 0x49;
+  const u16 = o => le ? b[o] | b[o + 1] << 8 : b[o] << 8 | b[o + 1];
+  const u32 = o => (le ? (b[o] | b[o + 1] << 8 | b[o + 2] << 16 | b[o + 3] << 24) : (b[o] << 24 | b[o + 1] << 16 | b[o + 2] << 8 | b[o + 3])) >>> 0;
+  const ifd = off => {
+    const res = {}, p = t + off;
+    if (p + 2 > b.length) return res;
+    const n = u16(p);
+    for (let k = 0; k < n; k++) {
+      const e = p + 2 + k * 12; if (e + 12 > b.length) break;
+      res[u16(e)] = { cnt: u32(e + 4), val: u32(e + 8), raw: e + 8 };
+    }
+    return res;
+  };
+  const str = en => {
+    if (!en) return null;
+    const o = en.cnt > 4 ? t + en.val : en.raw; let s = '';
+    for (let k = 0; k < Math.min(en.cnt, 19); k++) { if (o + k >= b.length) return null; s += String.fromCharCode(b[o + k]); }
+    return s;
+  };
+  const ifd0 = ifd(u32(t + 4));
+  let s = null;
+  if (ifd0[0x8769]) { const ex = ifd(ifd0[0x8769].val); s = str(ex[0x9003]) || str(ex[0x9004]); }
+  s = s || str(ifd0[0x0132]);
+  const m = s && s.match(/^(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/);
+  return m ? mkDate(m) : null;
+}
+function exifDate(b) {
+  const i = findBytes(b, [0x45, 0x78, 0x69, 0x66, 0, 0]); // "Exif\0\0"
+  return i >= 0 ? parseTiff(b, i + 6) : null;
+}
+function textDate(b) {
+  const m = new TextDecoder('latin1').decode(b).match(/(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/);
+  return m ? mkDate(m) : null;
+}
+// 檔名裡的日期：1655694782166.jpg（時間戳記）、20240522_213703.jpg、Screenshot_20240226_214820_LINE.jpg
+function nameDate(name) {
+  let m = name.match(/(?:^|\D)(1[3-9]\d{11})(?!\d)/);
+  if (m) return new Date(+m[1]);
+  m = name.match(/(?:^|\D)((?:19|20)\d{2})(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])(?:[_ -]?([01]\d|2[0-3])([0-5]\d)([0-5]\d))?/);
+  return m ? new Date(+m[1], m[2] - 1, +m[3], +(m[4] || 12), +(m[5] || 0), +(m[6] || 0)) : null;
+}
+function mvhdDate(b) {
+  const i = findBytes(b, [0x6d, 0x76, 0x68, 0x64]); // "mvhd"
+  if (i < 0 || i + 16 > b.length) return null;
+  const u = o => (b[o] << 24 | b[o + 1] << 16 | b[o + 2] << 8 | b[o + 3]) >>> 0;
+  const secs = b[i + 4] === 1 ? u(i + 8) * 2 ** 32 + u(i + 12) : u(i + 8);
+  if (!secs) return null;
+  const d = new Date((secs - 2082844800) * 1000);
+  return d.getFullYear() > 1980 ? d : null;
+}
+async function readDate(file, kind) {
+  try {
+    const head = new Uint8Array(await file.slice(0, 262144).arrayBuffer());
+    let d = kind === 'video' ? mvhdDate(head) : exifDate(head);
+    if (!d && kind === 'video' && file.size > 262144)
+      d = mvhdDate(new Uint8Array(await file.slice(Math.max(0, file.size - 1048576)).arrayBuffer()));
+    if (d) return d;
+    d = nameDate(file.name) || (kind === 'video' ? null : textDate(head));
+    if (d) return d;
+  } catch (e) {}
+  return new Date(file.lastModified);
+}
+
+// ---------- 開啟資料夾 ----------
+async function walk(h, path, out) {
+  const node = { handle: h, path, name: path ? path.slice(path.lastIndexOf('/') + 1) : h.name, children: [] };
+  dirs.set(path, node);
+  const subs = [];
+  for await (const [name, ch] of h.entries()) {
+    if (name.startsWith('.')) continue;
+    if (ch.kind === 'directory') subs.push([name, ch]);
+    else { const k = kindOf(name); if (k) out.push({ name, dir: path, handle: ch, kind: k }); }
+  }
+  subs.sort((a, b) => byName(a[0], b[0]));
+  for (const [name, ch] of subs) {
+    const cp = path ? path + '/' + name : name;
+    node.children.push(cp);
+    await walk(ch, cp, out);
+  }
+}
+
+async function openRoot(h) {
+  tq.length = 0; photos.forEach(p => { if (p.thumb) URL.revokeObjectURL(p.thumb); });
+  thumbLRU.clear();
+  root = h; dirs.clear(); photos = []; sel.clear(); anchor = cursor = -1; undoStack.length = 0;
+  filter = { type: 'folder', value: '' };
+  $('#start').hidden = true; $('#app').hidden = false;
+  busy('掃描資料夾…');
+  const found = [];
+  await walk(h, '', found);
+  try { await ensureTrash(); } catch (e) { toast('垃圾桶建立失敗：' + e.message); }
+  let done = 0;
+  await pool(found, 8, async f => {
+    const file = await f.handle.getFile();
+    const p = { id: nextId++, name: f.name, dir: f.dir, handle: f.handle, kind: f.kind, size: file.size };
+    p.key = `${p.name}|${p.size}`; p.cacheKey = `v2|${h.name}|${f.dir}|${p.key}|${file.lastModified}`;
+    const cached = await idbGet('meta', p.key);
+    p.date = cached ? new Date(cached) : await readDate(file, p.kind);
+    if (!cached) idbSet('meta', p.key, p.date.getTime());
+    photos.push(p);
+    if (++done % 25 === 0) busy(`讀取照片 ${done} / ${found.length}…`);
+  });
+  await loadTags();
+  busy('');
+  applyFilter();
+}
+
+// ---------- 標籤 ----------
+async function loadTags() {
+  tagData = { tags: [], colors: {}, photos: {} };
+  try {
+    const fh = await root.getFileHandle(TAGFILE);
+    const t = JSON.parse(await (await fh.getFile()).text());
+    tagData = { tags: t.tags || [], colors: t.colors || {}, photos: t.photos || {} };
+  } catch (e) {}
+}
+let saveTimer;
+function saveTags() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try {
+      const fh = await root.getFileHandle(TAGFILE, { create: true });
+      const w = await fh.createWritable();
+      await w.write(JSON.stringify(tagData, null, 1)); await w.close();
+    } catch (e) { toast('⚠️ 標籤儲存失敗：' + e.message); }
+  }, 300);
+}
+const tagsOf = p => tagData.photos[p.key] || [];
+function setTags(p, arr) { if (arr.length) tagData.photos[p.key] = arr; else delete tagData.photos[p.key]; }
+let needRefilter = false;
+function afterTagChange(ps) {
+  saveTags();
+  if (filter.type === 'tag' || filter.type === 'untagged') {
+    if ($('#viewer').classList.contains('show')) needRefilter = true; else return applyFilter();
+  }
+  ps.forEach(renderDots); renderSidebar();
+  if ($('#viewer').classList.contains('show')) renderVTags(list[vi]);
+}
+function toggleTag(ps, t) {
+  if (!ps.length) return;
+  const all = ps.every(p => tagsOf(p).includes(t));
+  ps.forEach(p => { const s = new Set(tagsOf(p)); all ? s.delete(t) : s.add(t); setTags(p, [...s]); });
+  toast(all ? `已從 ${ps.length} 張移除「${t}」` : `已將 ${ps.length} 張加上「${t}」`);
+  afterTagChange(ps);
+}
+function addTag(ps, t) {
+  ps.forEach(p => { const s = new Set(tagsOf(p)); s.add(t); setTags(p, [...s]); });
+  toast(`已將 ${ps.length} 張加上「${t}」`);
+  afterTagChange(ps);
+}
+function createTag() {
+  const name = (prompt('新標籤名稱（例如：2024 九州旅行）') || '').trim();
+  if (!name) return null;
+  if (!tagData.tags.includes(name)) {
+    tagData.tags.push(name);
+    tagData.colors[name] = PALETTE[(tagData.tags.length - 1) % PALETTE.length];
+    saveTags(); renderSidebar();
+  }
+  return name;
+}
+function renameTag(t) {
+  const name = (prompt('標籤改名為：', t) || '').trim();
+  if (!name || name === t) return;
+  if (tagData.tags.includes(name)) return toast('已經有同名的標籤');
+  tagData.tags[tagData.tags.indexOf(t)] = name;
+  tagData.colors[name] = tagData.colors[t]; delete tagData.colors[t];
+  for (const k in tagData.photos) tagData.photos[k] = tagData.photos[k].map(x => x === t ? name : x);
+  if (filter.type === 'tag' && filter.value === t) filter.value = name;
+  saveTags(); applyFilter();
+}
+function deleteTag(t) {
+  if (!confirm(`刪除標籤「${t}」？\n（只會移除標籤，照片本身不會被刪除）`)) return;
+  tagData.tags = tagData.tags.filter(x => x !== t); delete tagData.colors[t];
+  for (const k in tagData.photos) { const a = tagData.photos[k].filter(x => x !== t); a.length ? tagData.photos[k] = a : delete tagData.photos[k]; }
+  if (filter.type === 'tag' && filter.value === t) filter = { type: 'folder', value: '' };
+  saveTags(); applyFilter();
+}
+
+// ---------- 搬移檔案 ----------
+async function ensureTrash() {
+  if (dirs.has(TRASH)) return dirs.get(TRASH);
+  const handle = await root.getDirectoryHandle(TRASH, {create:true});
+  const node = {handle, path:TRASH, name:TRASH, children:[]}; dirs.set(TRASH, node);
+  const parent = dirs.get(''); if (parent && !parent.children.includes(TRASH)) parent.children.push(TRASH);
+  return node;
+}
+async function trashPhotos(ps) {
+  const todo = ps.filter(p => !inTrash(p));
+  if (!todo.length) return toast('請先選取要移到垃圾桶的照片');
+  try { await ensureTrash(); await movePhotos(todo, TRASH); }
+  catch (e) { toast('無法移到垃圾桶：' + e.message); }
+}
+
+async function exists(dirH, name) { try { await dirH.getFileHandle(name); return true; } catch (e) { return false; } }
+async function freeName(dirH, name) {
+  if (!await exists(dirH, name)) return name;
+  const dot = name.lastIndexOf('.'), base = dot > 0 ? name.slice(0, dot) : name, ext = dot > 0 ? name.slice(dot) : '';
+  for (let i = 1; ; i++) { const n = `${base}_${i}${ext}`; if (!await exists(dirH, n)) return n; }
+}
+async function moveOne(p, dest, wantName = p.name) {
+  const src = dirs.get(p.dir);
+  const newName = await freeName(dest.handle, wantName);
+  let ok = false;
+  if (typeof p.handle.move === 'function') { try { await p.handle.move(dest.handle, newName); ok = true; } catch (e) {} }
+  if (!ok) {
+    // 瀏覽器不支援直接搬移時：先完整複製、確認大小一致，再刪除原檔
+    const file = await p.handle.getFile();
+    const nh = await dest.handle.getFileHandle(newName, { create: true });
+    const w = await nh.createWritable(); await w.write(file); await w.close();
+    if ((await nh.getFile()).size !== file.size) { await dest.handle.removeEntry(newName); throw new Error('複製不完整'); }
+    await src.handle.removeEntry(p.name);
+  }
+  const oldKey = p.key;
+  p.handle = await dest.handle.getFileHandle(newName);
+  p.dir = dest.path; p.name = newName; p.key = `${newName}|${p.size}`;
+  if (oldKey !== p.key && tagData.photos[oldKey]) { tagData.photos[p.key] = tagData.photos[oldKey]; delete tagData.photos[oldKey]; saveTags(); }
+}
+async function movePhotos(ps, destPath) {
+  const dest = dirs.get(destPath); if (!dest) return;
+  const todo = ps.filter(p => p.dir !== destPath);
+  if (!todo.length) return toast('照片已經在這個資料夾裡了');
+  busy(`搬移 ${todo.length} 張…`);
+  const done = []; let fail = 0;
+  for (const p of todo) {
+    const from = { dir: p.dir, name: p.name };
+    try { await moveOne(p, dest); done.push({ p, ...from }); } catch (e) { console.error(e); fail++; }
+  }
+  busy('');
+  if (done.length) undoStack.push(done);
+  toast(`已搬移 ${done.length} 張到「${dest.name}」` + (fail ? `，${fail} 張失敗` : '') + '（⌘Z 可復原）');
+  applyFilter();
+}
+async function undo() {
+  const u = undoStack.pop();
+  if (!u) return toast('沒有可以復原的搬移');
+  busy('復原中…');
+  for (const it of [...u].reverse()) { try { await moveOne(it.p, dirs.get(it.dir), it.name); } catch (e) { console.error(e); } }
+  busy('');
+  toast(`已復原，${u.length} 張移回原本的資料夾`);
+  applyFilter();
+}
+// ---------- 畫面 ----------
+function applyFilter() {
+  let ps = filter.type === 'folder' && (filter.value === TRASH || filter.value?.startsWith(TRASH + '/')) ? photos : photos.filter(p => !inTrash(p));
+  if (filter.type === 'folder' && filter.value) ps = ps.filter(p => p.dir === filter.value || p.dir.startsWith(filter.value + '/'));
+  if (filter.type === 'tag') ps = ps.filter(p => tagsOf(p).includes(filter.value));
+  if (filter.type === 'untagged') ps = ps.filter(p => !tagsOf(p).length);
+  list = ps.slice().sort((a, b) => ((a.date - b.date) || byName(a.name, b.name)) * (sortAsc ? 1 : -1));
+  const ids = new Set(list.map(p => p.id));
+  for (const id of [...sel]) if (!ids.has(id)) sel.delete(id);
+  anchor = cursor = anchorEnd = -1;
+  renderGrid(); renderSidebar(); renderHeader();
+}
+
+function renderHeader() {
+  $('#title').textContent =
+    filter.type === 'tag' ? `🏷 ${filter.value}` :
+    filter.type === 'untagged' ? '未加標籤' :
+    filter.value ? dirs.get(filter.value)?.name || '' : `${root.name}（全部）`;
+  $('#count').textContent = `${list.length} 個項目`;
+  $('#selinfo').textContent = sel.size ? `· 已選 ${sel.size} 張` : '';
+  $('#btnSort').textContent = sortAsc ? '日期：舊 → 新' : '日期：新 → 舊';
+}
+
+function renderSidebar() {
+  const counts = new Map();
+  for (const p of photos) {
+    let d = p.dir;
+    while (true) { counts.set(d, (counts.get(d) || 0) + 1); if (!d) break; const i = d.lastIndexOf('/'); d = i < 0 ? '' : d.slice(0, i); }
+  }
+  const f = $('#folders'); f.innerHTML = '';
+  const addRow = (path, depth) => {
+    const n = dirs.get(path);
+    const row = document.createElement('div');
+    row.className = 'row' + (filter.type === 'folder' && filter.value === path ? ' active' : '');
+    row.dataset.drop = 'folder'; row.dataset.path = path;
+    row.style.paddingLeft = (8 + depth * 14) + 'px';
+    const tw = document.createElement('span'); tw.className = 'tw';
+    tw.textContent = n.children.length ? (collapsed.has(path) ? '▶' : '▼') : '';
+    tw.dataset.toggle = path;
+    const name = document.createElement('span'); name.className = 'name';
+    name.textContent = (path === TRASH ? '🗑 ' : path ? '📁 ' : '🗂 ') + (path ? n.name : `${n.name}（全部）`);
+    const cnt = document.createElement('span'); cnt.className = 'cnt'; cnt.textContent = (path ? counts.get(path) : photos.filter(p => !inTrash(p)).length) || '';
+    row.append(tw, name, cnt); f.append(row);
+    if (!collapsed.has(path)) n.children.filter(c => c !== TRASH).forEach(c => addRow(c, depth + 1));
+  };
+  if (dirs.has('')) addRow('', 0);
+  if (dirs.has(TRASH)) addRow(TRASH, 1);
+
+  const tcount = {};
+  let untagged = 0;
+  for (const p of photos.filter(p => !inTrash(p))) { const ts = tagsOf(p); if (!ts.length) untagged++; ts.forEach(t => tcount[t] = (tcount[t] || 0) + 1); }
+  const t = $('#tags'); t.innerHTML = '';
+  tagData.tags.forEach((tag, i) => {
+    const row = document.createElement('div');
+    row.className = 'row' + (filter.type === 'tag' && filter.value === tag ? ' active' : '');
+    row.dataset.drop = 'tag'; row.dataset.tag = tag; row.title = '右鍵可改名或刪除';
+    const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = tagData.colors[tag] || '#888';
+    const name = document.createElement('span'); name.className = 'name'; name.textContent = tag;
+    const cnt = document.createElement('span'); cnt.className = 'cnt'; cnt.textContent = tcount[tag] || '';
+    row.append(dot, name, cnt);
+    if (i < 9) { const k = document.createElement('span'); k.className = 'key'; k.textContent = i + 1; row.append(k); }
+    t.append(row);
+  });
+  const un = document.createElement('div');
+  un.className = 'row' + (filter.type === 'untagged' ? ' active' : ''); un.dataset.untagged = '1';
+  un.innerHTML = '<span class="dot" style="border:1.5px dashed var(--muted)"></span><span class="name">未加標籤</span>';
+  const uc = document.createElement('span'); uc.className = 'cnt'; uc.textContent = untagged || ''; un.append(uc);
+  t.append(un);
+  const addT = document.createElement('div'); addT.className = 'row add'; addT.dataset.drop = 'newtag';
+  addT.innerHTML = '<span class="dot"></span><span class="name">＋ 新增標籤（可拖照片到這裡）</span>';
+  t.append(addT);
+}
+
+const io = new IntersectionObserver(entries => {
+  for (const e of entries) if (e.isIntersecting) {
+    const p = list[+e.target.dataset.i];
+    if (p?.thumb) retainThumb(p);
+    if (p && !p.thumb && !p.thumbPending && !p.thumbFail) enqueueThumb(p);
+  }
+}, { root: $('#main'), rootMargin: '800px' });
+
+// ---------- 年月目錄：只跳到目前清單的位置，不改資料夾或排序 ----------
+let monthTargets = [], timelineFrame = 0;
+function renderTimeline() {
+  const nodes = $('#timelineNodes'); nodes.innerHTML = '';
+  let year = '', group;
+  monthTargets.forEach((entry, i) => {
+    const y = entry.month.slice(0, 4);
+    if (y !== year) {
+      year = y; group = document.createElement('section');
+      const heading = document.createElement('h3'); heading.textContent = y;
+      group.append(heading); nodes.append(group);
+    }
+    const button = document.createElement('button'); button.textContent = Number(entry.month.slice(5)) + '月';
+    button.setAttribute('aria-label', entry.month + ' 照片');
+    button.onclick = () => jumpMonth(i); entry.button = button; group.append(button);
+  });
+  if (!monthTargets.length) nodes.textContent = '沒有照片';
+  updateTimelinePosition();
+}
+function jumpMonth(i) {
+  const entry = monthTargets[i]; if (!entry) return;
+  const main = $('#main');
+  main.scrollTo({top: Math.max(0, entry.section.offsetTop - main.querySelector('header').offsetHeight - 8), behavior:'instant'});
+  markMonth(i);
+}
+function markMonth(i) {
+  const entry = monthTargets[i]; if (!entry) return;
+  monthTargets.forEach((e, n) => {
+    if (n === i) e.button.setAttribute('aria-current', 'date'); else e.button.removeAttribute('aria-current');
+  });
+
+}
+function updateTimelinePosition() {
+  if (!monthTargets.length) return;
+  const main = $('#main'), position = main.scrollTop + main.querySelector('header').offsetHeight + 12;
+  let lo = 0, hi = monthTargets.length - 1;
+  while (lo < hi) { const mid = Math.ceil((lo + hi) / 2); if (monthTargets[mid].section.offsetTop <= position) lo = mid; else hi = mid - 1; }
+  markMonth(lo);
+}
+$('#main').addEventListener('scroll', () => {
+  if (!timelineFrame) timelineFrame = requestAnimationFrame(() => { timelineFrame = 0; updateTimelinePosition(); });
+}, {passive:true});
+window.addEventListener('resize', () => requestAnimationFrame(updateTimelinePosition));
+
+function renderGrid() {
+  const grid = $('#grid'); grid.innerHTML = ''; cells.clear(); io.disconnect(); monthTargets = [];
+  let lastMonth = '';
+  if (!list.length) { grid.innerHTML = '<div class="empty">這裡沒有照片</div>'; renderTimeline(); return; }
+  const dayCount = {};
+  list.forEach(p => { const k = dayKey(p.date); dayCount[k] = (dayCount[k] || 0) + 1; });
+  let cur = null, wrap;
+  const frag = document.createDocumentFragment();
+  list.forEach((p, i) => {
+    const dk = dayKey(p.date);
+    if (dk !== cur) {
+      cur = dk;
+      const sec = document.createElement('section'); sec.className = 'day';
+      const month = dk.slice(0, 7);
+      if (month !== lastMonth) { monthTargets.push({month, section:sec}); lastMonth = month; }
+      const h = document.createElement('div'); h.className = 'dayhead'; h.dataset.day = dk; h.title = '點一下選取這一天的照片';
+      const l = document.createElement('span'); l.className = 'dlabel'; l.textContent = dayLabel(p.date);
+      const c = document.createElement('span'); c.className = 'dcount'; c.textContent = `${dayCount[dk]} 張`;
+      h.append(l, c);
+      wrap = document.createElement('div'); wrap.className = 'cells';
+      sec.append(h, wrap); frag.append(sec);
+    }
+    const c = document.createElement('div');
+    c.className = 'cell' + (p.thumbFail ? ' fail' : ''); c.dataset.i = i; c.draggable = !multi && !mobile;
+    c.title = `${p.name}\n${fmtDate(p.date)}\n${p.dir || root.name}`;
+    const img = document.createElement('img'); img.draggable = false; if (p.thumb) img.src = p.thumb;
+    c.append(img);
+    const mark = document.createElement('button'); mark.className = 'pickmark'; mark.textContent = '✓'; mark.setAttribute('aria-label', '選取 ' + p.name); c.append(mark);
+    if (p.kind === 'video') { const v = document.createElement('span'); v.className = 'vid'; v.textContent = '▶ 影片'; c.append(v); }
+    const dots = document.createElement('span'); dots.className = 'dots'; c.append(dots);
+    wrap.append(c); cells.set(p.id, c);
+  });
+  grid.append(frag);
+  renderTimeline();
+  list.forEach(renderDots);
+  cells.forEach(c => io.observe(c));
+  updateSel();
+}
+function renderDots(p) {
+  const c = cells.get(p.id); if (!c) return;
+  const d = c.querySelector('.dots'); d.innerHTML = '';
+  tagsOf(p).forEach(t => { const i = document.createElement('i'); i.style.background = tagData.colors[t] || '#888'; i.title = t; d.append(i); });
+}
+function updateSel() {
+  list.forEach((p, i) => {
+    const c = cells.get(p.id); if (!c) return;
+    c.classList.toggle('sel', sel.has(p.id));
+    c.querySelector('.pickmark')?.setAttribute('aria-pressed', String(sel.has(p.id)));
+    c.classList.toggle('cur', i === cursor);
+  });
+  $('#selinfo').textContent = sel.size ? `· 已選 ${sel.size} 張` : '';
+  document.body.classList.toggle('selection-active', multi || sel.size > 0);
+  $('#selectionTools').hidden = !(multi || sel.size);
+}
+const selected = () => list.filter(p => sel.has(p.id));
+
+// ---------- 縮圖 ----------
+const tq = []; let active = 0;
+function enqueueThumb(p) { p.thumbPending = true; tq.push(p); pump(); }
+function pump() {
+  while (active < 2 && tq.length) {
+    const p = tq.pop(); if (!cells.has(p.id)) { p.thumbPending = false; continue; } active++;
+    loadThumb(p).finally(() => { active--; p.thumbPending = false; pump(); });
+  }
+}
+async function loadThumb(p) {
+  try {
+    let blob = await idbGet('thumbs', p.cacheKey);
+    if (!blob) { blob = await makeThumb(p); if (blob) idbSet('thumbs', p.cacheKey, blob); }
+    if (blob) { p.thumb = URL.createObjectURL(blob); p.thumbFail = false; retainThumb(p); } else p.thumbFail = true;
+  } catch (e) { console.warn(p.name, e); p.thumbFail = true; }
+  const c = cells.get(p.id);
+  if (c) { if (p.thumb) c.querySelector('img').src = p.thumb; c.classList.toggle('fail', !!p.thumbFail); if (p.thumbFail) c.title += '\n預覽失敗：可在左側設定裡「重試預覽」'; }
+}
+// Bound decoded thumbnails so browsing thousands of photos does not retain every image.
+const thumbLRU = new Map();
+function retainThumb(p) {
+  thumbLRU.delete(p.id); thumbLRU.set(p.id, p);
+  while (thumbLRU.size > 240) {
+    const [id, old] = thumbLRU.entries().next().value; thumbLRU.delete(id);
+    if (old.thumb) URL.revokeObjectURL(old.thumb); old.thumb = null;
+    const c = cells.get(id); if (c) { c.querySelector('img').removeAttribute('src'); io.unobserve(c); io.observe(c); }
+  }
+}
+let heicLib;
+function loadHeic() {
+  return heicLib ||= new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/heic-to@1.6.6/dist/iife/heic-to.js';
+    s.onload = () => { if (typeof window.HeicTo === 'function') res(window.HeicTo); else { heicLib = null; rej(new Error('HEIC 轉換工具初始化失敗')); } };
+    s.onerror = () => { heicLib = null; rej(new Error('HEIC 轉換工具載入失敗（需要網路）')); };
+    document.head.append(s);
+  });
+}
+let decodeQueue = Promise.resolve();
+async function heicToJpeg(file, quality) {
+  // libheif uses substantial memory; serialize conversions, including viewer requests.
+  const job = decodeQueue.then(async () => {
+    try { const bmp = await createImageBitmap(file); const cv = new OffscreenCanvas(bmp.width, bmp.height); cv.getContext('2d').drawImage(bmp, 0, 0); bmp.close(); return await cv.convertToBlob({type: 'image/jpeg', quality}); } catch (_) {}
+    const h = await loadHeic();
+    return h({ blob: file, type: 'image/jpeg', quality });
+  });
+  decodeQueue = job.catch(() => {}); return job;
+}
+async function makeThumb(p) {
+  const file = await p.handle.getFile();
+  if (p.kind === 'video') return videoThumb(file);
+  let bmp;
+  try { bmp = await createImageBitmap(file); }
+  catch (e) { if (p.kind !== 'heic') throw e; bmp = await createImageBitmap(await heicToJpeg(file, 0.8)); }
+  const ratio = Math.min(1, THUMB_W / Math.max(bmp.width, bmp.height));
+  const cv = new OffscreenCanvas(Math.max(1, Math.round(bmp.width * ratio)), Math.max(1, Math.round(bmp.height * ratio)));
+  cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height); bmp.close();
+  return cv.convertToBlob({ type: 'image/jpeg', quality: 0.8 });
+}
+function videoThumb(file) {
+  return new Promise(res => {
+    const v = document.createElement('video'), url = URL.createObjectURL(file);
+    let doneFlag = false;
+    const finish = b => { if (doneFlag) return; doneFlag = true; URL.revokeObjectURL(url); res(b); };
+    v.muted = true; v.preload = 'auto'; v.src = url;
+    v.onerror = () => finish(null);
+    v.onloadedmetadata = () => { v.currentTime = Math.min(1, (v.duration || 0) / 3); };
+    v.onseeked = async () => {
+      const w = THUMB_W, h = Math.round(v.videoHeight * w / v.videoWidth) || 288;
+      const cv = new OffscreenCanvas(w, h); cv.getContext('2d').drawImage(v, 0, 0, w, h);
+      finish(await cv.convertToBlob({ type: 'image/jpeg', quality: 0.8 }));
+    };
+    setTimeout(() => finish(null), 15000);
+  });
+}
+
+// ---------- 大圖檢視 ----------
+let vi = -1, vUrl = null, vToken = 0;
+const heicCache = new Map();
+function openViewer(i) {
+  if (i < 0 || i >= list.length) return;
+  vi = i; $('#viewer').classList.add('show'); showV(); wakeBars();
+}
+function closeViewer() {
+  vToken++;
+  $('#viewer').classList.remove('show'); $('#vstage').innerHTML = '';
+  if (vUrl) { URL.revokeObjectURL(vUrl); vUrl = null; }
+  const p = list[vi];
+  if (needRefilter) { needRefilter = false; applyFilter(); }
+  if (p) {
+    const i = list.indexOf(p);
+    if (i >= 0) { cursor = i; updateSel(); cells.get(p.id)?.scrollIntoView({ block: 'nearest' }); }
+  }
+}
+async function showV() {
+  const p = list[vi]; if (!p) return closeViewer();
+  const token = ++vToken, stage = $('#vstage');
+  if (vUrl) { URL.revokeObjectURL(vUrl); vUrl = null; }
+  stage.innerHTML = ''; setZoom(1);
+  $('#vinfo').textContent = `${p.name}　·　${fmtDate(p.date)}　·　📁 ${p.dir || root.name}　·　${vi + 1} / ${list.length}`;
+  renderVTags(p);
+  $('#vtrash').hidden = inTrash(p);
+  let file; try { file = await p.handle.getFile(); } catch (e) { stage.textContent = '無法讀取檔案：' + e.message; return; }
+  if (token !== vToken) return;
+  if (p.kind === 'video') {
+    vUrl = URL.createObjectURL(file);
+    const v = document.createElement('video'); v.src = vUrl; v.controls = true; v.autoplay = true;
+    stage.append(v); return;
+  }
+  const img = document.createElement('img'); if (p.thumb) img.src = p.thumb; stage.append(img);
+  let blob = file;
+  if (p.kind === 'heic') {
+    blob = heicCache.get(p.key);
+    if (!blob) {
+      try { blob = await heicToJpeg(file, 0.92); } catch (e) { if (token === vToken) { const msg = document.createElement('div'); msg.className = 'verror'; msg.textContent = '無法解碼這張 HEIC。' + e.message; const retry = document.createElement('button'); retry.textContent = '重試'; retry.onclick = showV; msg.append(document.createElement('br'), retry); stage.replaceChildren(msg); } return; }
+      heicCache.set(p.key, blob);
+      if (heicCache.size > 8) heicCache.delete(heicCache.keys().next().value);
+    }
+  }
+  if (token !== vToken) return;
+  vUrl = URL.createObjectURL(blob); img.src = vUrl; img.onerror = () => { toast('瀏覽器無法解碼此照片，請檢查檔案格式'); };
+}
+function renderVTags(p) {
+  const b = $('#vbottom'); b.innerHTML = '';
+  if (!p) return;
+  const mine = tagsOf(p);
+  tagData.tags.forEach((t, i) => {
+    const c = document.createElement('button'); c.className = 'chip' + (mine.includes(t) ? ' on' : '');
+    const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = tagData.colors[t] || '#888';
+    const name = document.createElement('span'); name.textContent = t;
+    c.append(dot, name);
+    if (i < 9) { const k = document.createElement('small'); k.textContent = i + 1; c.append(k); }
+    c.onclick = () => toggleTag([p], t);
+    b.append(c);
+  });
+  const add = document.createElement('button'); add.className = 'chip'; add.textContent = '＋ 新標籤';
+  add.onclick = () => { const t = createTag(); if (t) addTag([p], t); };
+  b.append(add);
+}
+let idleTimer;
+function wakeBars() {
+  $('#viewer').classList.remove('idle');
+  clearTimeout(idleTimer); idleTimer = setTimeout(() => $('#viewer').classList.add('idle'), 2500);
+}
+$('#viewer').addEventListener('mousemove', wakeBars);
+$('#vclose').onclick = closeViewer;
+$('#vprev').onclick = () => { if (vi > 0) { vi--; showV(); } };
+$('#vnext').onclick = () => { if (vi < list.length - 1) { vi++; showV(); } };
+
+// ---------- 格狀畫面的點選與拖曳 ----------
+const grid = $('#grid');
+grid.addEventListener('click', e => {
+  if (suppressClick) { e.preventDefault(); return; }
+  const head = e.target.closest('.dayhead');
+  if (head) return selectDay(head.dataset.day, e);
+  const c = e.target.closest('.cell');
+  const meta = e.metaKey || e.ctrlKey || multi || !!e.target.closest('.pickmark');
+  if (!c) { if (!meta && !e.shiftKey) { sel.clear(); updateSel(); } return; }
+  const i = +c.dataset.i, p = list[i];
+  if (!multi && !meta && !e.shiftKey) return openViewer(i);
+  if (e.shiftKey && anchor >= 0) {
+    if (!meta) sel.clear();
+    for (let k = Math.min(anchor, i); k <= Math.max(anchor, i); k++) sel.add(list[k].id);
+  } else if (meta) { sel.has(p.id) ? sel.delete(p.id) : sel.add(p.id); anchor = i; anchorEnd = -1; }
+  else { sel = new Set([p.id]); anchor = i; anchorEnd = -1; }
+  cursor = i; updateSel();
+});
+grid.addEventListener('dblclick', e => { if (e.target.closest('button') || suppressClick) return; const c = e.target.closest('.cell'); if (c) openViewer(+c.dataset.i); });
+function selectDay(dk, e) {
+  const idx = list.map((p, i) => dayKey(p.date) === dk ? i : -1).filter(i => i >= 0);
+  if (!idx.length) return;
+  const first = idx[0], last = idx[idx.length - 1];
+  if (e.shiftKey && anchor >= 0) {
+    if (!(e.metaKey || e.ctrlKey || multi)) sel.clear();
+    const a = Math.min(anchor, first), b = Math.max(anchor, anchorEnd, last);
+    for (let k = a; k <= b; k++) sel.add(list[k].id);
+  } else {
+    if (!(e.metaKey || e.ctrlKey || multi)) sel.clear();
+    idx.forEach(i => sel.add(list[i].id));
+    anchor = first; anchorEnd = last;
+  }
+  cursor = first; updateSel();
+}
+grid.addEventListener('dragstart', e => {
+  clearTimeout(gesture?.timer);
+  if (multi || mobile || gesture?.active) { e.preventDefault(); return; }
+  const c = e.target.closest('.cell'); if (!c) return;
+  const i = +c.dataset.i;
+  if (!sel.has(list[i].id)) { sel = new Set([list[i].id]); anchor = cursor = i; updateSel(); }
+  e.dataTransfer.setData('application/x-photos', '1');
+  e.dataTransfer.effectAllowed = 'move';
+  const g = $('#dragghost'); g.textContent = `${sel.size} 張照片`;
+  e.dataTransfer.setDragImage(g, 12, 12);
+});
+
+// ---------- 左側選單：點選與放下 ----------
+const side = $('#side');
+side.addEventListener('click', async e => {
+  const tg = e.target.closest('[data-toggle]');
+  if (tg && tg.textContent) { const p = tg.dataset.toggle; collapsed.has(p) ? collapsed.delete(p) : collapsed.add(p); return renderSidebar(); }
+  const row = e.target.closest('.row'); if (!row) return;
+  const d = row.dataset;
+  if (d.drop === 'folder') filter = { type: 'folder', value: d.path };
+  else if (d.drop === 'tag') filter = { type: 'tag', value: d.tag };
+  else if (d.untagged) filter = { type: 'untagged' };
+  else if (d.drop === 'newtag') { createTag(); return; }
+  else return;
+  setMenu(false);
+  $('#main').scrollTop = 0;
+  applyFilter();
+});
+side.addEventListener('contextmenu', e => {
+  const row = e.target.closest('[data-tag]'); if (!row) return;
+  e.preventDefault();
+  const t = row.dataset.tag;
+  const a = prompt(`標籤「${t}」\n輸入 1 改名、輸入 2 刪除標籤：`);
+  if (a === '1') renameTag(t); else if (a === '2') deleteTag(t);
+});
+let hoverTimer, hoverPath;
+side.addEventListener('dragover', e => {
+  const t = e.target.closest('[data-drop]');
+  if (!t || !e.dataTransfer.types.includes('application/x-photos')) return;
+  e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+  side.querySelectorAll('.over').forEach(x => x !== t && x.classList.remove('over'));
+  t.classList.add('over');
+  // 拖著停在收合的資料夾上，會自動展開
+  if (t.dataset.drop === 'folder' && collapsed.has(t.dataset.path) && hoverPath !== t.dataset.path) {
+    hoverPath = t.dataset.path; clearTimeout(hoverTimer);
+    hoverTimer = setTimeout(() => { collapsed.delete(hoverPath); renderSidebar(); }, 700);
+  }
+});
+side.addEventListener('dragleave', e => {
+  const t = e.target.closest('[data-drop]');
+  if (t && !t.contains(e.relatedTarget)) { t.classList.remove('over'); if (t.dataset.path === hoverPath) { clearTimeout(hoverTimer); hoverPath = null; } }
+});
+side.addEventListener('drop', async e => {
+  const t = e.target.closest('[data-drop]'); if (!t) return;
+  e.preventDefault(); t.classList.remove('over'); clearTimeout(hoverTimer); hoverPath = null;
+  const ps = selected(); if (!ps.length) return;
+  const d = t.dataset;
+  if (d.drop === 'folder') movePhotos(ps, d.path);
+  else if (d.drop === 'tag') addTag(ps, d.tag);
+  else if (d.drop === 'newtag') { const n = createTag(); if (n) addTag(ps, n); }
+});
+
+// ---------- 鍵盤 ----------
+document.addEventListener('keydown', e => {
+  if ($('#app').hidden || e.target.closest?.('input, textarea')) return;
+  const meta = e.metaKey || e.ctrlKey;
+  const n = !meta && /^[1-9]$/.test(e.key) ? +e.key : 0;
+  if ($('#viewer').classList.contains('show')) {
+    wakeBars();
+    if (e.key === 'ArrowRight') { if (vi < list.length - 1) { vi++; showV(); } }
+    else if (e.key === 'ArrowLeft') { if (vi > 0) { vi--; showV(); } }
+    else if (e.key === 'Escape' || e.key === ' ') closeViewer();
+    else if (e.key === '+' || e.key === '=') setZoom(zoom * 1.25);
+    else if (e.key === '-') setZoom(zoom / 1.25);
+    else if (e.key === '0') setZoom(1);
+    else if (n && tagData.tags[n - 1]) toggleTag([list[vi]], tagData.tags[n - 1]);
+    else return;
+    e.preventDefault(); return;
+  }
+  if (meta && e.key.toLowerCase() === 'a') { sel = new Set(list.map(p => p.id)); updateSel(); }
+  else if (meta && e.key.toLowerCase() === 'z') undo();
+  else if (e.key === 'Escape') { sel.clear(); updateSel(); }
+  else if (e.key === ' ' || e.key === 'Enter') {
+    const i = cursor >= 0 ? cursor : list.findIndex(p => sel.has(p.id));
+    openViewer(i >= 0 ? i : 0);
+  }
+  else if (/^Arrow/.test(e.key)) {
+    if (!list.length) return;
+    let step = 1;
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      const c = cells.get(list[Math.max(cursor, 0)].id);
+      const box = c.parentElement.clientWidth, w = c.offsetWidth + 6;
+      step = Math.max(1, Math.floor((box + 6) / w));
+    }
+    const dir = (e.key === 'ArrowLeft' || e.key === 'ArrowUp') ? -1 : 1;
+    const i = Math.min(list.length - 1, Math.max(0, (cursor < 0 ? 0 : cursor + dir * step)));
+    if (e.shiftKey && anchor >= 0) {
+      sel.clear();
+      for (let k = Math.min(anchor, i); k <= Math.max(anchor, i); k++) sel.add(list[k].id);
+    } else { sel = new Set([list[i].id]); anchor = i; anchorEnd = -1; }
+    cursor = i; updateSel(); cells.get(list[i].id)?.scrollIntoView({ block: 'nearest' });
+  }
+  else if (n && tagData.tags[n - 1] && sel.size) toggleTag(selected(), tagData.tags[n - 1]);
+  else return;
+  e.preventDefault();
+});
+
+// ---------- 上方按鈕 ----------
+$('#btnUndo').onclick = undo;
+$('#btnSort').onclick = () => { sortAsc = !sortAsc; applyFilter(); };
+$('#size').oninput = e => { document.documentElement.style.setProperty('--size', e.target.value + 'px'); document.documentElement.style.setProperty('--mobile-cols', e.target.value < 140 ? 4 : e.target.value < 240 ? 3 : 2); requestAnimationFrame(updateTimelinePosition); };
+$('#btnRescan').onclick = () => { setMenu(false); openRoot(root); };
+$('#btnChange').onclick = () => { setMenu(false); pick(); };
+$('#btnNewTag').onclick = () => createTag();
+$('#btnNewFolder').onclick = async () => {
+  const parentPath = filter.type === 'folder' ? filter.value : '';
+  const parent = dirs.get(parentPath); if (!parent) return;
+  const input = prompt('在「' + parent.name + '」裡新增資料夾，請輸入名稱：');
+  if (input === null) return; const name = input.trim();
+  if (!name || name === '.' || name === '..' || /[\/\\]/.test(name)) return toast('請輸入單一資料夾名稱，不可包含斜線');
+  const path = parentPath ? parentPath + '/' + name : name;
+  if (dirs.has(path)) return toast('這個資料夾已經存在');
+  try {
+    const handle = await parent.handle.getDirectoryHandle(name, {create:true});
+    dirs.set(path, {handle, path, name, children:[]}); parent.children.push(path);
+    parent.children.sort(byName); collapsed.delete(parentPath); renderSidebar();
+    toast('已新增資料夾「' + name + '」');
+  } catch (e) { toast('無法新增資料夾：' + e.message); }
+};
+
+// ---------- 顯示模式、框選與觸控連選 ----------
+let suppressClick = false, gesture = null, scrollFrame;
+function setMulti(value) {
+  multi = value; if (!value) sel.clear();
+  $('#btnMulti').textContent = multi ? '完成選取' : '選取／分類';
+  $('#btnMulti').setAttribute('aria-pressed', String(multi));
+  grid.classList.toggle('selecting', multi);
+  cells.forEach(c => c.draggable = !multi && !mobile);
+  updateSel();
+}
+function layout() {
+  document.body.classList.toggle('mobile', mobile);
+  $('#btnMode').textContent = mobile ? '切換桌機' : '切換手機';
+  setMenu(false); setMulti(multi);
+  requestAnimationFrame(updateTimelinePosition);
+}
+$('#btnMode').onclick = () => { mobile = !mobile; localStorage.setItem('photo-layout', mobile ? 'mobile' : 'desktop'); layout(); };
+function setMenu(open) {
+  document.body.classList.toggle('menu-open', open);
+  $('#sideBackdrop').hidden = !open;
+  $('#btnMenu').setAttribute('aria-expanded', String(open));
+  if (!open && mobile) $('#btnMenu').focus();
+}
+$('#btnMenu').onclick = () => setMenu(!document.body.classList.contains('menu-open'));
+$('#btnCloseSide').onclick = () => setMenu(false);
+$('#sideBackdrop').onclick = () => setMenu(false);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('menu-open')) { setMenu(false); e.stopImmediatePropagation(); } }, true);
+$('#btnMulti').onclick = () => setMulti(!multi);
+$('#btnTrash').onclick = () => trashPhotos(selected());
+$('#vtrash').onclick = () => { const p = list[vi]; if (p) { closeViewer(); trashPhotos([p]); } };
+$('#btnClear').onclick = () => { sel.clear(); updateSel(); };
+$('#btnRetry').onclick = () => { for (const p of list) if (p.thumbFail) { p.thumbFail = false; cells.get(p.id)?.classList.remove('fail'); } io.disconnect(); cells.forEach(c => io.observe(c)); toast('正在重試可見的照片'); };
+layout();
+$('#settings').addEventListener('click', e => { if (e.target.closest('button')) $('#settings').open = false; });
+document.addEventListener('click', e => { if (!e.target.closest('#settings')) $('#settings').open = false; });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $('#settings').open = false; });
+function activateGesture(g) {
+  g.active = true; suppressClick = true;
+  g.boxes = [...cells].map(([id,c]) => ({id, i: +c.dataset.i, rect: c.getBoundingClientRect()}));
+  g.scroll = $('#main').scrollTop;
+  setMulti(true);
+  if (g.touch) grid.setPointerCapture(g.id);
+  sweep(g); scrollFrame = requestAnimationFrame(autoScroll);
+}
+function sweep(g) {
+  if (!g.active) return;
+  const delta = $('#main').scrollTop - g.scroll;
+  if (g.range) {
+    const hit = document.elementFromPoint(g.x, g.y)?.closest('.cell');
+    if (hit) g.last = +hit.dataset.i;
+    sel = new Set(g.base);
+    for (let i = Math.min(g.first, g.last); i <= Math.max(g.first, g.last); i++) {
+      if (g.remove) sel.delete(list[i].id); else sel.add(list[i].id);
+    }
+  } else {
+    const left = Math.min(g.sx, g.x), right = Math.max(g.sx, g.x);
+    const top = Math.min(g.sy, g.y + delta), bottom = Math.max(g.sy, g.y + delta);
+    const box = $('#marquee'); box.hidden = false;
+    Object.assign(box.style, {left: left+'px', top: (top-delta)+'px', width: (right-left)+'px', height: (bottom-top)+'px'});
+    sel = new Set(g.add ? g.base : []);
+    for (const {id,rect:r} of g.boxes) if (r.right > left && r.left < right && r.bottom > top && r.top < bottom) sel.add(id);
+  }
+  updateSel();
+}
+function autoScroll() {
+  const g = gesture; if (!g?.active) return;
+  const main = $('#main'), r = main.getBoundingClientRect(), top = r.top + main.querySelector('header').offsetHeight;
+  const dy = g.y < top + 35 ? -14 : g.y > r.bottom - 35 ? 14 : 0;
+  if (dy) { main.scrollTop += dy; sweep(g); }
+  scrollFrame = requestAnimationFrame(autoScroll);
+}
+grid.addEventListener('pointerdown', e => {
+  if (e.button !== 0 || e.target.closest('button,.dayhead')) return;
+  const c = e.target.closest('.cell'), touch = e.pointerType === 'touch' || mobile;
+  const g = gesture = {id:e.pointerId, sx:e.clientX, sy:e.clientY, x:e.clientX, y:e.clientY, touch, range:!!c, first:c ? +c.dataset.i : -1, last:c ? +c.dataset.i : -1, base:new Set(sel), remove:c && sel.has(list[+c.dataset.i].id), add:e.metaKey || e.ctrlKey || multi};
+  if (c && !multi) g.timer = setTimeout(() => activateGesture(g), 380);
+});
+window.addEventListener('pointermove', e => {
+  const g = gesture; if (!g || e.pointerId !== g.id) return;
+  g.x = e.clientX; g.y = e.clientY;
+  if (!g.active && Math.hypot(g.x-g.sx,g.y-g.sy) > 6) {
+    clearTimeout(g.timer);
+    if (!multi && (g.touch || g.range)) { gesture = null; return; }
+    activateGesture(g);
+  }
+  if (g.active) { e.preventDefault(); sweep(g); }
+}, {passive:false});
+function endGesture(e) {
+  const g = gesture; if (!g || e.pointerId !== g.id) return;
+  clearTimeout(g.timer); cancelAnimationFrame(scrollFrame);
+  if (grid.hasPointerCapture(g.id)) grid.releasePointerCapture(g.id);
+  $('#marquee').hidden = true; gesture = null;
+  if (g.active) setTimeout(() => suppressClick = false, 0);
+}
+window.addEventListener('pointerup', endGesture);
+window.addEventListener('pointercancel', endGesture);
+grid.addEventListener('touchmove', e => { if (gesture?.active) e.preventDefault(); }, {passive:false});
+grid.addEventListener('contextmenu', e => { if (mobile || multi || gesture?.active) e.preventDefault(); });
+
+// ---------- 大圖：按鈕／滾輪／雙指縮放、放大後拖動、左右滑動 ----------
+let zoom = 1, panX = 0, panY = 0;
+const touches = new Map(); let viewGesture;
+function setZoom(z) {
+  zoom = Math.max(1, Math.min(8, z)); if (zoom === 1) panX = panY = 0;
+  const stage = $('#vstage'); stage.style.setProperty('--zoom', zoom);
+  stage.style.setProperty('--pan-x', panX+'px'); stage.style.setProperty('--pan-y', panY+'px');
+  $('#vfit').textContent = zoom === 1 ? '適合視窗' : Math.round(zoom*100)+'%';
+}
+$('#vplus').onclick = () => setZoom(zoom*1.25);
+$('#vminus').onclick = () => setZoom(zoom/1.25);
+$('#vfit').onclick = () => setZoom(1);
+const stage = $('#vstage');
+stage.addEventListener('wheel', e => { if (!stage.querySelector('img')) return; e.preventDefault(); setZoom(zoom * Math.exp(-e.deltaY*.002)); }, {passive:false});
+stage.addEventListener('dblclick', () => setZoom(zoom === 1 ? 2 : 1));
+stage.addEventListener('pointerdown', e => {
+  if (!stage.querySelector('img')) return;
+  stage.setPointerCapture(e.pointerId); touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  const pts = [...touches.values()];
+  viewGesture = {x:e.clientX,y:e.clientY,px:panX,py:panY,z:zoom,d:pts.length===2 ? Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y) : 0, pinch:pts.length>1};
+});
+stage.addEventListener('pointermove', e => {
+  if (!touches.has(e.pointerId) || !viewGesture) return;
+  touches.set(e.pointerId,{x:e.clientX,y:e.clientY}); const pts=[...touches.values()], g=viewGesture;
+  if (pts.length===2 && g.d) setZoom(g.z*Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y)/g.d);
+  else if (zoom>1) { panX=g.px+e.clientX-g.x; panY=g.py+e.clientY-g.y; setZoom(zoom); }
+});
+function endView(e) {
+  const g=viewGesture; if (!touches.has(e.pointerId)) return;
+  touches.delete(e.pointerId);
+  if (e.type !== 'pointercancel' && !g?.pinch && zoom===1 && Math.abs(e.clientX-g.x)>60 && Math.abs(e.clientY-g.y)<80) {
+    vi=Math.max(0,Math.min(list.length-1,vi+(e.clientX<g.x?1:-1))); showV();
+  }
+  if (touches.size) { const p=[...touches.values()][0]; viewGesture={x:p.x,y:p.y,px:panX,py:panY,z:zoom,pinch:true}; }
+  else viewGesture=null;
+}
+stage.addEventListener('pointerup',endView); stage.addEventListener('pointercancel',endView);
+
+// ---------- 開始 ----------
+async function pick() {
+  try {
+    const h = await showDirectoryPicker({ id: 'photos', mode: 'readwrite' });
+    await idbSet('kv', 'root', h);
+    openRoot(h);
+  } catch (e) { if (e.name !== 'AbortError') toast('無法開啟資料夾：' + e.message); }
+}
+(async () => {
+  if (!window.showDirectoryPicker) { $('#unsupported').hidden = false; $('#pick').disabled = true; return; }
+  $('#pick').onclick = pick;
+  const h = await idbGet('kv', 'root');
+  if (h) {
+    const r = $('#resume'); r.hidden = false; r.textContent = `繼續開啟「${h.name}」`;
+    r.onclick = async () => {
+      try {
+        if (await h.requestPermission({ mode: 'readwrite' }) === 'granted') openRoot(h);
+      } catch (e) { toast('找不到上次的資料夾，請重新選擇'); }
+    };
+  }
+})();
+</script>
+</body>
+</html>
