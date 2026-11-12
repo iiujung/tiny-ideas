@@ -65,6 +65,8 @@ hr { border: 0; border-top: 2px dashed var(--line); margin: 22px 0; }
 .list { margin: 8px 0 0; padding-left: 22px; display: grid; gap: 6px; }
 .list li { padding-left: 2px; text-wrap: pretty; }
 .list li::marker { color: var(--lime-d); }
+.list a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--lime-d); text-underline-offset: 3px; text-decoration-thickness: 2px; }
+.list a:focus-visible { outline: 3px solid var(--lime-d); outline-offset: 2px; border-radius: 3px; }
 .tip { margin: 0; font-size: 14px; line-height: 1.7; color: var(--sub); text-wrap: pretty; }
 .foot { text-align: center; font-size: 13px; line-height: 1.6; color: var(--sub); margin-top: 38px; }
 </style>
@@ -118,7 +120,7 @@ hr { border: 0; border-top: 2px dashed var(--line); margin: 22px 0; }
         <h2>Windows 用戶</h2>
         <p>FileDir.command 只有 Mac 能用，Windows 有兩個選擇：</p>
         <ul class="list">
-          <li>用原作者 AlexHsu 做的 FileDir（Windows 版），我的 Mac 版就是從它得到靈感</li>
+          <li>用原作者 AlexHsu 做的 FileDir（Windows 版，依拍攝日期自動分資料夾），下載方式看 <a href="https://blog.andylain.com/2022/05/win-filedirexe.html" target="_blank" rel="noopener">安迪連的介紹文</a>。我的 Mac 版就是從它得到靈感</li>
           <li>直接請 AI 幫忙分類：把照片資料夾交給它，說你想怎麼分</li>
         </ul>
         <p class="note">照片瀏覽器.html 在 Windows 用 Chrome 或 Edge 就能開，照常使用。</p>
