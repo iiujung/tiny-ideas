@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8">
+<title>風格抽取器｜下載</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="看到喜歡的風格，抽出來，換成自己的主題。一個 Skill 檔案，免費下載。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* DAY 13 風格抽取器的下載頁：沿用 DAY 11 的白色「出餐單」 */
+:root {
+  --ink: #2A2433; --sub: #6E6878; --line: #E8E5DC; --bg: #FAF9F5; --paper: #FFFFFF;
+  --lime: #D9E86B; --lime-l: #F1F6C8; --lime-d: #7C8A1F;
+  --font-sans: "Huninn", "jf-openhuninn-2.1", "PingFang TC", "Noto Sans TC", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: var(--font-sans); font-weight: 400; font-synthesis: none;
+  font-size: 16px; line-height: 1.75; letter-spacing: normal; line-break: strict;
+  color: var(--ink); background: var(--bg);
+  min-height: 100vh; padding: 28px 16px 56px;
+}
+main { max-width: 520px; margin: 0 auto; }
+.wrap { filter: drop-shadow(0 10px 24px rgba(42,36,51,.08)) drop-shadow(0 1px 3px rgba(42,36,51,.08)); }
+.slip { position: relative; background: var(--paper); padding: 28px 24px 36px; border-radius: 6px 6px 0 0; }
+.slip::after {   /* 收據下緣的鋸齒 */
+  content: ""; position: absolute; left: 0; right: 0; bottom: -10px; height: 10px;
+  background: linear-gradient(135deg, var(--paper) 25%, transparent 25%) -10px 0,
+              linear-gradient(225deg, var(--paper) 25%, transparent 25%) -10px 0;
+  background-size: 20px 20px;
+}
+.top { display: flex; justify-content: space-between; align-items: center; }
+.no { font-family: var(--font-mono); font-weight: 500; font-size: 13px; letter-spacing: .02em; color: var(--sub); }
+.shop { font-size: 14px; color: var(--sub); }
+h1 { font-weight: 400; font-size: 28px; line-height: 1.35; margin: 14px 0 4px; text-wrap: balance; }
+.lead { font-size: 14px; line-height: 1.7; color: var(--sub); margin: 0; text-wrap: pretty; }
+hr { border: 0; border-top: 2px dashed var(--line); margin: 22px 0; }
+h2 { font-weight: 400; font-size: 20px; line-height: 1.4; margin: 0; }
+p { margin: 6px 0 0; text-wrap: pretty; }
+.note { font-size: 14px; line-height: 1.7; color: var(--sub); }
+.size { font-family: var(--font-mono); font-weight: 500; font-size: 13px; color: var(--sub); letter-spacing: .02em; }
+.callout { margin: 16px 0 0; padding: 12px 14px; border-radius: 12px; border: 2px dashed var(--line); font-size: 14px; line-height: 1.7; text-wrap: pretty; }
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 56px; margin-top: 14px; padding: 0 20px; border-radius: 16px;
+  font-family: inherit; font-size: 17px; line-height: 1; color: var(--ink); text-decoration: none;
+  background: var(--lime); border: 2px solid var(--ink); box-shadow: 0 3px 0 var(--ink);
+  transition: transform .12s, box-shadow .12s;
+}
+.btn:hover { transform: translateY(1px); box-shadow: 0 2px 0 var(--ink); }
+.btn:active { transform: translateY(3px); box-shadow: 0 0 0 var(--ink); }
+.btn:focus-visible { outline: 3px solid var(--lime-d); outline-offset: 3px; }
+.btn svg { width: 20px; height: 20px; flex: none; }
+.files { margin: 16px 0 0; padding: 0; list-style: none; display: grid; gap: 14px; }
+.files li { padding: 12px 14px; border-radius: 12px; background: var(--lime-l); }
+.fname { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; font-size: 17px; line-height: 1.4; }
+.ext { font-size: 13px; line-height: 1; padding: 4px 9px; border-radius: 999px; background: #fff; color: var(--lime-d); }
+.files p { font-size: 14px; line-height: 1.7; margin-top: 4px; }
+figure { margin: 18px 0 0; }
+figure svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 6px 14px rgba(42,36,51,.10)); }
+figcaption { margin-top: 10px; font-size: 14px; line-height: 1.7; color: var(--sub); text-align: center; text-wrap: balance; }
+.nw { white-space: nowrap; }
+.list { margin: 8px 0 0; padding-left: 22px; display: grid; gap: 6px; }
+.list li { padding-left: 2px; text-wrap: pretty; }
+.list li::marker { color: var(--lime-d); }
+.list a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--lime-d); text-underline-offset: 3px; text-decoration-thickness: 2px; }
+.list a:focus-visible { outline: 3px solid var(--lime-d); outline-offset: 2px; border-radius: 3px; }
+.diff { margin-top: 16px; padding: 12px 14px; border-radius: 12px; background: var(--lime-l); }
+.diff h3 { font-weight: 400; font-size: 16px; line-height: 1.5; margin: 0 0 4px; }
+.diff ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 14px; line-height: 1.7; }
+.diff li::marker { color: var(--lime-d); }
+.steps { margin: 10px 0 0; padding: 0; list-style: none; counter-reset: s; display: grid; gap: 12px; }
+.steps > li { counter-increment: s; display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; font-size: 16px; }
+.steps > li::before { content: counter(s); width: 28px; height: 28px; border-radius: 50%; background: var(--lime); display: grid; place-items: center; font-size: 14px; line-height: 1; margin-top: 3px; }
+.steps > li > div { min-width: 0; }
+.prompt { margin-top: 10px; border: 2px solid var(--line); border-radius: 12px; background: #FDFCF9; }
+.prompt .ph { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px 0 14px; }
+.prompt .pt { font-size: 14px; line-height: 1.5; color: var(--sub); }
+.copy { flex: none; min-height: 32px; padding: 0 12px; border-radius: 999px; border: 2px solid var(--ink); background: var(--lime); color: var(--ink); font-family: inherit; font-size: 14px; line-height: 1; cursor: pointer; }
+.copy:focus-visible { outline: 3px solid var(--lime-d); outline-offset: 2px; }
+.prompt .pb { margin: 0; padding: 6px 14px 12px; font-size: 14px; line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere; }
+.tip { margin: 14px 0 0; font-size: 14px; line-height: 1.7; color: var(--sub); text-wrap: pretty; }
+.foot { text-align: center; font-size: 13px; line-height: 1.6; color: var(--sub); margin-top: 38px; }
+
+.steps > li { grid-template-columns: 34px 1fr; }
+.steps > li::before { display: none; }
+.mk { font-size: 22px; line-height: 1.5; color: var(--lime-d); }
+.sub { margin: 6px 0 0; font-size: 14px; line-height: 1.7; color: var(--sub); text-wrap: pretty; }
+@media (max-width: 640px) {
+  .lead, .callout, .tip { font-size: 16px; }
+  .sub, .note, .files p, .diff ul { font-size: 15px; }
+  .prompt .pb { font-size: 15px; }
+}
+</style>
+<main>
+  <div class="wrap">
+    <div class="slip">
+      <div class="top"><span class="no">DAY 13</span><span class="shop">404 廚房｜出餐單</span></div>
+      <h1>風格抽取器</h1>
+      <p class="lead">看到喜歡的風格，不用再等別人開發。把參考圖抽成提示詞，再換成自己想要的主題。</p>
+      <p class="callout">為什麼不直接丟參考圖，叫 AI 照著畫、換個主題？因為 AI 會被原圖影響，AI 味就跑出來了。先把風格抽成提示詞，再換主題重新打包，效果比較好。</p>
+
+      <hr>
+
+      <section>
+        <h2>下載 Skill</h2>
+        <a class="btn" href="style-dna-tools/visual-style-dna.zip" download="visual-style-dna.zip">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v10m0 0l-4-4m4 4l4-4M4 17h12"/></svg>
+          下載 visual-style-dna.zip
+        </a>
+        <p class="note" style="margin-top:8px"><span class="size">5 KB</span>｜解壓縮後是一個資料夾，裡面只有一個檔案：</p>
+        <ul class="files">
+          <li>
+            <div class="fname">SKILL <span class="ext">.md</span></div>
+            <p>風格抽取器本體（正式名稱「視覺解剖師」，skill 名稱 visual-style-dna）。純文字，用記事本就能打開看它怎麼運作。</p>
+          </li>
+        </ul>
+      </section>
+
+      <hr>
+
+      <section>
+        <h2>安裝</h2>
+        <ol class="steps">
+          <li><span class="mk">❶</span><div>在 Claude 的設定裡找到 Skills（技能）頁面，把剛下載的 zip 檔上傳。<p class="sub">介面名稱可能依版本不同，找不到的話，搜尋「upload skill」或「上傳技能」。</p></div></li>
+          <li><span class="mk">❷</span><div>用 Claude Code 的話，把解壓縮出來的 <code>visual-style-dna</code> 資料夾放進 <code>~/.claude/skills/</code>，重開對話。</div></li>
+        </ol>
+        <p class="tip">這個 Skill 只輸出提示詞，不會幫你生圖。拿到提示詞之後，貼到你慣用的生圖工具。</p>
+      </section>
+
+      <hr>
+
+      <section>
+        <h2>怎麼用</h2>
+        <ol class="steps">
+          <li><span class="mk">❶</span><div>先給它一張喜歡的參考圖，請它反推出提示詞。<p class="sub">說「幫我做視覺解剖」或打 /visual-style-dna 都可以。</p></div></li>
+          <li><span class="mk">❷</span><div>再寫上自己想要的主題。<p class="sub">只做插畫，只寫主題就好。要做 banner 之類的，再補上主標和副標。</p></div></li>
+          <li><span class="mk">❸</span><div>它會根據提示詞重新打包，風格不變，主題換成你的。<p class="sub">想一次做很多張，就一次貼上多個主題，它會批量產出各自的提示詞。</p></div></li>
+        </ol>
+
+        <div class="prompt">
+          <div class="ph"><span class="pt">主題的寫法（可以貼多個）</span><button type="button" class="copy" data-copy="p1">複製</button></div>
+          <pre class="pb" id="p1">1.
+主題：數碼方塊 上面有刻AI
+主標：AI素材
+副標：餵給AI的素材、過程記錄
+
+2.
+主題：（你的第二個主題）
+主標：（沒有主標就不用寫）
+副標：（沒有副標就不用寫）</pre>
+        </div>
+        <p class="tip">沒給主標或副標的時候，它不會自己編文字，只描述畫面。圖像模型常把中文字畫壞，文字出錯的話，請它改出一份「文字區留白」版本，之後自己在設計軟體裡補字。</p>
+      </section>
+    </div>
+  </div>
+  <p class="foot">404 廚房｜每天 30 分鐘，實現一個小點子</p>
+</main>
+<script>
+document.querySelectorAll('[data-copy]').forEach(function (b) {
+  b.addEventListener('click', async function () {
+    var el = document.getElementById(b.dataset.copy), done = '已複製';
+    try { await navigator.clipboard.writeText(el.innerText); }
+    catch (e) { var r = document.createRange(); r.selectNodeContents(el); var s = getSelection(); s.removeAllRanges(); s.addRange(r); done = '已選取，請按複製'; }
+    b.textContent = done; setTimeout(function () { b.textContent = '複製'; }, 1800);
+  });
+});
+</script>
